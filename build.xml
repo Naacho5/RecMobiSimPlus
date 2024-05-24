@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<project basedir="." default="build" name="NewSimulator">
+	<property environment="env" />
+	<property name="ECLIPSE_HOME"
+		value="../../../../../../../../../eclipse/java-photon/eclipse/" />
+		
+	<property name="debuglevel" value="source,lines,vars" />
+	<property name="target" value="1.8" />
+	<property name="source" value="1.8" />
+	<property name="projectName" value="RecMobiSim" />
+	<property name="build.dir" location="bin" />
+	<property name="dist.dir" location="dist" />
+	<property name="dist.dir.resources" location="dist/resources" />
+	<property name="dist.lib.dir" location="dist/lib" />
+	<property name="lib.dir" value="lib" />
+	<property name="resources.dir" value="resources" />
+	
+	<path id="NewSimulator.classpath">
+		<pathelement location="bin" />
+		<pathelement location="lib/jgraphx-4.2.2.jar" />
+		<pathelement location="lib/jamon-2.82.jar" />
+		<pathelement location="lib/sqlite-jdbc-3.7.2.jar" />
+		<pathelement location="lib/slf4j-api-1.7.5.jar" />
+		<pathelement location="lib/mahout-math-0.9.jar" />
+		<pathelement location="lib/mahout-core-0.9.jar" />
+		<pathelement location="lib/jgrapht-core-1.0.0.jar" />
+		<pathelement location="lib/guava-16.0.jar" />
+		<pathelement location="lib/commons-math3-3.2.jar" />
+		<pathelement location="lib/earcut4j-2.2.2.jar" />
+		<pathelement location="lib/opencsv-5.5.2.jar" />
+		<pathelement location="lib/lucene-spatial-5.2.1.jar" />
+		<pathelement location="lib/batik-all-1.17.jar"/>
+		<pathelement location="lib/xml-apis-ext-1.3.04.jar"/>
+		<pathelement location="lib/postgresql-42.6.0.jar"/>
+		<pathelement location="lib/reactive-streams-1.0.4.jar"/>
+		<pathelement location="lib/netty-buffer-4.1.100.Final.jar"/>
+		<pathelement location="lib/netty-codec-4.1.100.Final.jar"/>
+		<pathelement location="lib/netty-common-4.1.100.Final.jar"/>
+		<pathelement location="lib/netty-handler-4.1.100.Final.jar"/>
+		<pathelement location="lib/netty-resolver-4.1.100.Final.jar"/>
+		<pathelement location="lib/netty-tcnative-classes-2.0.61.Final.jar"/>
+		<pathelement location="lib/netty-transport-4.1.100.Final.jar"/>
+		<pathelement location="lib/netty-transport-native-unix-common-4.1.100.Final.jar"/>
+		<pathelement location="lib/reactor-core-3.5.11.jar"/>
+		<pathelement location="lib/slf4j-simple-2.0.9.jar"/>
+		<pathelement location="lib/neo4j-java-driver-5.14.0.jar"/>
+		<pathelement location="lib/gs-algo-2.0.jar"/>
+		<pathelement location="lib/gs-core-2.0.jar"/>
+		<pathelement location="lib/gs-ui-swing-2.0.jar"/>
+	</path>
+	<pathconvert property="classpath.name" pathsep=" ">
+		<path refid="NewSimulator.classpath" />
+		<mapper>
+			<chainedmapper>
+				<flattenmapper />
+				<globmapper from="*.jar" to="lib/*.jar" />
+			</chainedmapper>
+		</mapper>
+	</pathconvert>
+	
+	<target name="init">
+		<mkdir dir="bin" />
+		<copy includeemptydirs="false" todir="bin">
+			<fileset dir="src">
+				<exclude name="**/*.java" />
+				<exclude
+					name="es/unizar/dao/MemoryDataManagementQueueDB.java" />
+				<exclude
+					name="es/unizar/dao/MemoryDataManagementUserDB.java" />
+				<exclude name="es/unizar/dao/MemoryDAOFactory.java" />
+				<exclude name="es/unizar/util/VariableWeight.java" />
+			</fileset>
+		</copy>
+	</target>
+	
+	<target name="clean">
+		<delete dir="bin" />
+	</target>
+	
+	<target depends="clean" name="cleanall" />
+	
+	<target depends="build-subprojects,build-project" name="build" />
+	
+	<target name="build-subprojects" />
+	
+	<target depends="init" name="build-project">
+		<echo message="${ant.project.name}: ${ant.file}" />
+		<javac debug="true" debuglevel="${debuglevel}" destdir="bin"
+			includeantruntime="false" source="${source}" target="${target}">
+			<src path="src" />
+			<exclude
+				name="es/unizar/dao/MemoryDataManagementQueueDB.java" />
+			<exclude name="es/unizar/dao/MemoryDataManagementUserDB.java" />
+			<exclude name="es/unizar/dao/MemoryDAOFactory.java" />
+			<exclude name="es/unizar/util/VariableWeight.java" />
+			<classpath refid="NewSimulator.classpath" />
+		</javac>
+	</target>
+	
+	<target
+		description="Build all projects which reference this project. Useful to propagate changes."
+		name="build-refprojects" />
+		
+	<target
+		description="copy Eclipse compiler jars to ant lib directory"
+		name="init-eclipse-compiler">
+		<copy todir="${ant.library.dir}">
+			<fileset dir="${ECLIPSE_HOME}/plugins"
+				includes="org.eclipse.jdt.core_*.jar" />
+		</copy>
+		<unzip dest="${ant.library.dir}">
+			<patternset includes="jdtCompilerAdapter.jar" />
+			<fileset dir="${ECLIPSE_HOME}/plugins"
+				includes="org.eclipse.jdt.core_*.jar" />
+		</unzip>
+	</target>
+	
+	<target description="compile project with Eclipse compiler"
+		name="build-eclipse-compiler">
+		<property name="build.compiler"
+			value="org.eclipse.jdt.core.JDTCompilerAdapter" />
+		<antcall target="build" />
+	</target>
+	<target name="MainSimulator">
+		<java classname="es.unizar.gui.MainSimulator" failonerror="true"
+			fork="yes">
+			<classpath refid="NewSimulator.classpath" />
+		</java>
+	</target>
+	
+	<target name="copy-dependencies">
+		<copy todir="${dist.lib.dir}">
+			<fileset dir="${lib.dir}" includes="**/*.jar" excludes="**/*sources.jar, **/*javadoc.jar" />
+		</copy>
+		<copy todir="${dist.dir.resources}">
+			<fileset dir="${resources.dir}/" includes="**/**"/>
+		</copy>
+	</target>
+	
+	<target name="jar" depends="build, copy-dependencies" description="package, output to JAR">
+		<echo message="classpath.name : ${classpath.name} " />
+		<mkdir dir="${dist.dir}" />
+		<mkdir dir="${dist.lib.dir}"/>
+		<jar jarfile="${dist.dir}/${projectName}.jar" basedir="${build.dir}" excludes="**/*.java,*.txt">
+			<!-- <fileset dir="." includes="resources/**"/> -->
+			<manifest>
+				<attribute name="Main-Class" value="es/unizar/gui/MainSimulator"/>
+				<attribute name="Built-By" value="${user.name}"/>
+				<attribute name="Class-Path" value="${classpath.name}" />
+			</manifest>
+			<fileset dir="." includes="resources/**" />
+		</jar>
+	</target>
+</project>

@@ -1,0 +1,12 @@
+--- VUELTA ---
+- Time to change users' mood: 0
+- Time to update users' position: 182
+-Time to repaint: 1
+--- VUELTA ---
+- Time to change users' mood: 0
+- Time to update users' position: 3711
+-Time to repaint: 0
+--- VUELTA ---
+- Time to change users' mood: 0
+- Time to update users' position: 373
+-Time to repaint: 1

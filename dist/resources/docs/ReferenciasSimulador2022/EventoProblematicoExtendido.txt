@@ -1,0 +1,46 @@
+--- VUELTA ---
+- Time to change users' mood: 0
+Updating user positions: 
+   Soy el usuario: 1
+   Tiempo en repintar: 0
+   Soy el usuario: 2
+   Tiempo en repintar: 0
+- Time to update users' position: 211
+- Time to repaint: 0
+--------------
+
+--- VUELTA ---
+- Time to change users' mood: 0
+Updating user positions: 
+   Soy el usuario: 1
+   Tiempo en repintar: 1
+   Soy el usuario: 2
+   Tiempo en repintar: 0
+   TENGO TIEMPO TODAVÍA: 0.2843232934819575
+   Path no acabado
+      VOTANDO EL ITEM 118
+      Tiempo en obtener el contexto: 4
+      Tiempo en generar valoración: 29
+      IS CHANGED BY RECOMMENDER: 113
+    - TIME MOVING: 0
+   TENGO TIEMPO TODAVÍA: 0.2843232934819575
+   Path no acabado
+      Tiempo en actualizar ruta (usuario especial tiene más cosas que ver en la sala): 8063
+    - TIME MOVING: 223
+- Time to update users' position: 8710
+- Time to repaint: 0
+--------------
+
+--- VUELTA ---
+- Time to change users' mood: 0
+Updating user positions: 
+   Soy el usuario: 1
+   Tiempo en repintar: 0
+   Soy el usuario: 2
+   Tiempo en repintar: 0
+   TENGO TIEMPO TODAVÍA: 1.0
+   Path no acabado
+    - TIME MOVING: 168
+- Time to update users' position: 400
+- Time to repaint: 0
+--------------

@@ -1,0 +1,1 @@
+https://coderanch.com/how-to/javadoc/itext-2.1.7/com/lowagie/rups/io/TextAreaOutputStream.html
