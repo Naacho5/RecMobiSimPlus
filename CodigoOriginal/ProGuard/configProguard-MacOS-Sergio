@@ -1,0 +1,121 @@
+-injars '/Volumes/OWC Envoy Pro FX/Workspace/GitHub/RecMobiSim/SimulatorAndMapEditor/dist/RecMobiSim.jar'
+-outjars '/Volumes/OWC Envoy Pro FX/Workspace/GitHub/RecMobiSim/SimulatorAndMapEditor/dist/RecMobiSim-web.jar'
+
+-libraryjars '/Volumes/OWC Envoy Pro FX/Workspace/GitHub/RecMobiSim/SimulatorAndMapEditor/dist/lib/commons-math3-3.2.jar'
+-libraryjars '/Volumes/OWC Envoy Pro FX/Workspace/GitHub/RecMobiSim/SimulatorAndMapEditor/dist/lib/earcut4j-2.2.2.jar'
+-libraryjars '/Volumes/OWC Envoy Pro FX/Workspace/GitHub/RecMobiSim/SimulatorAndMapEditor/dist/lib/guava-16.0.jar'
+-libraryjars '/Volumes/OWC Envoy Pro FX/Workspace/GitHub/RecMobiSim/SimulatorAndMapEditor/dist/lib/itext-rups-2.1.7.jar'
+-libraryjars '/Volumes/OWC Envoy Pro FX/Workspace/GitHub/RecMobiSim/SimulatorAndMapEditor/dist/lib/jamon-2.82.jar'
+-libraryjars '/Volumes/OWC Envoy Pro FX/Workspace/GitHub/RecMobiSim/SimulatorAndMapEditor/dist/lib/jgrapht-core-1.0.0.jar'
+-libraryjars '/Volumes/OWC Envoy Pro FX/Workspace/GitHub/RecMobiSim/SimulatorAndMapEditor/dist/lib/jgraphx-4.2.2.jar'
+-libraryjars '/Volumes/OWC Envoy Pro FX/Workspace/GitHub/RecMobiSim/SimulatorAndMapEditor/dist/lib/lucene-spatial-5.2.1.jar'
+-libraryjars '/Volumes/OWC Envoy Pro FX/Workspace/GitHub/RecMobiSim/SimulatorAndMapEditor/dist/lib/mahout-core-0.9.jar'
+-libraryjars '/Volumes/OWC Envoy Pro FX/Workspace/GitHub/RecMobiSim/SimulatorAndMapEditor/dist/lib/mahout-math-0.9.jar'
+-libraryjars '/Volumes/OWC Envoy Pro FX/Workspace/GitHub/RecMobiSim/SimulatorAndMapEditor/dist/lib/opencsv-5.5.2.jar'
+-libraryjars '/Volumes/OWC Envoy Pro FX/Workspace/GitHub/RecMobiSim/SimulatorAndMapEditor/dist/lib/slf4j-api-1.7.5.jar'
+-libraryjars '/Volumes/OWC Envoy Pro FX/Workspace/GitHub/RecMobiSim/SimulatorAndMapEditor/dist/lib/sqlite-jdbc-3.7.2.jar'
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/java.base.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/java.compiler.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/java.datatransfer.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/java.desktop.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/java.instrument.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/java.logging.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/java.management.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/java.management.rmi.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/java.naming.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/java.net.http.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/java.prefs.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/java.rmi.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/java.scripting.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/java.se.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/java.security.jgss.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/java.security.sasl.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/java.smartcardio.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/java.sql.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/java.sql.rowset.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/java.transaction.xa.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/java.xml.crypto.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/java.xml.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.accessibility.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.attach.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.charsets.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.compiler.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.crypto.cryptoki.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.crypto.ec.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.dynalink.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.editpad.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.hotspot.agent.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.httpserver.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.incubator.foreign.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.incubator.vector.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.internal.ed.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.internal.jvmstat.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.internal.le.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.internal.opt.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.internal.vm.ci.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.internal.vm.compiler.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.internal.vm.compiler.management.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.jartool.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.javadoc.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.jcmd.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.jconsole.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.jdeps.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.jdi.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.jdwp.agent.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.jfr.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.jlink.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.jpackage.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.jshell.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.jsobject.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.jstatd.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.localedata.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.management.agent.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.management.jfr.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.management.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.naming.dns.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.naming.rmi.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.net.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.nio.mapmode.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.random.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.sctp.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.security.auth.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.security.jgss.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.unsupported.desktop.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.unsupported.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.xml.dom.jmod
+-libraryjars /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/jmods/jdk.zipfs.jmod
+
+-dontskipnonpubliclibraryclassmembers
+-dontusemixedcaseclassnames
+-keeppackagenames es.unizar.gui.MainSimulator
+-keepattributes InnerClasses
+-dontwarn
+-ignorewarnings
+
+
+
+# Keep - Applications. Keep all application classes, along with their 'main' methods.
+-keepclasseswithmembers public class * {
+    public static void main(java.lang.String[]);
+}
+
+# Also keep - Enumerations. Keep the special static methods that are required in
+# enumeration classes.
+-keepclassmembers enum  * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+# Also keep - Database drivers. Keep all implementations of java.sql.Driver.
+-keep class * extends java.sql.Driver
+
+# Also keep - Swing UI L&F. Keep all extensions of javax.swing.plaf.ComponentUI,
+# along with the special 'createUI' method.
+-keep class * extends javax.swing.plaf.ComponentUI {
+    public static javax.swing.plaf.ComponentUI createUI(javax.swing.JComponent);
+}
+
+# Keep - Native method names. Keep all native class/method names.
+-keepclasseswithmembers,includedescriptorclasses,allowshrinking class * {
+    native <methods>;
+}

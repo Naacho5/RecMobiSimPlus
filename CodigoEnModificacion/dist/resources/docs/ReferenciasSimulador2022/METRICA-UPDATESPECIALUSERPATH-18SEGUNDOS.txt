@@ -1,0 +1,30 @@
+--- VUELTA ---
+- Time to change users' mood: 0
+Updating user positions: 
+ -TIEMPO TOTAL MENSAJE INICIO: 9
+   Soy el usuario: 1
+   Tiempo en repintar: 20
+   TENGO TIEMPO TODAVÍA: 1.0
+   Path NO acabado
+    - TIME MOVING: 65
+   Tiempo en imprimir tiempos en consola: 10
+   Soy el usuario: 2
+   Tiempo en repintar: 25
+   TENGO TIEMPO TODAVÍA: 0.6667958897443442
+   Path NO acabado
+      VOTANDO EL ITEM 102
+      Tiempo en obtener el contexto: 4
+      Tiempo en generar valoración: 17
+      IS CHANGED BY RECOMMENDER: 119
+    - TIME MOVING: 0
+   TENGO TIEMPO TODAVÍA: 0.6667958897443442
+   Path NO acabado
+      *** Tiempo en updateSpecialUserPath: 18211
+      Tiempo en actualizar ruta (usuario especial tiene más cosas que ver en la sala): 18211
+    - TIME MOVING: 59
+   Tiempo en imprimir tiempos en consola: 12
+ -TIEMPO TOTAL BUCLE: 18575
+ -TIEMPO TOTAL COMPROBACIÓN ÚLTIMO IF: 0
+- Time to update users' position: 18584
+- Time to repaint: 0
+--------------

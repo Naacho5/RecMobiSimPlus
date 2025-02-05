@@ -1,0 +1,16 @@
+!!! CONTEXT [getContextIDFor]: 1
+      Tiempo en obtener el contexto: 22
+
+
+Esto no tiene sentido puesto que el primer mensaje es impreso justo antes de 
+hacer "return" en la función y, el segundo mensaje, se imprime inmediatamente 
+después (se mide tiempo final y se realiza la resta).
+
+POSIBILIDAD: Pantalla hace pequeños parones, puede ser que buffer pantalla 
+consuma unos ms cada x tiempo.
+
+SOSPECHA: también puede ser cuando el nivel de debug (medición
+de tiempos) es muy bajo (Level.ALL) así como el tMín de filtardo del logger
+-> Se imprimen muchísimos mensajes y bajada de prestaciones igual que ocurría
+con los mensajes en la consola del simulador. Los tiempos de repintado no se
+reflejan en el logger, por lo que parece la opción más viable.

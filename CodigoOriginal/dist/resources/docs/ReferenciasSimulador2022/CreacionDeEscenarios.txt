@@ -1,0 +1,5 @@
+Tiled
+ - https://github.com/mapeditor/tiled-java
+ - LICENSE: https://discourse.mapeditor.org/t/tiled-licence-question/453
+
+ - TMX FILE FORMAT: https://doc.mapeditor.org/en/stable/reference/tmx-map-format/

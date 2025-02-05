@@ -1,0 +1,636 @@
+﻿Id;ObjectID;Title;ConstituentID;Artist;Date;Classification;Department;style;genre;floor;room
+1;2613;Tapestry;96;Anni Albers;1948;Design;Architecture & Design;Abstract Art;abstract;4th floor;407
+2;33212;Untitled;4716;Richard Pousette-Dart;1946;Drawing;Drawings & Prints;Abstract Art;abstract;4th floor;407
+3;33292;Untitled;4716;Richard Pousette-Dart;1948;Drawing;Drawings & Prints;Abstract Art;abstract;4th floor;407
+4;35078;Untitled;3805;Aldemir Martins;1961;Drawing;Drawings & Prints;Abstract Art;abstract;4th floor;407
+5;37020;Collage;4856;Ad Reinhardt;1940;Drawing;Drawings & Prints;Abstract Art;abstract;4th floor;407
+6;61001;The Big I;922;Alexander Calder;1944;Print;Drawings & Prints;Abstract Art;abstract;4th floor;407
+7;70720;Red Meander;96;Anni Albers;1969;Print;Drawings & Prints;Abstract Art;abstract;4th floor;407
+8;75353;Untitled;3888;John McLaughlin;1962;Print;Drawings & Prints;Abstract Art;abstract;4th floor;407
+9;75773;Untitled;3888;John McLaughlin;1963;Print;Drawings & Prints;Abstract Art;abstract;4th floor;407
+10;75800;Untitled;3888;John McLaughlin;1963;Print;Drawings & Prints;Abstract Art;abstract;4th floor;407
+11;75803;Untitled;3888;John McLaughlin;1963;Print;Drawings & Prints;Abstract Art;abstract;4th floor;407
+12;75806;Untitled;3888;John McLaughlin;1963;Print;Drawings & Prints;Abstract Art;abstract;4th floor;407
+13;75812;Untitled;3888;John McLaughlin;1963;Print;Drawings & Prints;Abstract Art;abstract;4th floor;407
+14;75815;Untitled;3888;John McLaughlin;1963;Print;Drawings & Prints;Abstract Art;abstract;4th floor;407
+15;75827;Untitled;3888;John McLaughlin;1963;Print;Drawings & Prints;Abstract Art;abstract;4th floor;407
+16;75830;Untitled;3888;John McLaughlin;1963;Print;Drawings & Prints;Abstract Art;abstract;4th floor;407
+17;75834;Untitled;3888;John McLaughlin;1963;Print;Drawings & Prints;Abstract Art;abstract;4th floor;407
+18;409639;Untitled;37083;Vera Molnar;1952;Drawing;Drawings & Prints;Abstract Art;abstract;4th floor;407
+19;33262;Untitled;3240;Lee Krasner;1964;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+20;33371;Untitled;1965;Sam Francis;1958;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;411
+21;34224;Untitled;670;Lee Bontecou;1960;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+22;34238;Untitled;670;Lee Bontecou;1961;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+23;34581;Seated Nude;3240;Lee Krasner;1940;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+24;34714;The Blessing;4285;Barnett Newman;1944;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;408
+25;35761;Untitled;670;Lee Bontecou;1970;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+26;37156;Untitled;2419;Philip Guston;1951;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+27;37298;Untitled;4285;Barnett Newman;1946;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;408
+28;37422;Untitled;670;Lee Bontecou;1967;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+29;37640;Untitled;2395;José Guerrero;1960;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+30;38100;Untitled;4285;Barnett Newman;1945;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;408
+31;38354;Untitled;5683;Myron Stout;1950;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+32;47309;Untitled;22630;Marvin E. Newman;1951;Photograph;Photography;Abstract Expressionism;abstract;4th floor;410
+33;54834;Untitled;1600;Edward Douglas;1970;Photograph;Photography;Abstract Expressionism;abstract;4th floor;408
+34;55207;Untitled;6222;Todd Walker;1970;Photograph;Photography;Abstract Expressionism;abstract;4th floor;411
+35;57675;Untitled (Man Tapping Vein);1133;Larry Clark;1970;Photograph;Photography;Abstract Expressionism;abstract;4th floor;409
+36;61793;Circle Image;5202;Louis Schanker;1952;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+37;63439;Composition;5997;Raoul Ubac;1949;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+38;63597;The White Line;1965;Sam Francis;1960;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;411
+39;63630;Untitled;5988;Cy Twombly;1952;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;408
+40;63660;Damn Braces;1965;Sam Francis;1960;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;411
+41;64248;Untitled;5889;Mark Tobey;1967;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+42;64956;Untitled;2242;Robert Goodnough;1968;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;411
+43;65117;Composition;5997;Raoul Ubac;1949;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+44;66398;Untitled;6147;Esteban Vicente;1965;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;408
+45;66519;Composition;5997;Raoul Ubac;1950;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+46;66656;Untitled;1539;Richard Diebenkorn;1970;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;411
+47;66672;Untitled;1539;Richard Diebenkorn;1970;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;411
+48;68536;Eleventh Stone;670;Lee Bontecou;1970;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+49;69133;Untitled;4285;Barnett Newman;1961;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;408
+50;70094;Fourth Stone;670;Lee Bontecou;1963;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+51;71489;Ocean Park;1539;Richard Diebenkorn;1969;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;411
+52;71667;Obsidian;3240;Lee Krasner;1962;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+53;71905;(Untitled);1172;Bernard Cohen;1964;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;408
+54;72107;Sixth Stone I;670;Lee Bontecou;1964;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+55;72123;Sixth Stone II;670;Lee Bontecou;1964;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+56;72133;Untitled (Peace Symbol and Animal Figures Also Known as I Love Lisa);3213;Willem de Kooning;1970;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;411
+57;72338;Firework;1965;Sam Francis;1963;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;411
+58;72561;Untitled;2419;Philip Guston;1966;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+59;72819;Chinese Wall;1965;Sam Francis;1969;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;411
+60;72841;Sulfur Sail;1965;Sam Francis;1969;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;411
+61;73431;Adios;5086;Edward Ruscha;1969;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;408
+62;73989;Untitled;6147;Esteban Vicente;1961;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;408
+63;74386;Untitled;1539;Richard Diebenkorn;1961;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;411
+64;74390;Untitled;1539;Richard Diebenkorn;1961;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;411
+65;74491;Untitled;1539;Richard Diebenkorn;1950;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;411
+66;74690;Untitled;4285;Barnett Newman;1961;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;408
+67;74694;Untitled;4285;Barnett Newman;1961;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;408
+68;74867;Untitled;5068;Richards Ruben;1961;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;411
+69;74870;Untitled;5068;Richards Ruben;1961;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;411
+70;74873;Untitled;5068;Richards Ruben;1961;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;411
+71;75080;Untitled;132;John Altoon;1968;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+72;75085;Untitled;132;John Altoon;1968;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+73;75093;Untitled;132;John Altoon;1968;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+74;75097;Untitled;132;John Altoon;1968;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+75;75109;Untitled;132;John Altoon;1968;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+76;75112;Untitled;132;John Altoon;1968;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+77;75136;Untitled;132;John Altoon;1968;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+78;75139;Untitled;132;John Altoon;1968;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+79;75488;Untitled;6147;Esteban Vicente;1962;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;408
+80;75576;Untitled;1965;Sam Francis;1963;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;411
+81;75593;Dark Egg;1965;Sam Francis;1963;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;411
+82;75614;Another Disappearance;1965;Sam Francis;1963;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;411
+83;75638;Untitled;2419;Philip Guston;1963;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+84;76566;Eighths;3354;Mark Lancaster;1967;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+85;76658;Untitled;5988;Cy Twombly;1968;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;408
+86;76950;Untitled;132;John Altoon;1965;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+87;76965;Untitled;132;John Altoon;1965;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+88;77638;Untitled;3576;Frank Lobdell;1966;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+89;77643;Untitled;3576;Frank Lobdell;1966;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+90;77646;Untitled;3576;Frank Lobdell;1966;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+91;77647;Untitled;3576;Frank Lobdell;1966;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+92;77649;Untitled;3576;Frank Lobdell;1966;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+93;77650;Untitled;3576;Frank Lobdell;1966;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+94;77780;Untitled;3576;Frank Lobdell;1966;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+95;77781;Untitled;3576;Frank Lobdell;1966;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+96;77795;Untitled;3576;Frank Lobdell;1966;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+97;77796;Untitled;3576;Frank Lobdell;1966;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+98;78157;Etching One;670;Lee Bontecou;1967;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+99;82314;Untitled;670;Lee Bontecou;1962;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+100;84715;Untitled;6526;Adja Yunkers;1952;Print;Drawings & Prints;Abstract Expressionism;abstract;4th floor;408
+101;90677;Untitled (Florence);7694;Jay DeFeo;1952;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+102;95814;Untitled;1539;Richard Diebenkorn;1970;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;411
+103;96074;Untitled;2419;Philip Guston;1968;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+104;96075;Untitled;2419;Philip Guston;1968;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+105;97664;Untitled;6220;John Walker;1970;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+106;97765;Untitled;18539;Hannah Wilke;1969;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;409
+107;98688;Untitled;5889;Mark Tobey;1960;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+108;100244;Last Piece;2419;Philip Guston;1958;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+109;100246;Untitled;2419;Philip Guston;1963;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+110;100273;Untitled;2419;Philip Guston;1963;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+111;128480;Untitled;5799;Atsuko Tanaka;1956;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;408
+112;143748;Untitled;4873;Milton Resnick;1948;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;410
+113;201417;Untitled;49371;Ray Francis;1964;Photograph;Photography;Abstract Expressionism;abstract;4th floor;411
+114;201418;Untitled;49363;Herman Howard;1964;Photograph;Photography;Abstract Expressionism;abstract;4th floor;409
+115;201424;Untitled;49368;Shawn W. Walker;1964;Photograph;Photography;Abstract Expressionism;abstract;4th floor;411
+116;201430;Untitled;49371;Ray Francis;1965;Photograph;Photography;Abstract Expressionism;abstract;4th floor;411
+117;201431;Untitled;49363;Herman Howard;1965;Photograph;Photography;Abstract Expressionism;abstract;4th floor;409
+118;201436;Untitled;49368;Shawn W. Walker;1965;Photograph;Photography;Abstract Expressionism;abstract;4th floor;411
+119;205273;Untitled;5988;Cy Twombly;1954;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;408
+120;205274;Untitled;5988;Cy Twombly;1954;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;408
+121;205275;Untitled;5988;Cy Twombly;1954;Drawing;Drawings & Prints;Abstract Expressionism;abstract;4th floor;408
+122;35435;Untitled;580;Ion Bitzan;1967;Drawing;Drawings & Prints;Art Informel;abstract;4th floor;412
+123;38160;Untitled;4245;Ernst Wilhelm Nay;1961;Drawing;Drawings & Prints;Art Informel;abstract;4th floor;412
+124;60461;Untitled;884;Alberto Burri;1968;Print;Drawings & Prints;Art Informel;abstract;4th floor;412
+125;63928;Composition;1447;Nicolas de Staël;1948;Print;Drawings & Prints;Art Informel;abstract;4th floor;412
+126;68207;Twilight;3720;Alfred Manessier;1950;Print;Drawings & Prints;Art Informel;abstract;4th floor;412
+127;72671;Untitled;4127;Sadamasa Motonaga;1968;Print;Drawings & Prints;Art Informel;abstract;4th floor;412
+128;72851;Untitled;4245;Ernst Wilhelm Nay;1957;Print;Drawings & Prints;Art Informel;abstract;4th floor;412
+129;72862;Untitled;4245;Ernst Wilhelm Nay;1957;Print;Drawings & Prints;Art Informel;abstract;4th floor;412
+130;72920;Untitled;4245;Ernst Wilhelm Nay;1957;Print;Drawings & Prints;Art Informel;abstract;4th floor;412
+131;73328;Untitled;227;François Arnal;1961;Print;Drawings & Prints;Art Informel;abstract;4th floor;412
+132;75379;Untitled;573;Julius Bissier;1950;Print;Drawings & Prints;Art Informel;abstract;4th floor;412
+133;155078;Untitled;884;Alberto Burri;1968;Print;Drawings & Prints;Art Informel;abstract;4th floor;412
+134;155079;Untitled;884;Alberto Burri;1968;Print;Drawings & Prints;Art Informel;abstract;4th floor;412
+135;155080;Untitled;884;Alberto Burri;1968;Print;Drawings & Prints;Art Informel;abstract;4th floor;412
+136;155081;Untitled;884;Alberto Burri;1968;Print;Drawings & Prints;Art Informel;abstract;4th floor;412
+137;155082;Untitled;884;Alberto Burri;1968;Print;Drawings & Prints;Art Informel;abstract;4th floor;412
+138;155083;Untitled;884;Alberto Burri;1968;Print;Drawings & Prints;Art Informel;abstract;4th floor;412
+139;155084;Untitled;884;Alberto Burri;1968;Print;Drawings & Prints;Art Informel;abstract;4th floor;412
+140;8988;Paris Review;1974;Helen Frankenthaler;1967;Design;Architecture & Design;Color Field Painting;abstract;4th floor;415
+141;14591;Title Page from 18 Cantos;4285;Barnett Newman;1964;Illustrated Book;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+142;33068;Untitled;1587;Piero Dorazio;1959;Drawing;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+143;33519;Untitled;4474;Blinky Palermo;1969;Drawing;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+144;37059;Untitled;2948;Donald Judd;1966;Drawing;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+145;53561;Paris;1973;Robert Frank;1951;Photograph;Photography;Color Field Painting;abstract;4th floor;415
+146;61968;Untitled;3048;Ellsworth Kelly;1949;Print;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+147;63273;Untitled;1587;Piero Dorazio;1962;Print;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+148;68504;What Red Lines Can Do;1974;Helen Frankenthaler;1970;Print;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+149;70673;Red, Blue;2742;John Hoyland;1969;Print;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+150;72830;Veiled Sail;1965;Sam Francis;1969;Print;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+151;73895;Untitled;4503;Raymond Parker;1961;Print;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+152;74526;Variation II on Mauve Corner;1974;Helen Frankenthaler;1969;Print;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+153;74779;Untitled;6618;Robert Andrew Parker;1967;Print;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+154;74791;Untitled;6618;Robert Andrew Parker;1967;Print;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+155;74807;Untitled;6618;Robert Andrew Parker;1967;Print;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+156;76137;Untitled;3049;James Kelly;1963;Print;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+157;76139;Untitled;3049;James Kelly;1963;Print;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+158;76141;Untitled;3049;James Kelly;1963;Print;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+159;76143;Untitled;3049;James Kelly;1963;Print;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+160;78030;White Portal;1974;Helen Frankenthaler;1967;Print;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+161;89080;Paris;1973;Robert Frank;1950;Photograph;Photography;Color Field Painting;abstract;4th floor;415
+162;96283;Untitled;2948;Donald Judd;1965;Drawing;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+163;96284;Untitled;2948;Donald Judd;1970;Drawing;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+164;96323;Untitled;3048;Ellsworth Kelly;1964;Drawing;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+165;96927;Untitled;4474;Blinky Palermo;1965;Drawing;Drawings & Prints;Color Field Painting;abstract;4th floor;415
+166;89249;Untitled;1859;León Ferrari;1962;Drawing;Drawings & Prints;Conceptual Art;abstract;4th floor;420
+167;89251;Untitled;1859;León Ferrari;1962;Drawing;Drawings & Prints;Conceptual Art;abstract;4th floor;420
+168;89252;Untitled;1859;León Ferrari;1962;Drawing;Drawings & Prints;Conceptual Art;abstract;4th floor;420
+169;89253;Untitled;1859;León Ferrari;1964;Drawing;Drawings & Prints;Conceptual Art;abstract;4th floor;420
+170;95458;Untitled;352;Robert Barry;1970;Drawing;Drawings & Prints;Conceptual Art;abstract;4th floor;420
+171;101924;Untitled;1859;León Ferrari;1962;Drawing;Drawings & Prints;Conceptual Art;abstract;4th floor;420
+172;109517;Untitled;352;Robert Barry;1968;Drawing;Drawings & Prints;Conceptual Art;abstract;4th floor;420
+173;116542;Untitled;1859;León Ferrari;1964;Drawing;Drawings & Prints;Conceptual Art;abstract;4th floor;420
+174;146955;Untitled;352;Robert Barry;1968;Drawing;Drawings & Prints;Conceptual Art;abstract;4th floor;420
+175;59912;Untitled;1913;Adolf Richard Fleischmann;1959;Print;Drawings & Prints;Concretism;abstract;4th floor;406
+176;109732;Diagonal;3048;Ellsworth Kelly;1951;Drawing;Drawings & Prints;Concretism;abstract;4th floor;406
+177;109733;Diagonal Lines;3048;Ellsworth Kelly;1951;Drawing;Drawings & Prints;Concretism;abstract;4th floor;406
+178;72843;In Society (En société);107;Pierre Alechinsky;1962;Print;Drawings & Prints;Expressionism;abstract;4th floor;402
+179;139853;Stars and Disasters (Astres et Désastres);107;Pierre Alechinsky;1969;Illustrated Book;Drawings & Prints;Expressionism;abstract;4th floor;402
+180;32349;Numbers;2812;Robert Indiana;1968;Illustrated Book;Drawings & Prints;Hard Edge Painting;abstract;4th floor;412
+181;37179;Awnings, Avenue Matignon;3048;Ellsworth Kelly;1950;Drawing;Drawings & Prints;Hard Edge Painting;abstract;4th floor;412
+182;65961;Untitled;3537;Alexander Liberman;1961;Print;Drawings & Prints;Hard Edge Painting;abstract;4th floor;412
+183;65985;Untitled;3537;Alexander Liberman;1961;Print;Drawings & Prints;Hard Edge Painting;abstract;4th floor;412
+184;66004;Untitled;3537;Alexander Liberman;1962;Print;Drawings & Prints;Hard Edge Painting;abstract;4th floor;412
+185;66022;Untitled;3537;Alexander Liberman;1962;Print;Drawings & Prints;Hard Edge Painting;abstract;4th floor;412
+186;66041;Untitled;3537;Alexander Liberman;1962;Print;Drawings & Prints;Hard Edge Painting;abstract;4th floor;412
+187;66063;Untitled;3537;Alexander Liberman;1961;Print;Drawings & Prints;Hard Edge Painting;abstract;4th floor;412
+188;67951;Untitled;6586;Larry Zox;1970;Print;Drawings & Prints;Hard Edge Painting;abstract;4th floor;412
+189;70367;Untitled;3537;Alexander Liberman;1962;Print;Drawings & Prints;Hard Edge Painting;abstract;4th floor;412
+190;70381;Untitled;3537;Alexander Liberman;1962;Print;Drawings & Prints;Hard Edge Painting;abstract;4th floor;412
+191;70405;Untitled;3537;Alexander Liberman;1962;Print;Drawings & Prints;Hard Edge Painting;abstract;4th floor;412
+192;73229;Homage to the Square: Ten Works by Josef Albers;97;Josef Albers;1962;Print;Drawings & Prints;Hard Edge Painting;abstract;4th floor;412
+193;109758;Blue and Red from the series Line Form Color;3048;Ellsworth Kelly;1951;Drawing;Drawings & Prints;Hard Edge Painting;abstract;4th floor;412
+194;109763;Blue and White;3048;Ellsworth Kelly;1951;Drawing;Drawings & Prints;Hard Edge Painting;abstract;4th floor;412
+195;164629;15 Nov '65;5945;Anne Truitt;1965;Drawing;Drawings & Prints;Hard Edge Painting;abstract;4th floor;412
+196;33088;Untitled;1172;Bernard Cohen;1965;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;413
+197;34571;Untitled (fire-color painting);3137;Yves Klein;1962;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;414
+198;34889;Umble #2;19;Richard Artschwager;1970;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;414
+199;34916;Red Bird;3787;Agnes Martin;1964;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;413
+200;35139;Untitled;6386;Christopher Wilmarth;1968;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;413
+201;35882;Untitled;2375;Jan Groth;1970;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;413
+202;36262;Mountain;3787;Agnes Martin;1960;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;413
+203;36551;Rook;281;Jo Baer;1962;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;413
+204;37153;Untitled;1172;Bernard Cohen;1965;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;413
+205;37494;Untitled;5098;Robert Ryman;1965;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;414
+206;38158;Untitled;3758;Brice Marden;1965;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;413
+207;38280;Tremolo;3787;Agnes Martin;1962;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;413
+208;38432;Eagle Turquoise 7H#4;5098;Robert Ryman;1966;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;414
+209;38764;Untitled;1172;Bernard Cohen;1965;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;413
+210;46585;Untitled;1175;Mark Cohen;1968;Photograph;Photography;Minimalism;abstract;4th floor;413
+211;46626;Untitled;1175;Mark Cohen;1967;Photograph;Photography;Minimalism;abstract;4th floor;413
+212;61213;Black Series I;5640;Frank Stella;1967;Print;Drawings & Prints;Minimalism;abstract;4th floor;413
+213;61216;Marriage of Reason and Squalor from Black Series I;5640;Frank Stella;1967;Print;Drawings & Prints;Minimalism;abstract;4th floor;413
+214;65215;Vertical Lines, Not Touching;3528;Sol LeWitt;1970;Print;Drawings & Prints;Minimalism;abstract;4th floor;414
+215;68780;Composite Series;3528;Sol LeWitt;1970;Print;Drawings & Prints;Minimalism;abstract;4th floor;414
+216;70101;Vessel;726;Paul Brach;1962;Print;Drawings & Prints;Minimalism;abstract;4th floor;414
+217;70655;Black Series II;5640;Frank Stella;1967;Print;Drawings & Prints;Minimalism;abstract;4th floor;413
+218;74796;Ifafa I from the V Series;5640;Frank Stella;1968;Print;Drawings & Prints;Minimalism;abstract;4th floor;413
+219;74797;V Series;5640;Frank Stella;1968;Print;Drawings & Prints;Minimalism;abstract;4th floor;413
+220;82302;Untitled;7961;Mira Schendel;1964;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;414
+221;90716;Untitled;3724;Sylvia Plimack Mangold;1968;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;414
+222;92909;Untitled;5945;Anne Truitt;1962;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;413
+223;94447;Untitled;7961;Mira Schendel;1965;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;414
+224;94448;Untitled;7961;Mira Schendel;1964;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;414
+225;94450;Untitled;7961;Mira Schendel;1964;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;414
+226;94451;Untitled;7961;Mira Schendel;1964;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;414
+227;94452;Untitled;7961;Mira Schendel;1964;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;414
+228;95442;Sex Symbol;281;Jo Baer;1961;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;413
+229;95443;Untitled;281;Jo Baer;1963;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;413
+230;96603;Untitled;3758;Brice Marden;1969;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;413
+231;96604;Untitled;3758;Brice Marden;1969;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;413
+232;97596;Untitled;5983;Richard Tuttle;1965;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;414
+233;101925;Untitled;7961;Mira Schendel;1965;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;414
+234;109730;Horizontal and Vertical Lines;3048;Ellsworth Kelly;1951;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;413
+235;109731;Grid Lines from the series Line Form Color;3048;Ellsworth Kelly;1951;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;413
+236;109766;Black on Black;3048;Ellsworth Kelly;1951;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;413
+237;110503;Classico 5;5098;Robert Ryman;1968;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;414
+238;114246;Untitled;7961;Mira Schendel;1965;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;414
+239;114247;Untitled;7961;Mira Schendel;1965;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;414
+240;116372;Untitled;7961;Mira Schendel;1964;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;414
+241;126031;Sumi Drawing;5945;Anne Truitt;1966;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;413
+242;126032;Sumi Drawing;5945;Anne Truitt;1966;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;413
+243;126033;Sumi Drawing;5945;Anne Truitt;1966;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;413
+244;147071;Untitled;3528;Sol LeWitt;1968;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;414
+245;160132;Untitled;3758;Brice Marden;1962;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;413
+246;160133;Untitled;5098;Robert Ryman;1961;Drawing;Drawings & Prints;Minimalism;abstract;4th floor;414
+247;38162;Study;4929;Bridget Riley;1967;Drawing;Drawings & Prints;Op Art;abstract;4th floor;407
+248;60517;Untitled;1025;Enrico Castellani;1967;Print;Drawings & Prints;Op Art;abstract;4th floor;407
+249;60628;Untitled;3858;Almir Mavignier;1961;Print;Drawings & Prints;Op Art;abstract;4th floor;407
+250;60712;Untitled ( Oval Image );4929;Bridget Riley;1964;Print;Drawings & Prints;Op Art;abstract;4th floor;407
+251;63726;Untitled (Fragment 4);4929;Bridget Riley;1965;Print;Drawings & Prints;Op Art;abstract;4th floor;407
+252;64069;Untitled;3858;Almir Mavignier;1962;Print;Drawings & Prints;Op Art;abstract;4th floor;407
+253;72035;Untitled (Oval Image);4929;Bridget Riley;1964;Print;Drawings & Prints;Op Art;abstract;4th floor;407
+254;72746;Untitled;3669;Heinz Mack;1961;Print;Drawings & Prints;Op Art;abstract;4th floor;407
+255;75869;Untitled ( Based on Movement in Squares );4929;Bridget Riley;1962;Print;Drawings & Prints;Op Art;abstract;4th floor;407
+256;84786;Untitled;3858;Almir Mavignier;1961;Print;Drawings & Prints;Op Art;abstract;4th floor;407
+257;84790;Untitled;3858;Almir Mavignier;1961;Print;Drawings & Prints;Op Art;abstract;4th floor;407
+258;84793;Untitled;3858;Almir Mavignier;1961;Print;Drawings & Prints;Op Art;abstract;4th floor;407
+259;84794;Untitled;3858;Almir Mavignier;1961;Print;Drawings & Prints;Op Art;abstract;4th floor;407
+260;84795;Untitled;3858;Almir Mavignier;1961;Print;Drawings & Prints;Op Art;abstract;4th floor;407
+261;84796;Untitled;3858;Almir Mavignier;1961;Print;Drawings & Prints;Op Art;abstract;4th floor;407
+262;84797;Untitled;3858;Almir Mavignier;1961;Print;Drawings & Prints;Op Art;abstract;4th floor;407
+263;84801;Untitled;3858;Almir Mavignier;1961;Print;Drawings & Prints;Op Art;abstract;4th floor;407
+264;99701;Untitled (Fragment 1) from Fragments;4929;Bridget Riley;1965;Print;Drawings & Prints;Op Art;abstract;4th floor;407
+265;60131;Untitled;3270;Nicholas Krushenick;1965;Print;Drawings & Prints;Pop Art;abstract;4th floor;418
+266;33163;Untitled;4894;Barbara Chase-Riboud;1967;Drawing;Drawings & Prints;Post-Minimalism;abstract;4th floor;421
+267;36989;Untitled;4894;Barbara Chase-Riboud;1966;Drawing;Drawings & Prints;Post-Minimalism;abstract;4th floor;421
+268;96421;Untitled;3230;Jannis Kounellis;1962;Drawing;Drawings & Prints;Post-Minimalism;abstract;4th floor;421
+269;288887;Untitled;42909;Bill Bollinger;1970;Drawing;Drawings & Prints;Post-Minimalism;abstract;4th floor;421
+270;34892;Archaic Idol;5047;Mark Rothko;1945;Drawing;Drawings & Prints;Surrealism;abstract;4th floor;405
+271;60680;Constellation;11;Jean (Hans) Arp;1951;Print;Drawings & Prints;Surrealism;abstract;4th floor;404
+272;70744;Nocturne;3821;André Masson;1951;Print;Drawings & Prints;Surrealism;abstract;4th floor;403
+273;74176;Configuration;11;Jean (Hans) Arp;1951;Print;Drawings & Prints;Surrealism;abstract;4th floor;404
+274;10213;(POÈMES);5247;Gérard Schneider;1964;Illustrated Book;Drawings & Prints;Tachisme;abstract;4th floor;401
+275;34907;Untitled;2525;Hans Hartung;1960;Drawing;Drawings & Prints;Tachisme;abstract;4th floor;401
+276;37575;Untitled;3829;Georges Mathieu;1958;Drawing;Drawings & Prints;Tachisme;abstract;4th floor;401
+277;37614;Untitled;203;Karel Appel;1959;Drawing;Drawings & Prints;Tachisme;abstract;4th floor;401
+278;62297;Composition;2525;Hans Hartung;1948;Print;Drawings & Prints;Tachisme;abstract;4th floor;401
+279;63526;L 12;2525;Hans Hartung;1957;Print;Drawings & Prints;Tachisme;abstract;4th floor;401
+280;72901;Untitled;6511;Hideo Yoshihara;1969;Print;Drawings & Prints;Tachisme;abstract;4th floor;401
+281;72934;Untitled;6511;Hideo Yoshihara;1969;Print;Drawings & Prints;Tachisme;abstract;4th floor;401
+282;116348;Untitled;2943;Asger Jorn;1950;Drawing;Drawings & Prints;Tachisme;abstract;4th floor;401
+283;5233;Robert Indiana, New Art, Stable New York;2812;Robert Indiana;1964;Design;Architecture & Design;Pop Art;advertisement;4th floor;419
+284;5721;Pirelli, Suola Coria;4163;Bruno Munari;1953;Design;Architecture & Design;Pop Art;advertisement;4th floor;417
+285;6815;Robert Indiana;2812;Robert Indiana;1962;Design;Architecture & Design;Pop Art;advertisement;4th floor;419
+286;7406;Pirelli, Suola Coria;4163;Bruno Munari;1953;Design;Architecture & Design;Pop Art;advertisement;4th floor;417
+287;72897;Campaign;5021;James Rosenquist;1965;Print;Drawings & Prints;Pop Art;advertisement;4th floor;418
+288;68680;Birds in Flight;6165;Jacques Villon;1958;Print;Drawings & Prints;Cubism;animal painting;4th floor;406
+289;9004;The Paris Review?;5627;Saul Steinberg;1967;Design;Architecture & Design;Expressionism;animal painting;4th floor;402
+290;61398;Relativity;1757;M. C. Escher;1953;Print;Drawings & Prints;Surrealism;capriccio;4th floor;404
+291;34156;Untitled;5178;Peter Saul;1961;Drawing;Drawings & Prints;Expressionism;caricature;4th floor;402
+292;37719;Railway;5627;Saul Steinberg;1951;Drawing;Drawings & Prints;Expressionism;cityscape;4th floor;402
+293;100269;City;2419;Philip Guston;1968;Drawing;Drawings & Prints;Neo-Expressionism;cityscape;4th floor;419
+294;84124;Museum on Fire;5086;Edward Ruscha;1968;Drawing;Drawings & Prints;Pop Art;cityscape;4th floor;417
+295;70946;Untitled;3749;Conrad Marca-Relli;1966;Print;Drawings & Prints;Surrealism;cityscape;4th floor;403
+296;70961;Untitled;3749;Conrad Marca-Relli;1966;Print;Drawings & Prints;Surrealism;cityscape;4th floor;403
+297;2960;Fork;4163;Bruno Munari;1958;Design;Architecture & Design;Concretism;design;4th floor;406
+298;2970;Fork;4163;Bruno Munari;1958;Design;Architecture & Design;Concretism;design;4th floor;406
+299;3696;L'Ora X Clock;4163;Bruno Munari;1945;Design;Architecture & Design;Concretism;design;4th floor;406
+300;1484;Table (IN-50);4324;Isamu Noguchi;1944;Design;Architecture & Design;Abstract Expressionism;design, furniture;4th floor;409
+301;86474;Coffee Table (model IN-50);4324;Isamu Noguchi;1944;Design;Architecture & Design;Abstract Expressionism;design, furniture;4th floor;409
+302;1166;Maldive Tray;4163;Bruno Munari;1960;Design;Architecture & Design;Concretism;design, utensil;4th floor;406
+303;4050;Maldive Tray;4163;Bruno Munari;1960;Design;Architecture & Design;Concretism;design, utensil;4th floor;406
+304;4226;Fish Poacher;5136;Roberto Sambonet;1954;Design;Architecture & Design;Concretism;design, utensil;4th floor;406
+305;91738;Cubo Ashtray;4163;Bruno Munari;1957;Design;Architecture & Design;Concretism;design, utensil;4th floor;406
+306;91739;Cubo Ashtray;4163;Bruno Munari;1957;Design;Architecture & Design;Concretism;design, utensil;4th floor;406
+307;65457;The Dancer;3832;Henri Matisse;1949;Print;Drawings & Prints;Abstract Expressionism;figurative;4th floor;409
+308;36623;Thumbprint;3741;Piero Manzoni;1960;Drawing;Drawings & Prints;Conceptual Art;figurative;4th floor;420
+309;73736;Horizon;934;Luis Camnitzer;1968;Print;Drawings & Prints;Conceptual Art;figurative;4th floor;420
+310;76449;The Abolition of Cinema;934;Luis Camnitzer;1968;Print;Drawings & Prints;Conceptual Art;figurative;4th floor;420
+311;88087;Untitled;6287;Dan Weiner;1953;Photograph;Photography;Conceptual Art;figurative;4th floor;420
+312;95570;Untitled;630;Alighiero Boetti;1965;Drawing;Drawings & Prints;Conceptual Art;figurative;4th floor;420
+313;97692;Untitled;6288;Lawrence Weiner;1968;Drawing;Drawings & Prints;Conceptual Art;figurative;4th floor;420
+314;97693;Untitled;6288;Lawrence Weiner;1968;Drawing;Drawings & Prints;Conceptual Art;figurative;4th floor;420
+315;109528;Untitled;795;Marcel Broodthaers;1969;Print;Drawings & Prints;Conceptual Art;figurative;4th floor;420
+316;109667;Untitled;6288;Lawrence Weiner;1968;Drawing;Drawings & Prints;Conceptual Art;figurative;4th floor;420
+317;126545;Perspective Correction - Big Square;1533;Jan Dibbets;1968;Drawing;Drawings & Prints;Conceptual Art;figurative;4th floor;420
+318;147022;Perspective Correction - Square on Wall;1533;Jan Dibbets;1969;Photograph;Photography;Conceptual Art;figurative;4th floor;420
+319;147056;Duration Piece #12;2749;Douglas Huebler;1970;Drawing;Drawings & Prints;Conceptual Art;figurative;4th floor;420
+320;148165;Following Piece;53;Vito Acconci;1969;Photograph;Photography;Conceptual Art;figurative;4th floor;420
+321;288811;Following Piece;53;Vito Acconci;1969;Drawing;Drawings & Prints;Conceptual Art;figurative;4th floor;420
+322;109603;I Am Still Alive;3030;On Kawara;1970;Print;Drawings & Prints;Conceptual Art, Mail Art;figurative;4th floor;421
+323;124607;I Am Still Alive;3030;On Kawara;1970;Print;Drawings & Prints;Conceptual Art, Mail Art;figurative;4th floor;421
+324;124612;I Am Still Alive;3030;On Kawara;1970;Print;Drawings & Prints;Conceptual Art, Mail Art;figurative;4th floor;421
+325;124615;I Am Still Alive;3030;On Kawara;1970;Print;Drawings & Prints;Conceptual Art, Mail Art;figurative;4th floor;421
+326;124616;I Am Still Alive;3030;On Kawara;1970;Print;Drawings & Prints;Conceptual Art, Mail Art;figurative;4th floor;421
+327;137400;I Got Up...;3030;On Kawara;1970;Drawing;Drawings & Prints;Conceptual Art, Mail Art;figurative;4th floor;421
+328;186395;I Got Up...;3030;On Kawara;1970;Drawing;Drawings & Prints;Conceptual Art, Mail Art;figurative;4th floor;421
+329;186398;I Got Up...;3030;On Kawara;1970;Drawing;Drawings & Prints;Conceptual Art, Mail Art;figurative;4th floor;421
+330;186399;I Got Up...;3030;On Kawara;1970;Drawing;Drawings & Prints;Conceptual Art, Mail Art;figurative;4th floor;421
+331;186420;I Got Up...;3030;On Kawara;1970;Drawing;Drawings & Prints;Conceptual Art, Mail Art;figurative;4th floor;421
+332;54006;Untitled;1133;Larry Clark;1963;Photograph;Photography;Cubism;figurative;4th floor;406
+333;132509;Untitled;27445;Lygia Clark;1951;Drawing;Drawings & Prints;Cubism;figurative;4th floor;406
+334;201413;Untitled;134233;Bob Clark;1964;Photograph;Photography;Cubism;figurative;4th floor;406
+335;33138;Untitled (Animals and Figures);4675;Jackson Pollock;1942;Drawing;Drawings & Prints;Expressionism;figurative;4th floor;401
+336;33154;Untitled;4675;Jackson Pollock;1945;Drawing;Drawings & Prints;Expressionism;figurative;4th floor;401
+337;59574;The Cat and the Rooster (Le chat et le coq) from Aesop's Fable (Fables d'Ésope);107;Pierre Alechinsky;1946;Print;Drawings & Prints;Expressionism;figurative;4th floor;402
+338;75902;Untitled (1), state I of III;4675;Jackson Pollock;1944;Print;Drawings & Prints;Expressionism;figurative;4th floor;401
+339;75913;Untitled (1), state II of III;4675;Jackson Pollock;1944;Print;Drawings & Prints;Expressionism;figurative;4th floor;401
+340;75917;Untitled (2), state I of III;4675;Jackson Pollock;1944;Print;Drawings & Prints;Expressionism;figurative;4th floor;401
+341;75921;Untitled (2), state I of III;4675;Jackson Pollock;1944;Print;Drawings & Prints;Expressionism;figurative;4th floor;401
+342;75925;Untitled (2), state II of III;4675;Jackson Pollock;1944;Print;Drawings & Prints;Expressionism;figurative;4th floor;401
+343;75928;Untitled (2), state II of III;4675;Jackson Pollock;1944;Print;Drawings & Prints;Expressionism;figurative;4th floor;401
+344;75931;Untitled (2), state II of III;4675;Jackson Pollock;1944;Print;Drawings & Prints;Expressionism;figurative;4th floor;401
+345;75967;Untitled;4675;Jackson Pollock;1951;Print;Drawings & Prints;Expressionism;figurative;4th floor;401
+346;76177;Carnival;3296;Yasuo Kuniyoshi;1949;Print;Drawings & Prints;Expressionism;figurative;4th floor;402
+347;76415;Untitled from The Test of the Title (Le Test du titre);107;Pierre Alechinsky;1966;Print;Drawings & Prints;Expressionism;figurative;4th floor;402
+348;76416;The Test of the Title (Le Test du titre);107;Pierre Alechinsky;1966;Print;Drawings & Prints;Expressionism;figurative;4th floor;402
+349;77389;Untitled;2627;Anton Heyboer;1960;Print;Drawings & Prints;Expressionism;figurative;4th floor;401
+350;77405;Untitled;2627;Anton Heyboer;1965;Print;Drawings & Prints;Expressionism;figurative;4th floor;401
+351;15642;Untitled (folios 3 verso and 4) from L'Homme, la femme, et les vêtements (Man, Woman and Clothing);292;Enrico Baj;1966;Illustrated Book;Drawings & Prints;Neo-Dada;figurative;4th floor;416
+352;32117;General (plate, page 161) from 1¢ Life;292;Enrico Baj;1964;Illustrated Book;Drawings & Prints;Neo-Dada;figurative;4th floor;416
+353;52461;Untitled;4823;Robert Rauschenberg;1949;Photograph;Photography;Neo-Dada;figurative;4th floor;416
+354;68097;Urban;4823;Robert Rauschenberg;1962;Print;Drawings & Prints;Neo-Dada;figurative;4th floor;416
+355;68155;Stunt Man I;4823;Robert Rauschenberg;1962;Print;Drawings & Prints;Neo-Dada;figurative;4th floor;416
+356;68857;Untitled (title page) from the portfolio A Tool Box;1547;Jim Dine;1966;Print;Drawings & Prints;Neo-Dada;figurative;4th floor;416
+357;68859;Untitled (Plate IX) from the portfolio A Tool Box;1547;Jim Dine;1966;Print;Drawings & Prints;Neo-Dada;figurative;4th floor;416
+358;68860;Untitled (Plate X) from the portfolio A Tool Box;1547;Jim Dine;1966;Print;Drawings & Prints;Neo-Dada;figurative;4th floor;416
+359;68861;Untitled (Plate I) from the portfolio A Tool Box;1547;Jim Dine;1966;Print;Drawings & Prints;Neo-Dada;figurative;4th floor;416
+360;68864;Untitled (Plate IV) from the portfolio A Tool Box;1547;Jim Dine;1966;Print;Drawings & Prints;Neo-Dada;figurative;4th floor;416
+361;68865;Untitled (Plate V) from the portfolio A Tool Box;1547;Jim Dine;1966;Print;Drawings & Prints;Neo-Dada;figurative;4th floor;416
+362;68866;Untitled (Plate VI) from the portfolio A Tool Box;1547;Jim Dine;1966;Print;Drawings & Prints;Neo-Dada;figurative;4th floor;416
+363;68867;Untitled (Plate VII) from the portfolio A Tool Box;1547;Jim Dine;1966;Print;Drawings & Prints;Neo-Dada;figurative;4th floor;416
+364;68868;Untitled (Plate VIII) from the portfolio A Tool Box;1547;Jim Dine;1966;Print;Drawings & Prints;Neo-Dada;figurative;4th floor;416
+365;71906;Untitled;1547;Jim Dine;1966;Print;Drawings & Prints;Neo-Dada;figurative;4th floor;416
+366;93261;Flag;2923;Jasper Johns;1955;Drawing;Drawings & Prints;Neo-Dada;figurative;4th floor;416
+367;95509;Fe;540;Joseph Beuys;1951;Drawing;Drawings & Prints;Neo-Dada;figurative;4th floor;416
+368;116271;Currents;4823;Robert Rauschenberg;1970;Print;Drawings & Prints;Neo-Dada;figurative;4th floor;416
+369;222687;Untitled;4823;Robert Rauschenberg;1967;Drawing;Drawings & Prints;Neo-Dada;figurative;4th floor;416
+370;32076;Plate (page 61) from 1¢ Life;107;Pierre Alechinsky;1964;Illustrated Book;Drawings & Prints;Neo-Expressionism;figurative;4th floor;419
+371;35623;Big Night Down the Drain;366;Georg Baselitz;1963;Drawing;Drawings & Prints;Neo-Expressionism;figurative;4th floor;419
+372;37800;P.D. Zeichnung;366;Georg Baselitz;1963;Drawing;Drawings & Prints;Neo-Expressionism;figurative;4th floor;419
+373;71179;Under the Volcano;107;Pierre Alechinsky;1968;Print;Drawings & Prints;Neo-Expressionism;figurative;4th floor;419
+374;95474;Peitschenfrau;366;Georg Baselitz;1964;Drawing;Drawings & Prints;Neo-Expressionism;figurative;4th floor;419
+375;97841;Waldarbeiter;366;Georg Baselitz;1966;Drawing;Drawings & Prints;Neo-Expressionism;figurative;4th floor;419
+376;61527;Three Spheres;1757;M. C. Escher;1945;Print;Drawings & Prints;Op Art;figurative;4th floor;407
+377;6373;Campari;4163;Bruno Munari;1965;Design;Architecture & Design;Pop Art;figurative;4th floor;417
+378;57374;Untitled;2933;Harold Jones;1968;Photograph;Photography;Pop Art;figurative;4th floor;418
+379;59801;Untitled;1349;Allan D'Arcangelo;1965;Print;Drawings & Prints;Pop Art;figurative;4th floor;417
+380;60284;Brushstroke;3542;Roy Lichtenstein;1965;Print;Drawings & Prints;Pop Art;figurative;4th floor;419
+381;67406;Brushstrokes;3542;Roy Lichtenstein;1967;Print;Drawings & Prints;Pop Art;figurative;4th floor;419
+382;67925;Signs;4823;Robert Rauschenberg;1970;Print;Drawings & Prints;Pop Art;figurative;4th floor;419
+383;70874;Ruler;2923;Jasper Johns;1966;Print;Drawings & Prints;Pop Art;figurative;4th floor;418
+384;71809;Scott Fagan Record;2923;Jasper Johns;1970;Print;Drawings & Prints;Pop Art;figurative;4th floor;418
+385;71893;Untitled;688;Derek Boshier;1964;Print;Drawings & Prints;Pop Art;figurative;4th floor;417
+386;71921;Lisp;5086;Edward Ruscha;1970;Print;Drawings & Prints;Pop Art;figurative;4th floor;417
+387;73411;Hollywood;5086;Edward Ruscha;1969;Print;Drawings & Prints;Pop Art;figurative;4th floor;417
+388;74767;Reels (B + C);4823;Robert Rauschenberg;1968;Print;Drawings & Prints;Pop Art;figurative;4th floor;419
+389;74780;Hollywood;5086;Edward Ruscha;1968;Print;Drawings & Prints;Pop Art;figurative;4th floor;417
+390;75117;Untitled;2935;John Paul Jones;1962;Print;Drawings & Prints;Pop Art;figurative;4th floor;418
+391;75123;Untitled;2935;John Paul Jones;1962;Print;Drawings & Prints;Pop Art;figurative;4th floor;418
+392;75135;Untitled;2935;John Paul Jones;1962;Print;Drawings & Prints;Pop Art;figurative;4th floor;418
+393;75155;Untitled;2935;John Paul Jones;1962;Print;Drawings & Prints;Pop Art;figurative;4th floor;418
+394;75158;Untitled;2935;John Paul Jones;1962;Print;Drawings & Prints;Pop Art;figurative;4th floor;418
+395;75162;Untitled;2935;John Paul Jones;1962;Print;Drawings & Prints;Pop Art;figurative;4th floor;418
+396;75165;Untitled;2935;John Paul Jones;1962;Print;Drawings & Prints;Pop Art;figurative;4th floor;418
+397;75168;Untitled;2935;John Paul Jones;1962;Print;Drawings & Prints;Pop Art;figurative;4th floor;418
+398;75185;Untitled;2935;John Paul Jones;1962;Print;Drawings & Prints;Pop Art;figurative;4th floor;418
+399;75193;Untitled;2935;John Paul Jones;1962;Print;Drawings & Prints;Pop Art;figurative;4th floor;418
+400;77102;Man Woman;2931;Allen Jones;1965;Print;Drawings & Prints;Pop Art;figurative;4th floor;417
+401;95440;Glass Slippers;281;Jo Baer;1960;Drawing;Drawings & Prints;Pop Art;figurative;4th floor;418
+402;95441;Bootless Boots;281;Jo Baer;1960;Drawing;Drawings & Prints;Pop Art;figurative;4th floor;418
+403;97201;Untitled (Flamingo Capsule);5021;James Rosenquist;1969;Drawing;Drawings & Prints;Pop Art;figurative;4th floor;418
+404;116334;Untitled;8474;Willys de Castro;1962;Print;Drawings & Prints;Pop Art;figurative;4th floor;419
+405;165895;Gas;5086;Edward Ruscha;1962;Print;Drawings & Prints;Pop Art;figurative;4th floor;417
+406;288939;Untitled;1349;Allan D'Arcangelo;1966;Drawing;Drawings & Prints;Pop Art;figurative;4th floor;417
+407;35131;Left;6386;Christopher Wilmarth;1968;Drawing;Drawings & Prints;Post-Minimalism;figurative;4th floor;421
+408;35153;Her Sides of Me;6386;Christopher Wilmarth;1969;Drawing;Drawings & Prints;Post-Minimalism;figurative;4th floor;421
+409;35165;Reach;6386;Christopher Wilmarth;1969;Drawing;Drawings & Prints;Post-Minimalism;figurative;4th floor;421
+410;166742;Shadow;5785;Jiro Takamatsu;1965;Drawing;Drawings & Prints;Post-Minimalism;figurative;4th floor;421
+411;16025;Plate from Le Surréalisme en 1947;3351;Jacqueline Lamba;1947;Illustrated Book;Drawings & Prints;Surrealism;figurative;4th floor;404
+412;16042;Plate from Le Surréalisme en 1947;3349;Wifredo Lam;1947;Illustrated Book;Drawings & Prints;Surrealism;figurative;4th floor;405
+413;26841;Plate (page 17) from Le Rempart de brindilles (The Rampart of Twigs);3349;Wifredo Lam;1953;Illustrated Book;Drawings & Prints;Surrealism;figurative;4th floor;405
+414;26843;Plate (page 25) from Le Rempart de brindilles (The Rampart of Twigs);3349;Wifredo Lam;1953;Illustrated Book;Drawings & Prints;Surrealism;figurative;4th floor;405
+415;26844;Plate (page 33) from Le Rempart de Brindilles (The Rampart of Twigs);3349;Wifredo Lam;1953;Illustrated Book;Drawings & Prints;Surrealism;figurative;4th floor;405
+416;26845;Plate (page 41) from Le Rempart de brindilles (The Rampart of Twigs);3349;Wifredo Lam;1953;Illustrated Book;Drawings & Prints;Surrealism;figurative;4th floor;405
+417;34146;Untitled;3349;Wifredo Lam;1946;Drawing;Drawings & Prints;Surrealism;figurative;4th floor;405
+418;34162;Untitled;3349;Wifredo Lam;1946;Drawing;Drawings & Prints;Surrealism;figurative;4th floor;405
+419;35228;Untitled;3842;Roberto Matta;1942;Drawing;Drawings & Prints;Surrealism;figurative;4th floor;405
+420;37452;Untitled;3348;Jennett Lam;1962;Drawing;Drawings & Prints;Surrealism;figurative;4th floor;404
+421;37459;Untitled;3348;Jennett Lam;1964;Drawing;Drawings & Prints;Surrealism;figurative;4th floor;404
+422;38253;Untitled;3842;Roberto Matta;1942;Drawing;Drawings & Prints;Surrealism;figurative;4th floor;405
+423;38824;Untitled;2284;John D. Graham;1942;Drawing;Drawings & Prints;Surrealism;figurative;4th floor;404
+424;61544;Other World;1757;M. C. Escher;1947;Print;Drawings & Prints;Surrealism;figurative;4th floor;404
+425;62351;Untitled;3842;Roberto Matta;1957;Print;Drawings & Prints;Surrealism;figurative;4th floor;405
+426;69263;Untitled;3349;Wifredo Lam;1953;Print;Drawings & Prints;Surrealism;figurative;4th floor;405
+427;70734;The Night Will Be Calm (La nuit sera calme);107;Pierre Alechinsky;1963;Print;Drawings & Prints;Surrealism;figurative;4th floor;405
+428;70822;Blotter (Buvard);107;Pierre Alechinsky;1964;Print;Drawings & Prints;Surrealism;figurative;4th floor;405
+429;70876;Seen in Profile, Sticking Out Tongue (Tireur de langue profilé);107;Pierre Alechinsky;1964;Print;Drawings & Prints;Surrealism;figurative;4th floor;405
+430;139859;Untitled;3842;Roberto Matta;1957;Print;Drawings & Prints;Surrealism;figurative;4th floor;405
+431;139860;Untitled;3842;Roberto Matta;1957;Print;Drawings & Prints;Surrealism;figurative;4th floor;405
+432;139861;Untitled;3842;Roberto Matta;1957;Print;Drawings & Prints;Surrealism;figurative;4th floor;405
+433;139862;Untitled;3842;Roberto Matta;1957;Print;Drawings & Prints;Surrealism;figurative;4th floor;405
+434;201428;Untitled;49373;David Carter;1965;Photograph;Photography;Surrealism;figurative;4th floor;403
+435;36661;Trademark;5086;Edward Ruscha;1962;Drawing;Drawings & Prints;Pop Art;figurative, sketch and study;4th floor;417
+436;70832;Pomegranates in the Wind;3821;André Masson;1951;Print;Drawings & Prints;Surrealism;flower painting;4th floor;403
+437;73283;Red Pomegranates;3821;André Masson;1950;Print;Drawings & Prints;Surrealism;flower painting;4th floor;403
+438;73300;Ripe Pomegranates;3821;André Masson;1950;Print;Drawings & Prints;Surrealism;flower painting;4th floor;403
+439;160626;Untitled;3213;Willem de Kooning;1966;Drawing;Drawings & Prints;Abstract Expressionism;genre painting;4th floor;411
+440;160629;Untitled;3213;Willem de Kooning;1966;Drawing;Drawings & Prints;Abstract Expressionism;genre painting;4th floor;411
+441;160630;Untitled;3213;Willem de Kooning;1966;Drawing;Drawings & Prints;Abstract Expressionism;genre painting;4th floor;411
+442;160632;Untitled;3213;Willem de Kooning;1966;Drawing;Drawings & Prints;Abstract Expressionism;genre painting;4th floor;411
+443;160633;Untitled;3213;Willem de Kooning;1966;Drawing;Drawings & Prints;Abstract Expressionism;genre painting;4th floor;411
+444;160636;Untitled;3213;Willem de Kooning;1966;Drawing;Drawings & Prints;Abstract Expressionism;genre painting;4th floor;411
+445;160637;Untitled;3213;Willem de Kooning;1966;Drawing;Drawings & Prints;Abstract Expressionism;genre painting;4th floor;411
+446;160646;Untitled;3213;Willem de Kooning;1966;Drawing;Drawings & Prints;Abstract Expressionism;genre painting;4th floor;411
+447;16673;Pablo Picasso;4609;Pablo Picasso;1941;Illustrated Book;Drawings & Prints;Expressionism;genre painting;4th floor;402
+448;34813;Rain;1832;Lyonel Feininger;1952;Drawing;Drawings & Prints;Expressionism;genre painting;4th floor;402
+449;76483;I'm dreaming of a white Christmas;2481;Richard Hamilton;1967;Print;Drawings & Prints;Pop Art;genre painting;4th floor;419
+450;35592;Self-Portrait;5366;Ben Shahn;1955;Drawing;Drawings & Prints;Social Realism;genre painting;4th floor;401
+451;36254;Figures;4609;Pablo Picasso;1967;Drawing;Drawings & Prints;Surrealism;genre painting;4th floor;405
+452;66170;Jazz;3832;Henri Matisse;1947;Print;Drawings & Prints;Abstract Expressionism;illustration;4th floor;409
+453;105395;Lagoon (Le Lagon) from Jazz;3832;Henri Matisse;1947;Print;Drawings & Prints;Abstract Expressionism;illustration;4th floor;409
+454;105396;Lagoon (Le Lagon) from Jazz;3832;Henri Matisse;1947;Print;Drawings & Prints;Abstract Expressionism;illustration;4th floor;409
+455;105397;Lagoon (Le Lagon) from Jazz;3832;Henri Matisse;1947;Print;Drawings & Prints;Abstract Expressionism;illustration;4th floor;409
+456;144192;17 variazioni su temi proposti per una pura ideologia fonetica;884;Alberto Burri;1955;Illustrated Book;Drawings & Prints;Art Informel;illustration;4th floor;412
+457;156779;Cover for 17 variazioni su temi proposti per una pura ideologia fonetica;884;Alberto Burri;1955;Illustrated Book;Drawings & Prints;Art Informel;illustration;4th floor;412
+458;68681;Untitled;2429;Hans Haacke;1961;Print;Drawings & Prints;Conceptual Art;installation;4th floor;420
+459;68702;Untitled;2429;Hans Haacke;1960;Print;Drawings & Prints;Conceptual Art;installation;4th floor;420
+460;68731;Untitled;2429;Hans Haacke;1961;Print;Drawings & Prints;Conceptual Art;installation;4th floor;420
+461;68755;Untitled;2429;Hans Haacke;1961;Print;Drawings & Prints;Conceptual Art;installation;4th floor;420
+462;68766;Untitled;2429;Hans Haacke;1961;Print;Drawings & Prints;Conceptual Art;installation;4th floor;420
+463;68778;Untitled;2429;Hans Haacke;1961;Print;Drawings & Prints;Conceptual Art;installation;4th floor;420
+464;68789;Untitled;2429;Hans Haacke;1961;Print;Drawings & Prints;Conceptual Art;installation;4th floor;420
+465;68800;Untitled;2429;Hans Haacke;1961;Print;Drawings & Prints;Conceptual Art;installation;4th floor;420
+466;146915;Museum of Modern Art. The Eagles. 19th-Century Section (Musée d'Art Moderne. Les Aigles. Section XIXe siècle);795;Marcel Broodthaers;1969;Print;Drawings & Prints;Conceptual Art;installation;4th floor;420
+467;69040;Untitled;4243;Bruce Nauman;1969;Print;Drawings & Prints;Minimalism;installation;4th floor;413
+468;63815;Souvenir;2923;Jasper Johns;1970;Print;Drawings & Prints;Neo-Dada;installation;4th floor;416
+469;61054;The Store;4397;Claes Oldenburg;1961;Print;Drawings & Prints;Pop Art;installation;4th floor;417
+470;69472;A Postal Card - For Mother from S.M.S. No. 1;2481;Richard Hamilton;1968;Print;Drawings & Prints;Pop Art;installation;4th floor;419
+471;34584;Untitled (7 x 33);3230;Jannis Kounellis;1959;Drawing;Drawings & Prints;Post-Minimalism;installation;4th floor;421
+472;37077;Repetition Nineteen;2623;Eva Hesse;1967;Drawing;Drawings & Prints;Post-Minimalism;installation;4th floor;421
+473;38105;Table and Two Chairs;19;Richard Artschwager;1965;Drawing;Drawings & Prints;Conceptual Art;interior;4th floor;420
+474;100554;Bathroom Mirror;1039;Patrick Caulfield;1968;Print;Drawings & Prints;Pop Art;interior;4th floor;418
+475;33572;Landscape (Paysage);1633;Jean Dubuffet;1952;Drawing;Drawings & Prints;Expressionism;landscape;4th floor;402
+476;34796;Untitled;5047;Mark Rothko;1945;Drawing;Drawings & Prints;Expressionism;landscape;4th floor;402
+477;37028;Untitled;5047;Mark Rothko;1969;Drawing;Drawings & Prints;Expressionism;landscape;4th floor;402
+478;37042;Untitled;5047;Mark Rothko;1968;Drawing;Drawings & Prints;Expressionism;landscape;4th floor;402
+479;73046;Dark Trees at Noon;5268;Karl Schrag;1961;Print;Drawings & Prints;Expressionism;landscape;4th floor;402
+480;74159;New England Landscape II;3296;Yasuo Kuniyoshi;1941;Print;Drawings & Prints;Expressionism;landscape;4th floor;402
+481;74902;Woods and Open Sea;5268;Karl Schrag;1962;Print;Drawings & Prints;Expressionism;landscape;4th floor;402
+482;85608;Landscape (Paysage);1633;Jean Dubuffet;1951;Drawing;Drawings & Prints;Expressionism;landscape;4th floor;402
+483;5638;Psychedelic Cloud;3859;Peter Max;1967;Design;Architecture & Design;Pop Art;landscape;4th floor;418
+484;76637;Standard Station;5086;Edward Ruscha;1966;Print;Drawings & Prints;Pop Art;landscape;4th floor;417
+485;34762;Caribbean Landscape;3821;André Masson;1941;Drawing;Drawings & Prints;Surrealism;landscape;4th floor;403
+486;70760;Villa d'Este;3821;André Masson;1958;Print;Drawings & Prints;Surrealism;landscape;4th floor;403
+487;73224;Mist in the Valley of the Arc;3821;André Masson;1956;Print;Drawings & Prints;Surrealism;landscape;4th floor;403
+488;69324;Hespéride;3821;André Masson;1947;Print;Drawings & Prints;Surrealism;mythological painting;4th floor;403
+489;72333;La Femme Tondue;4742;Antoine Prinner;1946;Print;Drawings & Prints;Cubism;nude painting (nu);4th floor;406
+490;29467;Bather (plate, page 49) from the illustrated book Non Vouloir;4609;Pablo Picasso;1942;Illustrated Book;Drawings & Prints;Surrealism;nude painting (nu);4th floor;405
+491;73208;Green Nude;3821;André Masson;1956;Print;Drawings & Prints;Surrealism;nude painting (nu);4th floor;403
+492;192667;Reading Position for Second Degree Burn, Stage I and Stage II, Book, Skin, Solar Energy. Exposure Time: 5 Hours, Jones Beach, New York, Photodocumentation;4415;Dennis Oppenheim;1970;Photograph;Photography;Conceptual Art;performance;4th floor;420
+493;127407;Music by Alison, performed during Fully Guaranteed 12 Fluxus Concerts, New York, May 23, 1964;36471;Alison Knowles;1964;Photograph;Drawings & Prints;Neo-Dada;performance;4th floor;416
+494;45258;Pleasures and Terrors of Levitation;5456;Aaron Siskind;1954;Photograph;Photography;Abstract Expressionism;photo;4th floor;408
+495;46975;Chicago;5456;Aaron Siskind;1952;Photograph;Photography;Abstract Expressionism;photo;4th floor;408
+496;48676;Pleasures and Terrors of Levitation 55;5456;Aaron Siskind;1956;Photograph;Photography;Abstract Expressionism;photo;4th floor;408
+497;49141;Gloucester;5456;Aaron Siskind;1944;Photograph;Photography;Abstract Expressionism;photo;4th floor;408
+498;49238;New York;5456;Aaron Siskind;1946;Photograph;Photography;Abstract Expressionism;photo;4th floor;408
+499;49256;Chicago;5456;Aaron Siskind;1956;Photograph;Photography;Abstract Expressionism;photo;4th floor;408
+500;49422;Rome, Arch of Constantine 3;5456;Aaron Siskind;1967;Photograph;Photography;Abstract Expressionism;photo;4th floor;408
+501;49490;Chicago;5456;Aaron Siskind;1952;Photograph;Photography;Abstract Expressionism;photo;4th floor;408
+502;52751;Pleasures and Terrors of Levitation 50;5456;Aaron Siskind;1965;Photograph;Photography;Abstract Expressionism;photo;4th floor;408
+503;57270;Chicago 6;5456;Aaron Siskind;1961;Photograph;Photography;Abstract Expressionism;photo;4th floor;408
+504;56388;Untitled;4617;Otto Piene;1959;Photograph;Photography;Op Art;photo;4th floor;407
+505;68671;Self-Portrait;6246;Andy Warhol;1966;Print;Drawings & Prints;Pop Art;photo;4th floor;417
+506;51258;Richmond, California;3373;Dorothea Lange;1942;Photograph;Photography;Social Realism;photo;4th floor;401
+507;51431;Richmond, California;3373;Dorothea Lange;1942;Photograph;Photography;Social Realism;photo;4th floor;401
+508;51471;Richmond, California;3373;Dorothea Lange;1944;Photograph;Photography;Social Realism;photo;4th floor;401
+509;51490;Richmond, California;3373;Dorothea Lange;1944;Photograph;Photography;Social Realism;photo;4th floor;401
+510;51938;Richmond, California;3373;Dorothea Lange;1942;Photograph;Photography;Social Realism;photo;4th floor;401
+511;52047;Richmond, California;3373;Dorothea Lange;1942;Photograph;Photography;Social Realism;photo;4th floor;401
+512;54692;Richmond, California;3373;Dorothea Lange;1942;Photograph;Photography;Social Realism;photo;4th floor;401
+513;55588;Untitled (Utah);3373;Dorothea Lange;1941;Photograph;Photography;Social Realism;photo;4th floor;401
+514;55726;Untitled (Egypt);3373;Dorothea Lange;1963;Photograph;Photography;Social Realism;photo;4th floor;401
+515;57163;Richmond, California;3373;Dorothea Lange;1942;Photograph;Photography;Social Realism;photo;4th floor;401
+516;46423;The Wall;5520;Frederick Sommer;1951;Photograph;Photography;Surrealism;photo;4th floor;403
+517;46856;Fighting Centaur;5520;Frederick Sommer;1952;Photograph;Photography;Surrealism;photo;4th floor;403
+518;46895;Livia;5520;Frederick Sommer;1948;Photograph;Photography;Surrealism;photo;4th floor;403
+519;46905;Medallion;5520;Frederick Sommer;1948;Photograph;Photography;Surrealism;photo;4th floor;403
+520;46962;Untitled;5520;Frederick Sommer;1940;Photograph;Photography;Surrealism;photo;4th floor;403
+521;46989;All Children Are Ambassadors;5520;Frederick Sommer;1950;Photograph;Photography;Surrealism;photo;4th floor;403
+522;47066;Ondine;5520;Frederick Sommer;1950;Photograph;Photography;Surrealism;photo;4th floor;403
+523;47360;Max Ernst;5520;Frederick Sommer;1946;Photograph;Photography;Surrealism;photo;4th floor;403
+524;47919;Dali Atomicus;2470;Philippe Halsman;1948;Photograph;Photography;Surrealism;photo;4th floor;405
+525;47955;Jean Cocteau;2470;Philippe Halsman;1949;Photograph;Photography;Surrealism;photo;4th floor;405
+526;51371;Charis;6329;Edward Weston;1942;Photograph;Photography;Surrealism;photo;4th floor;403
+527;51710;Untitled;5520;Frederick Sommer;1962;Photograph;Photography;Surrealism;photo;4th floor;403
+528;51728;Lee Nevin;5520;Frederick Sommer;1963;Photograph;Photography;Surrealism;photo;4th floor;403
+529;51873;Richard Nixon;2470;Philippe Halsman;1967;Photograph;Photography;Surrealism;photo;4th floor;405
+530;53101;Sand Dunes;6327;Brett Weston;1947;Photograph;Photography;Surrealism;photo;4th floor;403
+531;193251;Untitled I;32825;Nalini Malani;1970;Photograph;Photography;Op Art;photo, abstract;4th floor;407
+532;29922;Portrait of Jacqueline in Profile (frontispiece) from the illustrated book À Haute Flamme;4609;Pablo Picasso;1955;Illustrated Book;Drawings & Prints;Cubism;portrait;4th floor;406
+533;35587;Untitled;4609;Pablo Picasso;1969;Drawing;Drawings & Prints;Cubism;portrait;4th floor;406
+534;63558;Head;5627;Saul Steinberg;1945;Print;Drawings & Prints;Cubism;portrait;4th floor;406
+535;82661;Untitled;4609;Pablo Picasso;1962;Print;Drawings & Prints;Cubism;portrait;4th floor;406
+536;33051;Female Head;4609;Pablo Picasso;1940;Drawing;Drawings & Prints;Expressionism;portrait;4th floor;402
+537;33413;Seated Woman;3213;Willem de Kooning;1952;Drawing;Drawings & Prints;Expressionism;portrait;4th floor;402
+538;37538;Annette;2141;Alberto Giacometti;1954;Drawing;Drawings & Prints;Expressionism;portrait;4th floor;401
+539;65247;Blind Botanist;5366;Ben Shahn;1961;Print;Drawings & Prints;Expressionism;portrait;4th floor;401
+540;70598;Head;3832;Henri Matisse;1951;Print;Drawings & Prints;Expressionism;portrait;4th floor;401
+541;70730;Diego;2141;Alberto Giacometti;1964;Print;Drawings & Prints;Expressionism;portrait;4th floor;401
+542;95958;The Painter's Mother;1993;Lucian Freud;1940;Drawing;Drawings & Prints;Expressionism;portrait;4th floor;402
+543;5341;Untitled (Bob Dylan);3859;Peter Max;1967;Design;Architecture & Design;Pop Art;portrait;4th floor;418
+544;5635;Toulouse Lautrec;3859;Peter Max;1966;Design;Architecture & Design;Pop Art;portrait;4th floor;418
+545;61240;Marilyn Monroe;6246;Andy Warhol;1967;Print;Drawings & Prints;Pop Art;portrait;4th floor;417
+546;84127;Cagney;6246;Andy Warhol;1962;Print;Drawings & Prints;Pop Art;portrait;4th floor;417
+547;35462;Girl with Leaves;1993;Lucian Freud;1948;Drawing;Drawings & Prints;Surrealism;portrait;4th floor;404
+548;78143;Portraits of the Artists from Ten from Leo Castelli;6246;Andy Warhol;1967;Print;Drawings & Prints;Pop Art;portrait, self-portrait;4th floor;417
+549;4941;Diary of a Shinjuku Burglar;6502;Tadanori Yokoo;1968;Design;Architecture & Design;Pop Art;poster;4th floor;419
+550;4946;The Silly Generation;6502;Tadanori Yokoo;1970;Design;Architecture & Design;Pop Art;poster;4th floor;419
+551;4957;Stranger From The Wilderness;6502;Tadanori Yokoo;1967;Design;Architecture & Design;Pop Art;poster;4th floor;419
+552;4975;Anniversary Performance of the Garumella Dance Company;6502;Tadanori Yokoo;1970;Design;Architecture & Design;Pop Art;poster;4th floor;419
+553;4979;Ballad Dedicated To An Amputated Little Finger;6502;Tadanori Yokoo;1967;Design;Architecture & Design;Pop Art;poster;4th floor;419
+554;5351;Penney's Rainbow Lane;3859;Peter Max;1967;Design;Architecture & Design;Pop Art;poster;4th floor;418
+555;6226;The Rose-Colored Dance, A La Maison De M. Civecawa (Poster for a performance by Tatsumi Hijikata's butoh dance company);6502;Tadanori Yokoo;1966;Design;Architecture & Design;Pop Art;poster;4th floor;419
+556;6730;Poster for a Happening;6502;Tadanori Yokoo;1968;Design;Architecture & Design;Pop Art;poster;4th floor;419
+557;7949;B:1/B:2;6502;Tadanori Yokoo;1964;Design;Architecture & Design;Pop Art;poster;4th floor;419
+558;7957;Koshimaki-Osen;6502;Tadanori Yokoo;1966;Design;Architecture & Design;Pop Art;poster;4th floor;419
+559;7959;The City and Design, The Wonders of Life on Earth, Isamu Kurita;6502;Tadanori Yokoo;1966;Design;Architecture & Design;Pop Art;poster;4th floor;419
+560;9006;Paris Review;6246;Andy Warhol;1967;Design;Architecture & Design;Pop Art;poster;4th floor;417
+561;37835;Satan;3349;Wifredo Lam;1942;Drawing;Drawings & Prints;Cubism;religious painting;4th floor;406
+562;140961;Hair;710;Louise Bourgeois;1950;Drawing;Drawings & Prints;Conceptual Art;sculpture;4th floor;420
+563;5710;(Exhibition, 1955);3772;Marino Marini;1955;Design;Architecture & Design;Expressionism;sculpture;4th floor;402
+564;38595;The City Square;2141;Alberto Giacometti;1949;Drawing;Drawings & Prints;Expressionism;sculpture;4th floor;401
+565;64191;Family Group;4071;Henry Moore;1950;Print;Drawings & Prints;Expressionism;sculpture;4th floor;401
+566;38145;Untitled;2373;Robert Grosvenor;1969;Drawing;Drawings & Prints;Minimalism;sculpture;4th floor;414
+567;38350;Untitled;5493;Richard Smith;1967;Drawing;Drawings & Prints;Minimalism;sculpture;4th floor;414
+568;45924;Untitled;5485;Keith Smith;1965;Photograph;Photography;Minimalism;sculpture;4th floor;413
+569;50704;(Dr. Albert Schweitzer at a table);5496;W. Eugene Smith;1954;Photograph;Photography;Minimalism;sculpture;4th floor;414
+570;50726;(Dr. Albert Schweitzer at a table);5496;W. Eugene Smith;1954;Photograph;Photography;Minimalism;sculpture;4th floor;414
+571;50749;(Two children and headless doll);5496;W. Eugene Smith;1955;Photograph;Photography;Minimalism;sculpture;4th floor;414
+572;54581;(Death);5496;W. Eugene Smith;1950;Photograph;Photography;Minimalism;sculpture;4th floor;414
+573;54670;(Woman drinking);5496;W. Eugene Smith;1954;Photograph;Photography;Minimalism;sculpture;4th floor;414
+574;54705;(Family in yard);5496;W. Eugene Smith;1953;Photograph;Photography;Minimalism;sculpture;4th floor;414
+575;54713;(Baby in crib);5496;W. Eugene Smith;1951;Photograph;Photography;Minimalism;sculpture;4th floor;414
+576;54747;(Man in bandages in church);5496;W. Eugene Smith;1944;Photograph;Photography;Minimalism;sculpture;4th floor;414
+577;54768;(Childbirth);5496;W. Eugene Smith;1951;Photograph;Photography;Minimalism;sculpture;4th floor;414
+578;55375;(Man in bandages on cot in church);5496;W. Eugene Smith;1944;Photograph;Photography;Minimalism;sculpture;4th floor;414
+579;78092;Untitled;5481;Gordon A. Smith;1967;Print;Drawings & Prints;Minimalism;sculpture;4th floor;413
+580;134484;Untitled;5480;David Smith;1952;Print;Drawings & Prints;Minimalism;sculpture;4th floor;413
+581;289070;Untitled;2373;Robert Grosvenor;1967;Drawing;Drawings & Prints;Minimalism;sculpture;4th floor;414
+582;59579;Untitled;366;Georg Baselitz;1967;Print;Drawings & Prints;Neo-Expressionism;sculpture;4th floor;419
+583;28776;Notes;4397;Claes Oldenburg;1968;Illustrated Book;Drawings & Prints;Pop Art;sculpture;4th floor;417
+584;36331;Hamburger;4397;Claes Oldenburg;1962;Drawing;Drawings & Prints;Pop Art;sculpture;4th floor;417
+585;68416;Lipstick (Ascending) on Caterpillar Track;4397;Claes Oldenburg;1969;Print;Drawings & Prints;Pop Art;sculpture;4th floor;417
+586;71550;Turtle Cup;4734;Ken Price;1968;Print;Drawings & Prints;Pop Art;sculpture;4th floor;418
+587;109708;Untitled;3591;Richard Long;1970;Print;Drawings & Prints;Post-Minimalism;sculpture;4th floor;421
+588;5750;(Exhibition of recent work, Rome, 1955);5094;Mario Russo;1955;Design;Architecture & Design;Expressionism;self-portrait;4th floor;402
+589;53284;Untitled;797;John Brook;1956;Photograph;Photography;Expressionism;self-portrait;4th floor;402
+590;53295;Untitled;797;John Brook;1960;Photograph;Photography;Expressionism;self-portrait;4th floor;402
+591;34006;Untitled;3787;Agnes Martin;1960;Drawing;Drawings & Prints;Abstract Expressionism;sketch and study;4th floor;408
+592;37312;Untitled;3787;Agnes Martin;1952;Drawing;Drawings & Prints;Abstract Expressionism;sketch and study;4th floor;408
+593;95957;Stephen Spender;1993;Lucian Freud;1940;Drawing;Drawings & Prints;Expressionism;sketch and study;4th floor;402
+594;33892;The Solomon R. Guggenheim Museum;2481;Richard Hamilton;1966;Drawing;Drawings & Prints;Pop Art;sketch and study;4th floor;419
+595;33901;The Solomon R. Guggenheim Museum;2481;Richard Hamilton;1966;Drawing;Drawings & Prints;Pop Art;sketch and study;4th floor;419
+596;33914;The Solomon R. Guggenheim Museum;2481;Richard Hamilton;1966;Drawing;Drawings & Prints;Pop Art;sketch and study;4th floor;419
+597;33923;The Solomon R. Guggenheim Museum;2481;Richard Hamilton;1966;Drawing;Drawings & Prints;Pop Art;sketch and study;4th floor;419
+598;38748;The Solomon R. Guggenheim -- Architect's visual;2481;Richard Hamilton;1965;Drawing;Drawings & Prints;Pop Art;sketch and study;4th floor;419
+599;72399;The Solomon R. Guggenheim;2481;Richard Hamilton;1965;Print;Drawings & Prints;Pop Art;sketch and study;4th floor;419
+600;59733;Woman Machine-Gunner in a State of Grace (Mitrailleuse en état de grâce);452;Hans Bellmer;1954;Print;Drawings & Prints;Surrealism;sketch and study;4th floor;404
+601;63091;Variations on a Doll's Game;452;Hans Bellmer;1950;Print;Drawings & Prints;Surrealism;sketch and study;4th floor;404
+602;78113;The Woman at the Cathedral;452;Hans Bellmer;1948;Print;Drawings & Prints;Surrealism;sketch and study;4th floor;404
+603;78114;Rose ou Vert la nuit;452;Hans Bellmer;1966;Print;Drawings & Prints;Surrealism;sketch and study;4th floor;404
+604;10069;Plate (page 13) from LE TIR À L'ARC;744;Georges Braque;1960;Illustrated Book;Drawings & Prints;Cubism;still life;4th floor;406
+605;10070;Plate (page 21) from LE TIR À L'ARC;744;Georges Braque;1960;Illustrated Book;Drawings & Prints;Cubism;still life;4th floor;406
+606;22016;Plate (folio 11 verso) from Milarepa;744;Georges Braque;1950;Illustrated Book;Drawings & Prints;Cubism;still life;4th floor;406
+607;22043;Plate (page 7) from LES PAROLES TRANSPARENTES;744;Georges Braque;1955;Illustrated Book;Drawings & Prints;Cubism;still life;4th floor;406
+608;22045;Plate (page 11) from LES PAROLES TRANSPARENTES;744;Georges Braque;1955;Illustrated Book;Drawings & Prints;Cubism;still life;4th floor;406
+609;22046;Plate (page 35) from LES PAROLES TRANSPARENTES;744;Georges Braque;1955;Illustrated Book;Drawings & Prints;Cubism;still life;4th floor;406
+610;22115;Plate (page 23) from Août (August);744;Georges Braque;1958;Illustrated Book;Drawings & Prints;Cubism;still life;4th floor;406
+611;22120;Plate (page 9) from DESCENTE AUX ENFERS;744;Georges Braque;1961;Illustrated Book;Drawings & Prints;Cubism;still life;4th floor;406
+612;22124;Plate (page 77) from DESCENTE AUX ENFERS;744;Georges Braque;1961;Illustrated Book;Drawings & Prints;Cubism;still life;4th floor;406
+613;31707;Plate (page 21) from Du Cubisme (On Cubism);744;Georges Braque;1947;Illustrated Book;Drawings & Prints;Cubism;still life;4th floor;406
+614;68016;Flowers (for U.C.L.A.) (Fleurs [for U.C.L.A.]);4609;Pablo Picasso;1961;Print;Drawings & Prints;Cubism;still life;4th floor;406
+615;34722;Untitled;4108;Robert Morris;1969;Drawing;Drawings & Prints;Expressionism;still life;4th floor;402
+616;58925;Untitled;4109;Wright Morris;1951;Photograph;Photography;Expressionism;still life;4th floor;402
+617;90713;Untitled;4108;Robert Morris;1969;Drawing;Drawings & Prints;Expressionism;still life;4th floor;402
+618;117084;Untitled;4108;Robert Morris;1961;Drawing;Drawings & Prints;Expressionism;still life;4th floor;402
+619;117085;Untitled;4108;Robert Morris;1962;Drawing;Drawings & Prints;Expressionism;still life;4th floor;402
+620;133797;Untitled;4108;Robert Morris;1962;Drawing;Drawings & Prints;Expressionism;still life;4th floor;402
+621;100270;Book;2419;Philip Guston;1968;Drawing;Drawings & Prints;Neo-Expressionism;still life;4th floor;419
+622;66511;Ale Cans;2923;Jasper Johns;1964;Print;Drawings & Prints;Pop Art;still life;4th floor;418
+623;66551;Ale Cans;2923;Jasper Johns;1964;Print;Drawings & Prints;Pop Art;still life;4th floor;418
+624;66586;Ale Cans;2923;Jasper Johns;1964;Print;Drawings & Prints;Pop Art;still life;4th floor;418
+625;85004;A Wheatfield on a Summer's Afternoon. Study for backdrop for Scene III of the ballet Aleko;1055;Marc Chagall;1942;Drawing;Drawings & Prints;Expressionism;symbolic painting;4th floor;402
+626;400198;Unite;131723;Barbara Jones-Hogu;1969;Print;Drawings & Prints;Pop Art;symbolic painting;4th floor;417
+627;400206;Untitled;131723;Barbara Jones-Hogu;1969;Print;Drawings & Prints;Pop Art;symbolic painting;4th floor;417
+628;127864;Untitled;2486;David Hammons;1969;Drawing;Drawings & Prints;Post-Minimalism;symbolic painting;4th floor;421
+629;64804;Max Ernst;1752;Max Ernst;1950;Print;Drawings & Prints;Surrealism;symbolic painting;4th floor;405
+630;72803;Metamorphosis;3821;André Masson;1963;Print;Drawings & Prints;Surrealism;symbolic painting;4th floor;403
+631;3412;Prayer Rug;2631;Sheila Hicks;1965;Design;Architecture & Design;Minimalism;tapestry;4th floor;414
+632;60552;Encounter;1757;M. C. Escher;1944;Print;Drawings & Prints;Op Art;tessellation;4th floor;407
+633;6476;The Visionaries at the East Hampton Gallery;3859;Peter Max;1967;Design;Architecture & Design;Pop Art;tessellation;4th floor;418
+634;6484;1 2 3 Infinity, The Contemporaries;3859;Peter Max;1967;Design;Architecture & Design;Pop Art;tessellation;4th floor;418
+635;7221;#12 Captain Midnight;3859;Peter Max;1966;Design;Architecture & Design;Pop Art;tessellation;4th floor;418

@@ -1,0 +1,793 @@
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+es.unizar.gui.simulation.Simulation, updateSpecialUserPath:
+   [updateSpecialUserPath]: TRY - Build graph: 47
+es.unizar.gui.simulation.Simulation, updateSpecialUserPath:
+   org.apache.mahout.cf.taste.common.NoSuchUserException: 51
+[updateSpecialUserPath]: TRY - TIME TILL IT REACHES CATCH: 237
+[updateSpecialUserPath / CURRENTPATH]: CATCH - 32
+[updateSpecialUserPath]: CATCH - 32
+--- VUELTA ---
+ -TIEMPO TOTAL BUCLE: 50
+- Time to update users' position: 50
+--------------
+
+--- VUELTA ---
+ -TIEMPO TOTAL BUCLE: 110
+- Time to update users' position: 110
+--------------
+
+--- VUELTA ---
+   Tiempo en repintar: 32
+      - GET ROOM: 31
+    - TIME MOVING: 31
+      - GET ROOM: 63
+    - TIME MOVING: 63
+ -TIEMPO TOTAL BUCLE: 172
+- Time to update users' position: 172
+--------------
+
+--- VUELTA ---
+ -TIEMPO TOTAL BUCLE: 33
+- Time to update users' position: 33
+--------------
+
+--- VUELTA ---
+ -TIEMPO TOTAL BUCLE: 33
+- Time to update users' position: 33
+--------------
+
+--- VUELTA ---
+ -TIEMPO TOTAL BUCLE: 49
+- Time to update users' position: 49
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+ -TIEMPO TOTAL BUCLE: 49
+- Time to update users' position: 49
+--------------
+
+--- VUELTA ---
+ -TIEMPO TOTAL BUCLE: 32
+- Time to update users' position: 32
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+ -TIEMPO TOTAL BUCLE: 33
+- Time to update users' position: 33
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+ -TIEMPO TOTAL BUCLE: 32
+- Time to update users' position: 32
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+ -TIEMPO TOTAL BUCLE: 49
+- Time to update users' position: 49
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 135
+      IS CHANGED BY RECOMMENDER: 141
+      VOTANDO EL ITEM 125
+      IS CHANGED BY RECOMMENDER: 110
+ -TIEMPO TOTAL BUCLE: 283
+- Time to update users' position: 283
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 198
+      IS CHANGED BY RECOMMENDER: 109
+ -TIEMPO TOTAL BUCLE: 111
+- Time to update users' position: 111
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 213
+      IS CHANGED BY RECOMMENDER: 125
+      VOTANDO EL ITEM 202
+      IS CHANGED BY RECOMMENDER: 125
+      VOTANDO EL ITEM 55
+      IS CHANGED BY RECOMMENDER: 110
+es.unizar.gui.simulation.Simulation, updateSpecialUserPath:
+   [updateSpecialUserPath]: TRY - Build graph: 31
+es.unizar.gui.simulation.Simulation, updateSpecialUserPath:
+   org.apache.mahout.cf.taste.common.NoSuchUserException: 51
+[updateSpecialUserPath]: TRY - TIME TILL IT REACHES CATCH: 187
+[updateSpecialUserPath / CURRENTPATH]: CATCH - 32
+[updateSpecialUserPath]: CATCH - 32
+      *** Tiempo en updateSpecialUserPath: 219
+      Tiempo en actualizar ruta (usuario especial tiene más cosas que ver en la sala): 219
+ -TIEMPO TOTAL BUCLE: 596
+- Time to update users' position: 596
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 191
+      IS CHANGED BY RECOMMENDER: 125
+ -TIEMPO TOTAL BUCLE: 127
+- Time to update users' position: 127
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 183
+      IS CHANGED BY RECOMMENDER: 109
+      VOTANDO EL ITEM 149
+      IS CHANGED BY RECOMMENDER: 125
+      VOTANDO EL ITEM 146
+      IS CHANGED BY RECOMMENDER: 113
+ -TIEMPO TOTAL BUCLE: 364
+- Time to update users' position: 364
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 40
+      IS CHANGED BY RECOMMENDER: 134
+ -TIEMPO TOTAL BUCLE: 152
+- Time to update users' position: 152
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 90
+      IS CHANGED BY RECOMMENDER: 140
+      VOTANDO EL ITEM 196
+      IS CHANGED BY RECOMMENDER: 109
+      VOTANDO EL ITEM 194
+      IS CHANGED BY RECOMMENDER: 94
+      VOTANDO EL ITEM 134
+      IS CHANGED BY RECOMMENDER: 157
+ -TIEMPO TOTAL BUCLE: 533
+- Time to update users' position: 533
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 95
+      IS CHANGED BY RECOMMENDER: 140
+ -TIEMPO TOTAL BUCLE: 142
+- Time to update users' position: 142
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 128
+      IS CHANGED BY RECOMMENDER: 109
+ -TIEMPO TOTAL BUCLE: 111
+- Time to update users' position: 111
+--------------
+
+--- VUELTA ---
+      IS CHANGED BY RECOMMENDER: 125
+ -TIEMPO TOTAL BUCLE: 142
+- Time to update users' position: 142
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 158
+      IS CHANGED BY RECOMMENDER: 141
+ -TIEMPO TOTAL BUCLE: 142
+- Time to update users' position: 142
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 61
+      IS CHANGED BY RECOMMENDER: 265
+ -TIEMPO TOTAL BUCLE: 267
+- Time to update users' position: 267
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 120
+      IS CHANGED BY RECOMMENDER: 140
+ -TIEMPO TOTAL BUCLE: 158
+- Time to update users' position: 158
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 65
+      IS CHANGED BY RECOMMENDER: 125
+      VOTANDO EL ITEM 217
+      IS CHANGED BY RECOMMENDER: 110
+      VOTANDO EL ITEM 76
+      IS CHANGED BY RECOMMENDER: 125
+      VOTANDO EL ITEM 196
+      IS CHANGED BY RECOMMENDER: 140
+      VOTANDO EL ITEM 137
+      IS CHANGED BY RECOMMENDER: 94
+      VOTANDO EL ITEM 37
+      IS CHANGED BY RECOMMENDER: 125
+      VOTANDO EL ITEM 25
+      IS CHANGED BY RECOMMENDER: 109
+      VOTANDO EL ITEM 25
+      IS CHANGED BY RECOMMENDER: 125
+ -TIEMPO TOTAL BUCLE: 1013
+- Time to update users' position: 1013
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 130
+      IS CHANGED BY RECOMMENDER: 140
+      VOTANDO EL ITEM 20
+      IS CHANGED BY RECOMMENDER: 125
+      VOTANDO EL ITEM 200
+      IS CHANGED BY RECOMMENDER: 134
+ -TIEMPO TOTAL BUCLE: 418
+- Time to update users' position: 418
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 191
+      IS CHANGED BY RECOMMENDER: 93
+ -TIEMPO TOTAL BUCLE: 127
+- Time to update users' position: 127
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 109
+      IS CHANGED BY RECOMMENDER: 125
+ -TIEMPO TOTAL BUCLE: 142
+- Time to update users' position: 142
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 163
+      IS CHANGED BY RECOMMENDER: 94
+      VOTANDO EL ITEM 56
+      IS CHANGED BY RECOMMENDER: 110
+ -TIEMPO TOTAL BUCLE: 236
+- Time to update users' position: 236
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 163
+      IS CHANGED BY RECOMMENDER: 141
+ -TIEMPO TOTAL BUCLE: 158
+- Time to update users' position: 158
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 20
+      IS CHANGED BY RECOMMENDER: 94
+ -TIEMPO TOTAL BUCLE: 127
+- Time to update users' position: 127
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 27
+      IS CHANGED BY RECOMMENDER: 110
+ -TIEMPO TOTAL BUCLE: 111
+- Time to update users' position: 111
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 213
+      IS CHANGED BY RECOMMENDER: 125
+ -TIEMPO TOTAL BUCLE: 142
+- Time to update users' position: 142
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 219
+      IS CHANGED BY RECOMMENDER: 140
+      VOTANDO EL ITEM 206
+      IS CHANGED BY RECOMMENDER: 125
+ -TIEMPO TOTAL BUCLE: 267
+- Time to update users' position: 267
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 191
+      IS CHANGED BY RECOMMENDER: 109
+ -TIEMPO TOTAL BUCLE: 127
+- Time to update users' position: 127
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 231
+      IS CHANGED BY RECOMMENDER: 109
+ -TIEMPO TOTAL BUCLE: 111
+- Time to update users' position: 111
+--------------
+
+--- VUELTA ---
+      IS CHANGED BY RECOMMENDER: 93
+ -TIEMPO TOTAL BUCLE: 95
+- Time to update users' position: 95
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 178
+      IS CHANGED BY RECOMMENDER: 125
+ -TIEMPO TOTAL BUCLE: 142
+- Time to update users' position: 142
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 206
+      IS CHANGED BY RECOMMENDER: 156
+      VOTANDO EL ITEM 226
+      IS CHANGED BY RECOMMENDER: 94
+      VOTANDO EL ITEM 35
+      IS CHANGED BY RECOMMENDER: 109
+ -TIEMPO TOTAL BUCLE: 377
+- Time to update users' position: 377
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 70
+      IS CHANGED BY RECOMMENDER: 156
+      VOTANDO EL ITEM 138
+      IS CHANGED BY RECOMMENDER: 78
+ -TIEMPO TOTAL BUCLE: 267
+- Time to update users' position: 267
+--------------
+
+--- VUELTA ---
+      IS CHANGED BY RECOMMENDER: 125
+es.unizar.gui.simulation.Simulation, updateSpecialUserPath:
+   [updateSpecialUserPath]: TRY - Build graph: 31
+es.unizar.gui.simulation.Simulation, updateSpecialUserPath:
+   org.apache.mahout.cf.taste.common.NoSuchUserException: 51
+[updateSpecialUserPath]: TRY - TIME TILL IT REACHES CATCH: 203
+      *** Tiempo en updateSpecialUserPath: 218
+      Tiempo en actualizar ruta (usuario especial tiene más cosas que ver en la sala): 218
+ -TIEMPO TOTAL BUCLE: 361
+- Time to update users' position: 361
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 192
+      IS CHANGED BY RECOMMENDER: 234
+      VOTANDO EL ITEM 48
+      IS CHANGED BY RECOMMENDER: 109
+ -TIEMPO TOTAL BUCLE: 361
+- Time to update users' position: 361
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 68
+      IS CHANGED BY RECOMMENDER: 125
+ -TIEMPO TOTAL BUCLE: 142
+- Time to update users' position: 142
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 93
+      IS CHANGED BY RECOMMENDER: 125
+ -TIEMPO TOTAL BUCLE: 142
+- Time to update users' position: 142
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 132
+      IS CHANGED BY RECOMMENDER: 141
+      IS CHANGED BY RECOMMENDER: 140
+ -TIEMPO TOTAL BUCLE: 283
+- Time to update users' position: 283
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 111
+      IS CHANGED BY RECOMMENDER: 110
+      IS CHANGED BY RECOMMENDER: 110
+ -TIEMPO TOTAL BUCLE: 252
+- Time to update users' position: 252
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 63
+      IS CHANGED BY RECOMMENDER: 94
+      VOTANDO EL ITEM 176
+      IS CHANGED BY RECOMMENDER: 125
+ -TIEMPO TOTAL BUCLE: 237
+- Time to update users' position: 237
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 65
+      IS CHANGED BY RECOMMENDER: 110
+      VOTANDO EL ITEM 134
+      IS CHANGED BY RECOMMENDER: 109
+      VOTANDO EL ITEM 119
+      IS CHANGED BY RECOMMENDER: 109
+      VOTANDO EL ITEM 226
+      IS CHANGED BY RECOMMENDER: 85
+ -TIEMPO TOTAL BUCLE: 461
+- Time to update users' position: 461
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 93
+      IS CHANGED BY RECOMMENDER: 110
+      VOTANDO EL ITEM 97
+      IS CHANGED BY RECOMMENDER: 110
+      VOTANDO EL ITEM 225
+      IS CHANGED BY RECOMMENDER: 110
+ -TIEMPO TOTAL BUCLE: 377
+- Time to update users' position: 377
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 61
+      IS CHANGED BY RECOMMENDER: 125
+ -TIEMPO TOTAL BUCLE: 126
+- Time to update users' position: 126
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 22
+      IS CHANGED BY RECOMMENDER: 125
+      VOTANDO EL ITEM 33
+      IS CHANGED BY RECOMMENDER: 109
+ -TIEMPO TOTAL BUCLE: 252
+- Time to update users' position: 252
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 151
+      IS CHANGED BY RECOMMENDER: 159
+      VOTANDO EL ITEM 126
+      IS CHANGED BY RECOMMENDER: 140
+ -TIEMPO TOTAL BUCLE: 301
+- Time to update users' position: 301
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 128
+      IS CHANGED BY RECOMMENDER: 218
+ -TIEMPO TOTAL BUCLE: 236
+- Time to update users' position: 236
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 38
+      IS CHANGED BY RECOMMENDER: 125
+ -TIEMPO TOTAL BUCLE: 142
+- Time to update users' position: 142
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 38
+      IS CHANGED BY RECOMMENDER: 94
+ -TIEMPO TOTAL BUCLE: 111
+- Time to update users' position: 111
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 214
+      IS CHANGED BY RECOMMENDER: 156
+ -TIEMPO TOTAL BUCLE: 174
+- Time to update users' position: 174
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 198
+      IS CHANGED BY RECOMMENDER: 110
+      VOTANDO EL ITEM 207
+      IS CHANGED BY RECOMMENDER: 110
+ -TIEMPO TOTAL BUCLE: 236
+- Time to update users' position: 236
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 232
+      IS CHANGED BY RECOMMENDER: 109
+ -TIEMPO TOTAL BUCLE: 126
+- Time to update users' position: 126
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 73
+      IS CHANGED BY RECOMMENDER: 156
+ -TIEMPO TOTAL BUCLE: 174
+- Time to update users' position: 174
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 203
+      IS CHANGED BY RECOMMENDER: 125
+ -TIEMPO TOTAL BUCLE: 142
+- Time to update users' position: 142
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 181
+      IS CHANGED BY RECOMMENDER: 141
+      VOTANDO EL ITEM 163
+      IS CHANGED BY RECOMMENDER: 109
+ -TIEMPO TOTAL BUCLE: 283
+- Time to update users' position: 283
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 189
+      IS CHANGED BY RECOMMENDER: 109
+ -TIEMPO TOTAL BUCLE: 127
+- Time to update users' position: 127
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 126
+      IS CHANGED BY RECOMMENDER: 125
+      VOTANDO EL ITEM 37
+      IS CHANGED BY RECOMMENDER: 125
+      VOTANDO EL ITEM 240
+      IS CHANGED BY RECOMMENDER: 94
+ -TIEMPO TOTAL BUCLE: 361
+- Time to update users' position: 361
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 63
+      IS CHANGED BY RECOMMENDER: 125
+      VOTANDO EL ITEM 202
+      IS CHANGED BY RECOMMENDER: 109
+      VOTANDO EL ITEM 55
+ -TIEMPO TOTAL BUCLE: 252
+- Time to update users' position: 252
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 45
+      IS CHANGED BY RECOMMENDER: 125
+ -TIEMPO TOTAL BUCLE: 127
+- Time to update users' position: 127
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 92
+      IS CHANGED BY RECOMMENDER: 125
+      VOTANDO EL ITEM 222
+      IS CHANGED BY RECOMMENDER: 157
+ -TIEMPO TOTAL BUCLE: 314
+- Time to update users' position: 314
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 212
+      IS CHANGED BY RECOMMENDER: 212
+      VOTANDO EL ITEM 195
+      IS CHANGED BY RECOMMENDER: 141
+      VOTANDO EL ITEM 186
+      IS CHANGED BY RECOMMENDER: 134
+ -TIEMPO TOTAL BUCLE: 506
+- Time to update users' position: 506
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 155
+      IS CHANGED BY RECOMMENDER: 109
+      VOTANDO EL ITEM 98
+      IS CHANGED BY RECOMMENDER: 109
+ -TIEMPO TOTAL BUCLE: 236
+- Time to update users' position: 236
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 74
+      IS CHANGED BY RECOMMENDER: 172
+ -TIEMPO TOTAL BUCLE: 189
+- Time to update users' position: 189
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 61
+      IS CHANGED BY RECOMMENDER: 125
+      VOTANDO EL ITEM 215
+      IS CHANGED BY RECOMMENDER: 109
+      VOTANDO EL ITEM 98
+      IS CHANGED BY RECOMMENDER: 110
+ -TIEMPO TOTAL BUCLE: 346
+- Time to update users' position: 346
+--------------
+
+--- VUELTA ---
+--------------
+
+--- VUELTA ---
+      IS CHANGED BY RECOMMENDER: 110
+      IS CHANGED BY RECOMMENDER: 125
+ -TIEMPO TOTAL BUCLE: 251
+- Time to update users' position: 251
+--------------
+
+--- VUELTA ---
+      VOTANDO EL ITEM 174
+      IS CHANGED BY RECOMMENDER: 406
+      IS CHANGED BY RECOMMENDER: 109
+ -TIEMPO TOTAL BUCLE: 549
+- Time to update users' position: 549
+--------------
+
