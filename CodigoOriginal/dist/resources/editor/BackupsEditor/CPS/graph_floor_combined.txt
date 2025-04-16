@@ -1,0 +1,25 @@
+#Sun Jun 12 12:27:52 CEST 2022
+number_items_3=0
+number_items_2=0
+number_room_subrooms=3
+number_connected_door=2
+number_items_1=0
+room_number_subrooms_3=0
+number_connected_door_stairs=0
+room_number_subrooms_2=0
+room_number_subrooms_1=0
+number_connected_stairs=0
+number_room=3
+connected_door_2=door_1_1, door_1_3
+connected_door_1=door_1_1, door_1_2
+number_connected_invisible_door=0
+number_stairs=0
+room_3=3
+room_2=2
+room_1=1
+number_doors_3=1
+number_doors_2=1
+number_doors_1=1
+door_1_3=3
+door_1_2=2
+door_1_1=1

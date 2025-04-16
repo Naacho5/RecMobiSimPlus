@@ -1,0 +1,99 @@
+Dataset: MOMA
+
+* Preprocesamiento:
+	- Solo nos quedamos con los ítems "Painting & Sculture"
+	- Solo nos quedamos con los artistas de la planta 4 y 5
+	- Donde no hay información se puso null
+	- Se eliminaron los atributos: URL;ThumbnailURL	
+	- Se eliminaron los atributos que contiene información menor a un 6.67%: Seat Height (cm)->0, Duration (sec.)->16, Length (cm)->5, Circumference (cm)->0
+	
+	- Binarización del atributo nacionalidad, artista
+	- Discretizar el atributo date: tomar solo el año; parseo y me quedo con el número de 4 dígitos; si hay dos de 4 dígitos me quedo con el 1ro, 
+	- Discretizar el atributo DateAcquired: actual, antiguo
+	- Medium llevarlo a una palabra clave y luego discretizar
+	
+* Datos estadísticos:
+	- User: [100]
+		UserID: {Unique identifiers}
+	- Item: [240]
+	  Atributos:
+	    ItemID: {Unique identifiers}
+		Title: {Text}
+		*Artist [14]: {Andy Warhol (P4-20), Eva Hesse (P4-8), Jackson Pollock (P4-18), Jasper Johns (P4-13), Lee Bontecou (P4-4), Robert Rauschenberg (P4-15), Roy Lichtenstein (P4-12), Claude Monet (P5-5), Frida Kahlo (P5-3), Henri Matisse (P5-52), Pablo Picasso (P5-72), Paul Cézanne (P5-9), Salvador Dalí (P5-6), Vincent van Gogh (P5-3)}
+		ConstituentID: {Numbers in the range [670-6246]}
+		ArtistBio: {Country + Range of years lived}
+		*Nationality [5]: {Spanish (78), French (66), Mexican (3), American (90), Dutch (3)}
+		BeginDate: {Years in the range [1839-1936]}
+		EndDate: {Years in the range [1890-2008]}
+		*Gender: {Male, Female}
+		*Date: {Early century XIX (0), Middle century XIX (0), Later century XIX (15), Early century XX (102), Middle century XX (101), Later century XX (20), Early century XXI (2),	Middle century XXI (0), Later century XXI (0)} 
+		*Medium [32]: {Oil (134), Encaustic (8), Synthetic polymer (11), Tempera (2), Metal (7), Casein (2), Silk (7), Gouache (3), Silkscreen ink (7), Enamel (4), Fabric (5), Various materials (13), Felt (2), Steel (3), Bronze (24), Wood (3), Plaster (3), Glazed (2)}
+		Dimensions: {Text}
+		CreditLine: {Text}
+		AccessionNumber: {Unique ubications}
+		*Classification [2]:{Painting (182), Sculpture (58)}
+		Department [1]: {Painting & Sculpture}
+		*DateAcquired [2]: {Little time (7), Long time (233)}
+		Cataloged [2]: {Y (240), N (0)}
+		Depth (cm): {Numbers}
+		Diameter (cm): {Numbers}
+		Height (cm): {Numbers}
+		Weight (kg): {Numbers}
+		Width (cm): {Numbers}
+		Floor: {4 (90), 5 (150)}          [=SI(O(C2="Andy Warhol";C2="Eva Hesse";C2="Jackson Pollock";C2="Jasper Johns";C2="Lee Bontecou";C2="Robert Rauschenberg";C2="Roy Lichtenstein");4;5)]
+		Location (item location x,y): {range [0-200]}
+	- Context: [200]
+	    ContextID: {Unique identifiers}
+		TemperatureRoom (temperature in the room): {warm, hot, cold}
+		NumberPeopleRoom (number of people in a room): {range [0-50]}
+	- Ratings: [Users X Items = 24 000]
+
+* Plantas:
+	- Planta 4: 
+	  Name: Painting and Sculture II
+	  Range of years: 1940-1980
+	  Number of items: 90
+	
+	- Planta 5:
+	  Name: Painting and Sculture II
+	  Range of years: 1880-1940
+	  Number of items: 150
+	  
+* Atributos importantes para UserProfile:
+	- Item: Artist, Nationality, Gender, Date, Medium, Classification, DateAcquired
+		1 - Nationality, Gender
+		2 - Artist, Date
+		3 - Classification, Medium, DateAcquired
+		4 - Artist, DateAcquired
+		5 - Medium, Classification
+		6 - Artist, Nationality, Gender
+		7 - Date, Medium, Classification
+		8 - Artist,Medium, Classification
+		9 - Nationality, DateAcquired
+		10- Artist, Date, Medium, Classification
+	- Context: none
+
+	=SI(Y(B3>="1800";B3<="1835");"Early century XIX";
+	    SI(Y(B3>="1836";B3<="1870");"Middle century XIX";
+		   SI(Y(B3>="1871";B3<="1900");"Later century XIX";
+		      SI(Y(B3>="1901";B3<="1935");"Early century XX";
+			     SI(Y(B3>="1936";B3<="1970");"Middle century XX";
+				    SI(Y(B3>="1971";B3<="2000");"Later century XX"; 
+					   SI(Y(B3>="2001";B3<="2035");"Early century XXI";
+			       "NADA")))))))
+
+
+	=SI(Y(B3>=1800;B3<=1835);"Early century XIX";SI(Y(B3>=1836;B3<=1870);"Middle century XIX";SI(Y(B3>=1871;B3<=1900);"Later century XIX";SI(Y(B3>=1901;B3<=1935);"Early century XX";SI(Y(B3>=1936;B3<=1970);"Middle century XX";SI(Y(B3>=1971;B3<=2000);"Later century XX";SI(Y(B3>=2001;B3<=2035);"Early century XXI";"NADA")))))))
+
+
+	* ¿Cómo se obtienen los ficheros?:
+		- room_floor4.txt y room_floor5.txt: 
+		  1- Con el ploter (http://arohatgi.info/WebPlotDigitizer/app/) se obtienen las localizaciones de las esquinas, las puertas y escaleras.
+		  2- Con el simulador, se ejecuta la clase "GenerateRoomFloorFile" para generar las esquinas en el fichero de salida (room_floorX.txt).
+		  3- Las puertas y las escaleras, así como las relaciones entre ellas son incluidas manualmente.
+		- item_floor4.txt y item_floor5.txt
+		  Son obtenidos desde la aplicacion del simulador, con la funcionalidad: File/Load items y cargándose el fichero item.csv.
+		  1- DataGenCARS se genera itemsByRoomX.txt, que contiene las localizaciones de los ítems por habitaciones. Como entrada al generador necesitará: room_floorX.txt, item_scheme.txt, generation_config.txt.
+		  2- Las localizaciones obtenidas en itemsByRoomX.txt serán escritas en el fichero item.csv.
+		  3- Simulator genera los ficheros mediante el load de item.csv
+

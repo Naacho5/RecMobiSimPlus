@@ -1,0 +1,18 @@
+#Tue Dec 21 10:46:08 CET 2021
+vertex_label_painting=painting
+item_date_painting=21/12/2021
+item_beginDate_painting=21/12/2021
+vertex_label_hola=hola
+vertex_url_adios=C\:\\Users\\apied\\Desktop\\Cosillas\\Uni\\4toCurso\\2doCuatri\\TFG\\GitHubProyecto\\Simulator2021\\MuseumSimulator\\src\\es\\unizar\\images\\special_user.png
+number_items=3
+item_endDate_painting=21/12/2021
+item_height_painting=50
+item_department_painting=Siuuuuu
+item_nationality_painting=Spain
+item_width_painting=50
+visitable_3=adios
+vertex_url_painting=C\:\\Users\\apied\\Desktop\\Cosillas\\Uni\\4toCurso\\2doCuatri\\TFG\\GitHubProyecto\\Simulator2021\\MuseumSimulator\\src\\es\\unizar\\images\\painting.png
+visitable_2=hola
+visitable_1=painting
+vertex_label_adios=adios
+vertex_url_hola=C\:\\Users\\apied\\Desktop\\Cosillas\\Uni\\4toCurso\\2doCuatri\\TFG\\GitHubProyecto\\Simulator2021\\MuseumSimulator\\src\\es\\unizar\\images\\non_special_user.png

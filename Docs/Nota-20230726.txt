@@ -1,0 +1,18 @@
+Nota 1:
+-------
+
+El mapa que se carga por defecto al configurar e iniciar una simulación es el correspondiente a los ficheros de texto (graph_floor_combined.txt, item_floor_combined.txt, room_floor_combined.txt) que se encuentran en la carpeta resources/maps. Si se quiere utilizar un mapa distinto, basta copiar los ficheros .txt de la subcarpeta correspondiente (por ejemplo, resources/maps/GranCasa o resources/maps/MoMA_Museum) a la carpeta raíz de mapas (resources/maps).
+
+Nota 2:
+-------
+
+En algunos sistemas se ha observado un problema de codificación de caracteres en los ficheros fuentes al compilar. Puede resolverse cambiando la codificación a través de la variable de entorno JAVA_TOOL_OPTIONS:
+
+export JAVA_TOOL_OPTIONS=-Dfile.encoding=Cp1252
+
+Como alternativa, podría modificarse la codificación de los ficheros fuente problemáticos.
+
+Nota 3:
+-------
+
+En la versión aquí registrada, si se genera el fichero .jar con el script "GenerateJar.sh", hay que incluir en dicho fichero .jar de forma manual el directorio resources/images. Probablemente esto sea fácilmente automatizable.

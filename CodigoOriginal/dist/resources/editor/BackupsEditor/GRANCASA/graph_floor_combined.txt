@@ -1,0 +1,12 @@
+#Tue Jan 11 19:33:12 CET 2022
+number_connected_stairs=0
+number_doors_1=2
+number_stairs=0
+connected_door_1=door_1_1, door_2_1
+number_connected_door=1
+number_connected_door_stairs=0
+room_1=1
+number_items_1=0
+number_room=1
+door_2_1=2
+door_1_1=1

@@ -1,0 +1,5 @@
+#Wed Jan 12 18:31:13 CET 2022
+number_items=0
+name=GRANCASA
+vertex_dimension_width=6
+vertex_dimension_height=6

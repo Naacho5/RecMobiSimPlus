@@ -1,0 +1,218 @@
+Available time for iteration in seconds: -11.632766996111542
+Current time: 199/ 3600
+Updating user positions: 
+User: 1
+Available time for iteration in seconds: -16.02508630306034
+Current time: 182/ 3600
+User: 2
+Available time for iteration in seconds: -10.632766996111542
+Current time: 199/ 3600
+Updating user positions: 
+User: 1
+Available time for iteration in seconds: -15.025086303060341
+Current time: 182/ 3600
+User: 2
+Available time for iteration in seconds: -9.632766996111542
+Current time: 199/ 3600
+Updating user positions: 
+User: 1
+Available time for iteration in seconds: -14.025086303060341
+Current time: 182/ 3600
+User: 2
+Available time for iteration in seconds: -8.632766996111542
+Current time: 199/ 3600
+Updating user positions: 
+User: 1
+Available time for iteration in seconds: -13.025086303060341
+Current time: 182/ 3600
+User: 2
+Available time for iteration in seconds: -7.632766996111542
+Current time: 199/ 3600
+Updating user positions: 
+User: 1
+Available time for iteration in seconds: -12.025086303060341
+Current time: 182/ 3600
+User: 2
+Available time for iteration in seconds: -6.632766996111542
+Current time: 199/ 3600
+Updating user positions: 
+User: 1
+Available time for iteration in seconds: -11.025086303060341
+Current time: 182/ 3600
+User: 2
+Available time for iteration in seconds: -5.632766996111542
+Current time: 199/ 3600
+Updating user positions: 
+User: 1
+Available time for iteration in seconds: -10.025086303060341
+Current time: 182/ 3600
+User: 2
+Available time for iteration in seconds: -4.632766996111542
+Current time: 199/ 3600
+Updating user positions: 
+User: 1
+Available time for iteration in seconds: -9.025086303060341
+Current time: 182/ 3600
+User: 2
+Available time for iteration in seconds: -3.632766996111542
+Current time: 199/ 3600
+Updating user positions: 
+User: 1
+Available time for iteration in seconds: -8.025086303060341
+Current time: 182/ 3600
+User: 2
+Available time for iteration in seconds: -2.632766996111542
+Current time: 199/ 3600
+Updating user positions: 
+User: 1
+Available time for iteration in seconds: -7.025086303060341
+Current time: 182/ 3600
+User: 2
+Available time for iteration in seconds: -1.6327669961115419
+Current time: 199/ 3600
+Updating user positions: 
+User: 1
+Available time for iteration in seconds: -6.025086303060341
+Current time: 182/ 3600
+User: 2
+Available time for iteration in seconds: -0.6327669961115419
+Current time: 199/ 3600
+
+
+------------------------------------------------------------------
+Updating user positions: 
+User: 1
+Available time for iteration in seconds: -5.025086303060341
+Current time: 182/ 3600
+User: 2
+Available time for iteration in seconds: 0.36723300388845814
+It is moved from item: 110 to 109
+Generating rating: [User: 2 | Item: 109 | Painting or Sculpture | Rating: 1.0]
+It is moved from item: 109 to 294
+Move from: [1235.9254621227938, 416.60915492957747] to:  [1223.8333266417203, 356.0176056338029]
+Time consumed: 11.23899418946416
+Remaining time available for the user: -10.871761185575702
+The user does not have time to get to the item, then the remaining time available: 0.0
+It is moved from: 1235.9254621227938, 416.60915492957747 to 1235.5303528130742, 414.6293321551336
+[Current location: 1235.5303528130742, 414.6293321551336]
+Current time: 238/ 3600
+
+
+
+------------------------------------------------------------------
+Updating user positions: 
+User: 1
+Available time for iteration in seconds: -4.025086303060341
+Current time: 182/ 3600
+User: 2
+Available time for iteration in seconds: 1.0
+It is moved from item: 109 to 294
+Move from: [1235.5303528130742, 414.6293321551336] to:  [1223.8333266417203, 356.0176056338029]
+Time consumed: 10.871761185575695
+Remaining time available for the user: -9.871761185575695
+The user does not have time to get to the item, then the remaining time available: 0.0
+It is moved from: 1235.5303528130742, 414.6293321551336 to 1234.4544437702161, 409.23814249222096
+[Current location: 1234.4544437702161, 409.23814249222096]
+Current time: 238/ 3600
+
+
+
+------------------------------------------------------------------
+Updating user positions: 
+User: 1
+Available time for iteration in seconds: -3.025086303060341
+Current time: 182/ 3600
+User: 2
+Available time for iteration in seconds: 1.0
+It is moved from item: 109 to 294
+Move from: [1234.4544437702161, 409.23814249222096] to:  [1223.8333266417203, 356.0176056338029]
+Time consumed: 9.871761185575693
+Remaining time available for the user: -8.871761185575693
+The user does not have time to get to the item, then the remaining time available: 0.0
+It is moved from: 1234.4544437702161, 409.23814249222096 to 1233.378534727358, 403.8469528293083
+[Current location: 1233.378534727358, 403.8469528293083]
+Current time: 238/ 3600
+
+
+
+------------------------------------------------------------------
+Updating user positions: 
+User: 1
+Available time for iteration in seconds: -2.025086303060341
+Current time: 182/ 3600
+User: 2
+Available time for iteration in seconds: 1.0
+It is moved from item: 109 to 294
+Move from: [1233.378534727358, 403.8469528293083] to:  [1223.8333266417203, 356.0176056338029]
+Time consumed: 8.871761185575691
+Remaining time available for the user: -7.871761185575691
+The user does not have time to get to the item, then the remaining time available: 0.0
+It is moved from: 1233.378534727358, 403.8469528293083 to 1232.3026256845, 398.4557631663956
+[Current location: 1232.3026256845, 398.4557631663956]
+Current time: 238/ 3600
+
+
+
+
+------------------------------------------------------------------
+Updating user positions: 
+User: 1
+Available time for iteration in seconds: -1.0250863030603412
+Current time: 182/ 3600
+User: 2
+Available time for iteration in seconds: 1.0
+It is moved from item: 109 to 294
+Move from: [1232.3026256845, 398.4557631663956] to:  [1223.8333266417203, 356.0176056338029]
+Time consumed: 7.87176118557569
+Remaining time available for the user: -6.87176118557569
+The user does not have time to get to the item, then the remaining time available: 0.0
+It is moved from: 1232.3026256845, 398.4557631663956 to 1231.226716641642, 393.06457350348296
+[Current location: 1231.226716641642, 393.06457350348296]
+Current time: 238/ 3600
+
+
+
+------------------------------------------------------------------
+Updating user positions: 
+User: 1
+Available time for iteration in seconds: -0.02508630306034121
+Current time: 182/ 3600
+User: 2
+Available time for iteration in seconds: 1.0
+It is moved from item: 109 to 294
+Move from: [1231.226716641642, 393.06457350348296] to:  [1223.8333266417203, 356.0176056338029]
+Time consumed: 6.871761185575689
+Remaining time available for the user: -5.871761185575689
+The user does not have time to get to the item, then the remaining time available: 0.0
+It is moved from: 1231.226716641642, 393.06457350348296 to 1230.150807598784, 387.6733838405703
+[Current location: 1230.150807598784, 387.6733838405703]
+Current time: 238/ 3600
+
+
+
+------------------------------------------------------------------
+Updating user positions: 
+User: 1
+Available time for iteration in seconds: 0.9749136969396588
+It is moved from item: 43 to 30
+Generating rating: [User: 1 | Item: 30 | Painting or Sculpture | Rating: 4.0]
+It is moved from item: 30 to 25
+Move from: [896.9604003725889, 211.68661971830988] to:  [847.622468562802, 149.78521126760563]
+Time consumed: 14.39893952451092
+Remaining time available for the user: -13.424025827571262
+The user does not have time to get to the item, then the remaining time available: 0.0
+It is moved from: 896.9604003725889, 211.68661971830988 to 893.619860923961, 207.49544085713623
+[Current location: 893.619860923961, 207.49544085713623]
+Current time: 243/ 3600
+User: 2
+Available time for iteration in seconds: 1.0
+It is moved from item: 109 to 294
+Move from: [1230.150807598784, 387.6733838405703] to:  [1223.8333266417203, 356.0176056338029]
+Time consumed: 5.8717611855756875
+Remaining time available for the user: -4.8717611855756875
+The user does not have time to get to the item, then the remaining time available: 0.0
+It is moved from: 1230.150807598784, 387.6733838405703 to 1229.074898555926, 382.28219417765763
+[Current location: 1229.074898555926, 382.28219417765763]
+Current time: 238/ 3600
+Stop simulation
+PC current time: 12:53:27

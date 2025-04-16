@@ -1,0 +1,44 @@
+Updating user positions: 
+User: 1
+Available time for iteration in seconds: -6.025086303060341
+Current time: 182/ 3600
+User: 2
+Available time for iteration in seconds: -0.6327669961115419
+Current time: 199/ 3600
+
+
+------------------------------------------------------------------
+Updating user positions: 
+User: 1
+Available time for iteration in seconds: -5.025086303060341
+Current time: 182/ 3600
+User: 2
+Available time for iteration in seconds: 0.36723300388845814
+It is moved from item: 110 to 109
+Generating rating: [User: 2 | Item: 109 | Painting or Sculpture | Rating: 1.0]
+It is moved from item: 109 to 294
+Move from: [1235.9254621227938, 416.60915492957747] to:  [1223.8333266417203, 356.0176056338029]
+Time consumed: 11.23899418946416
+Remaining time available for the user: -10.871761185575702
+The user does not have time to get to the item, then the remaining time available: 0.0
+It is moved from: 1235.9254621227938, 416.60915492957747 to 1235.5303528130742, 414.6293321551336
+[Current location: 1235.5303528130742, 414.6293321551336]
+Current time: 238/ 3600
+
+
+
+------------------------------------------------------------------
+Updating user positions: 
+User: 1
+Available time for iteration in seconds: -4.025086303060341
+Current time: 182/ 3600
+User: 2
+Available time for iteration in seconds: 1.0
+It is moved from item: 109 to 294
+Move from: [1235.5303528130742, 414.6293321551336] to:  [1223.8333266417203, 356.0176056338029]
+Time consumed: 10.871761185575695
+Remaining time available for the user: -9.871761185575695
+The user does not have time to get to the item, then the remaining time available: 0.0
+It is moved from: 1235.5303528130742, 414.6293321551336 to 1234.4544437702161, 409.23814249222096
+[Current location: 1234.4544437702161, 409.23814249222096]
+Current time: 238/ 3600

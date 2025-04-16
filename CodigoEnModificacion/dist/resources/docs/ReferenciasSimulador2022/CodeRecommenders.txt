@@ -1,0 +1,9 @@
+eclipse.org/forums/index.php/t/1099870/
+
+Go to Help -> Install new software...
+
+Add a repository:
+"Code Recommenders"
+https://repo.eclipse.org/content/shadows/releases.unzip/org/eclipse/recommenders/stable/2.5.4/stable-2.5.4.zip-unzip/
+
+Then it will propose you to install the plugin.
