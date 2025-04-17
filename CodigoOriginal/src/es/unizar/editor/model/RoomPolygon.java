@@ -13,22 +13,42 @@ import earcut4j.Earcut;
 
 public class RoomPolygon {
 	
-	protected int label; // Equivalent to room's id
+	// protected int label; // Equivalent to room's id
+	protected long label; // Añadido por Nacho Palacio 2025-04-17.
+
 	protected List<Corner> corners;
 	protected Polygon polygon;
 	
-	public RoomPolygon(int label) {
+	// public RoomPolygon(int label) {
+	// 	// Init
+	// 	this.label = label;
+	// 	this.corners = new LinkedList<Corner>();
+	// 	this.polygon = new Polygon();
+	// }
+
+	/* Añadido por Nacho Palacio 2025-04-17. */
+	public RoomPolygon(long label) {
 		// Init
 		this.label = label;
 		this.corners = new LinkedList<Corner>();
 		this.polygon = new Polygon();
 	}
 	
-	public int getLabel() {
+	// public int getLabel() {
+	// 	return label;
+	// }
+
+	/* Añadido por Nacho Palacio 2025-04-17. */
+	public long getLabel() {
 		return label;
 	}
 
-	public void setLabel(int label) {
+	// public void setLabel(int label) {
+	// 	this.label = label;
+	// }
+
+	/* Añadido por Nacho Palacio 2025-04-17. */
+	public void setLabel(long label) {
 		this.label = label;
 	}
 
@@ -65,9 +85,11 @@ public class RoomPolygon {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((corners == null) ? 0 : corners.hashCode());
-		result = prime * result + label;
+		// result = prime * result + label;
+		result = prime * result + (int)(label ^ (label >>> 32)); // Añadido por Nacho Palacio 2025-04-17.
 		return result;
 	}
+	
 
 	@Override
 	public boolean equals(Object obj) {

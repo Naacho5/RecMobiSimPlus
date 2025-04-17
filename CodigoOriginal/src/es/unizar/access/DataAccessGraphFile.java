@@ -199,8 +199,14 @@ public class DataAccessGraphFile extends DataAccess {
 		setPropertyValue(Literals.NUMBER_ROOM, Integer.toString(numberOfRoom));
 	}
 	
-	public void setRoom(int posRoom, int roomLabel) {
-		setPropertyValue(Literals.ROOM + posRoom, Integer.toString(roomLabel));
+	// public void setRoom(int posRoom, int roomLabel) {
+	// 	setPropertyValue(Literals.ROOM + posRoom, Integer.toString(roomLabel));
+	// }
+
+
+	/* Añadido por Nacho Palacio 2025-04-17. */
+	public void setRoom(int posRoom, long roomLabel) {
+		setPropertyValue(Literals.ROOM + posRoom, Long.toString(roomLabel));
 	}
 
 	public void setNumberOfItemsByRoom(int posRoom, int numberOfItems) {

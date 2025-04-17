@@ -277,8 +277,13 @@ public class DataAccessItemFile extends DataAccess {
         setPropertyValue(Literals.ITEM_WIDTH + position, Double.toString(width));
     }
 
-    public void setItemRoom(int position, int roomLabel) {
-        setPropertyValue(Literals.ITEM_ROOM + position, Integer.toString(roomLabel));
+    // public void setItemRoom(int position, int roomLabel) {
+    //     setPropertyValue(Literals.ITEM_ROOM + position, Integer.toString(roomLabel));
+    // }
+
+    /* Añadido por Nacho Palacio 2025-04-17. */
+    public void setItemRoom(int position, long roomLabel) {
+        setPropertyValue(Literals.ITEM_ROOM + position, Long.toString(roomLabel));
     }
 
     public void setVertexLabel(int position, String itemLabel) {

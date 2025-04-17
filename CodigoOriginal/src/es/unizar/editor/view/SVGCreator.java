@@ -141,7 +141,8 @@ public class SVGCreator{
 					im.setAttributeNS(null, "beginDate", i.getBeginDate());
 					im.setAttributeNS(null, "endDate", i.getEndDate());
 					im.setAttributeNS(null, "date", i.getDate());
-					im.setAttributeNS(null, "room", Integer.toString(i.getRoom().getLabel()));
+					// im.setAttributeNS(null, "room", Integer.toString(i.getRoom().getLabel()));
+					im.setAttributeNS(null, "room", Long.toString(i.getRoom().getLabel())); // Añadido por Nacho Palacio 2025-04-17
 					im.setAttributeNS(null, "itemLabel", i.getItemLabel());
 					im.setAttributeNS(null, Literals.ITEM_ID, Integer.toString(indexItems));
 					indexItems++;
@@ -149,7 +150,9 @@ public class SVGCreator{
 				
 				if (d instanceof Door) {
 					Door door = (Door)d;
-					im.setAttributeNS(null, "room", Integer.toString(door.getRoom().getLabel()));
+					// im.setAttributeNS(null, "room", Integer.toString(door.getRoom().getLabel()));
+					im.setAttributeNS(null, "room", Long.toString(door.getRoom().getLabel())); // Añadido por Nacho Palacio 2025-04-17
+
 					List<Door> connectedDoors = new ArrayList<Door>();
 					List<Stairs> connectedStairs = new ArrayList<Stairs>();
 					for (Connectable c: door.getConnectedTo()) {
@@ -177,11 +180,15 @@ public class SVGCreator{
 //						int doorF = model.getRooms().get(roomDoorF).getDoors().indexOf(door2) + 1;						
 //						roomDoorF += 1;
 						
-						int roomDoorF = door2.getRoom().getLabel();
+						// int roomDoorF = door2.getRoom().getLabel();
+						long roomDoorF = door2.getRoom().getLabel(); // 
+
 						long doorF = door2.getVertex_label();
 						
 						// connectedDoor_+pos=numDoorInRoom_numRoom
-						im.setAttributeNS(null, "connectedDoor_"+pos, Long.toString(doorF)+"_"+Integer.toString(roomDoorF));
+						// im.setAttributeNS(null, "connectedDoor_"+pos, Long.toString(doorF)+"_"+Integer.toString(roomDoorF));
+						im.setAttributeNS(null, "connectedDoor_"+pos, Long.toString(doorF)+"_"+Long.toString(roomDoorF)); // Añadido por Nacho Palacio 2025-04-17
+
 						//im.setAttributeNS(null, "connectedDoor_"+pos+"_room", Integer.toString(roomDoorF));
 												
 						pos++;
@@ -213,7 +220,9 @@ public class SVGCreator{
 				if (d instanceof Stairs) {											
 					Stairs currentStairs = (Stairs)d;
 					// Set stairs locations
-					if(currentStairs.getRoom() != null) im.setAttributeNS(null, "room", Integer.toString(currentStairs.getRoom().getLabel()));
+					// if(currentStairs.getRoom() != null) im.setAttributeNS(null, "room", Integer.toString(currentStairs.getRoom().getLabel()));
+					if(currentStairs.getRoom() != null) im.setAttributeNS(null, "room", Long.toString(currentStairs.getRoom().getLabel())); // Añadido por Nacho Palacio 2025-04-17
+
 										
 					int pos = 1;
 					for (Connectable c: currentStairs.getConnectedTo()) { // There will be only 1 iteration (only connected to 1 stairs)						
@@ -273,7 +282,9 @@ public class SVGCreator{
 			//g.drawString(Integer.toString(r.getLabel()), (int) (roomPoint.getX()), (int) ((roomPoint.getY() -1)));
 			
 			Element txt = doc.createElementNS(svgNS, "text");
-			txt.setTextContent(Integer.toString(r.getLabel()));
+			// txt.setTextContent(Integer.toString(r.getLabel()));
+			txt.setTextContent(Long.toString(r.getLabel())); // Añadido por Nacho Palacio 2025-04-17
+
 			txt.setAttributeNS(null, "x", Integer.toString((int) (roomPoint.getX())));
 			txt.setAttributeNS(null, "y", Integer.toString((int) ((roomPoint.getY() -1))));
 			txt.setAttributeNS(null, "style", "stroke:black");
@@ -299,7 +310,8 @@ public class SVGCreator{
 				Element pol = doc.createElementNS(svgNS, "polygon");
 				pol.setAttributeNS(null, "points", s);
 				pol.setAttributeNS(null, "style", "stroke:yellow;fill-opacity:0");
-				pol.setAttributeNS(null, "room", Integer.toString(r.getLabel()));
+				// pol.setAttributeNS(null, "room", Integer.toString(r.getLabel()));
+				pol.setAttributeNS(null, "room", Long.toString(r.getLabel())); // Añadido por Nacho Palacio 2025-04-17
 				pol.setAttributeNS(null, "numSubroom", Integer.toString(subroom));
 				subroom++;
 												
@@ -350,7 +362,7 @@ public class SVGCreator{
 	 * @param corners			List of corners in room (completed or being drawn)
 	 * @param isCompletedRoom	If it's a completed room, draw last wall
 	 */
-	private void drawWalls(List<Corner> corners, boolean isCompletedRoom, int label) {
+	private void drawWalls(List<Corner> corners, boolean isCompletedRoom, long label) { // Modificado por Nacho Palacio 2025-04-17 (intlabel -> long label)
 		Corner previous = null;
 		
 		for (Corner c: corners) {
@@ -378,7 +390,7 @@ public class SVGCreator{
 	 * @param c1	First corner
 	 * @param c2	Second corner
 	 */
-	private void drawWallBetweenCorners(Corner c1, Corner c2, int label) {
+	private void drawWallBetweenCorners(Corner c1, Corner c2, long label) { // Modificado por Nacho Palacio 2025-04-17 (intlabel -> long label)
 		// Calculate c1 and c2 positions
 //		double previousCornerX = c1.getVertex_xy().getX();
 //		double previousCornerY = c1.getVertex_xy().getY();
@@ -393,7 +405,8 @@ public class SVGCreator{
         line.setAttributeNS(null, "x2", Double.toString((2*c2.getVertex_xy().getX()+model.getDRAWING_ICON_DIMENSION())/2));
         line.setAttributeNS(null, "y2", Double.toString((2*c2.getVertex_xy().getY()+model.getDRAWING_ICON_DIMENSION())/2));
         line.setAttributeNS(null, "style", "stroke:rgb(0,0,0);stroke-width:1");
-        line.setAttributeNS(null, "roomLabel", Integer.toString(label));
+        // line.setAttributeNS(null, "roomLabel", Integer.toString(label));
+		line.setAttributeNS(null, "roomLabel", Long.toString(label)); // Añadido por Nacho Palacio 2025-04-17
         line.setAttributeNS(null, "labelCorner1", Long.toString(c1.getVertex_label()));
         line.setAttributeNS(null, "labelCorner2", Long.toString(c2.getVertex_label()));
 //        line.setAttributeNS(null, "c1", c1.getVertex_xy().toString());
@@ -447,7 +460,9 @@ public class SVGCreator{
         line.setAttributeNS(null, "y2", Double.toString((2*rs.getC2().getVertex_xy().getY()+model.getDRAWING_ICON_DIMENSION())/2));
         line.setAttributeNS(null, "style", "stroke:blue");
         line.setAttributeNS(null, "separatorLabel", Long.toString(rs.getVertex_label()));
-        line.setAttributeNS(null, "room", Integer.toString(rs.getRoom().getLabel()));
+        // line.setAttributeNS(null, "room", Integer.toString(rs.getRoom().getLabel()));
+        line.setAttributeNS(null, "room", Long.toString(rs.getRoom().getLabel())); // Añadido por Nacho Palacio 2025-04-17
+
 //        line.setAttributeNS(null, "c1", rs.getC1().getVertex_xy().toString());
 //        line.setAttributeNS(null, "c2", rs.getC2().getVertex_xy().toString());
         svgRoot.appendChild(line);

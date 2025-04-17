@@ -5,6 +5,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import es.unizar.util.ElementIdMapper;
+
 public class Room extends RoomPolygon{
 
 	private String roomName;
@@ -21,7 +23,9 @@ public class Room extends RoomPolygon{
 	 * @param corners
 	 */
 	public Room(int label, List<Corner> corners) {
-		super(label);
+		// super(label);
+		/* Añadido por Nacho Palacio 2025-04-17. */
+		super(ElementIdMapper.convertToRangeId(label, ElementIdMapper.CATEGORY_ROOM));
 		
 		this.roomName = null;
 		this.doors = new LinkedList<Door>();
