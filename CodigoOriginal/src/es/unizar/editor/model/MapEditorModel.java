@@ -19,6 +19,7 @@ import es.unizar.access.DataAccessItemFile;
 import es.unizar.access.DataAccessRoomFile;
 import es.unizar.editor.view.SVGCreator;
 import es.unizar.util.EditorLiterals;
+import es.unizar.util.ElementIdMapper;
 import es.unizar.util.Literals;
 import es.unizar.util.Pair;
 
@@ -60,6 +61,8 @@ public class MapEditorModel {
 	private LinkedList<Corner> currentRoomCorners; // For corners to be added in order of insertion;
 	// Current RoomSeparator line before setting end point.
 	private Corner currentRoomSeparatorCorner;
+
+	private ElementIdMapper idMapper; // Añadido por Nacho Palacio 2025-04-18
 	
 	/**
 	 * DataAccess
@@ -114,6 +117,7 @@ public class MapEditorModel {
 		this.accessGraphFile = new DataAccessGraphFile(null);
 		this.accessItemFile = new DataAccessItemFile(null);
 		this.accessRoomFile = new DataAccessRoomFile(null);
+		this.idMapper = new ElementIdMapper(); // Añadido por Nacho Palacio 2025-04-18
 		
 		selected = IconButtons.none;
 		paintedElements = new LinkedList<Drawable>();
@@ -1192,8 +1196,11 @@ public class MapEditorModel {
 		for (Item i: getItems()) {
 			
 			// Set itemID
-			accessItemFile.setItemID(index, index);
-			i.setVertex_label(index);
+			// accessItemFile.setItemID(index, index);
+			// i.setVertex_label(index);
+
+			// Añadido por Nacho Palacio 2025-04-18.
+			accessItemFile.setItemID(index, (int)(i.getVertex_label() % ElementIdMapper.ITEM_ID_START));
 			
 			// Main attributes
 			// Set item room
@@ -1672,9 +1679,44 @@ public class MapEditorModel {
 	 */
 	//public boolean save(boolean saveFiles) {
 	public boolean save(boolean saveFiles) {
-		
+		// Añadido por Nacho Palacio 2025-04-18.
 		if(checkCorrectConstraints()) { // Every room has at least one door, every door is connected to at least one connected element.
+			boolean allIdsCorrect = true;
+        
+			for (Room r : rooms) {
+				if (!ElementIdMapper.isInCorrectRange(r.getLabel(), ElementIdMapper.CATEGORY_ROOM)) {
+					System.out.println("Warning: Room " + r.getLabel() + " has invalid ID range");
+					allIdsCorrect = false;
+				}
+			}
 			
+			for (Item i : items) {
+				if (!ElementIdMapper.isInCorrectRange(i.getVertex_label(), ElementIdMapper.CATEGORY_ITEM)) {
+					System.out.println("Warning: Item " + i.getVertex_label() + " has invalid ID range");
+					allIdsCorrect = false;
+				}
+			}
+			
+			for (Door d : doors) {
+				if (!ElementIdMapper.isInCorrectRange(d.getVertex_label(), ElementIdMapper.CATEGORY_DOOR)) {
+					System.out.println("Warning: Door " + d.getVertex_label() + " has invalid ID range");
+					allIdsCorrect = false;
+				}
+			}
+			
+			for (Stairs s : stairs) {
+				if (!ElementIdMapper.isInCorrectRange(s.getVertex_label(), ElementIdMapper.CATEGORY_STAIRS)) {
+					System.out.println("Warning: Stairs " + s.getVertex_label() + " has invalid ID range");
+					allIdsCorrect = false;
+				}
+			}
+			
+			if (!allIdsCorrect) {
+				System.out.println("Reassigning IDs to ensure correct ranges...");
+				reassignIDs(); // Ya has implementado este método con los rangos correctos
+			}
+
+
 			if(saveFiles) {createFiles();}
 			
 //			saveItemFile();
@@ -1763,7 +1805,9 @@ public class MapEditorModel {
 				//addCorner(c);
 			}
 			// Create room with its corners and add it to rooms
-			Room r = new Room(roomLabel, cornerList);
+			// Room r = new Room(roomLabel, cornerList);
+			// Añadido por Nacho Palacio 2025-04-18.
+			Room r = new Room(ElementIdMapper.convertToRangeId(roomLabel, ElementIdMapper.CATEGORY_ROOM), cornerList); 
 			addRoom(r);
 			
 			// Get number of doors in room
@@ -1858,6 +1902,8 @@ public class MapEditorModel {
 			int numRoom = Integer.valueOf(arrayDoor[2]) + numPrevRooms;
 			
 			Door firstDoor = getRooms().get(numRoom-1).getDoors().get(numDoorInRoom-1);
+			// Añadido por Nacho Palacio 2025-04-18.
+			firstDoor.setVertex_label(ElementIdMapper.convertToRangeId(firstDoor.getVertex_label(), ElementIdMapper.CATEGORY_DOOR)); 
 			
 			// Second door
 			// door_"numDoorInRoom"_"numRoom"
@@ -1866,6 +1912,8 @@ public class MapEditorModel {
 			numRoom = Integer.valueOf(arrayDoor[2]) + numPrevRooms;
 			
 			Door secondDoor = getRooms().get(numRoom-1).getDoors().get(numDoorInRoom-1);
+			// Añadido por Nacho Palacio 2025-04-18.
+			secondDoor.setVertex_label(ElementIdMapper.convertToRangeId(secondDoor.getVertex_label(), ElementIdMapper.CATEGORY_DOOR));
 			
 			// Add connection (connectTo creates a connection for both doors)
 			firstDoor.connectTo(secondDoor);
@@ -1889,6 +1937,8 @@ public class MapEditorModel {
 			int numStairs = Integer.valueOf(arrayDoorStairs[1]) + numPrevStairs;
 			
 			Stairs stairsConn = getStairs().get(numStairs-1);
+			// Añadido por Nacho Palacio 2025-04-18.
+			stairsConn.setVertex_label(ElementIdMapper.convertToRangeId(stairsConn.getVertex_label(), ElementIdMapper.CATEGORY_STAIRS));
 			
 			// Door
 			// door_"numDoorInRoom"_"numRoom"
@@ -1959,6 +2009,10 @@ public class MapEditorModel {
 			// Get item label
 			int vertexLabel = accessItemFile.getItemID(item+1); // ItemID will be the common vertex_label for all objects
 			vertexLabel += numExistingItems;
+
+			// Añadido por Nacho Palacio 2025-04-18.
+			long rangedVertexLabel = ElementIdMapper.convertToRangeId(vertexLabel, ElementIdMapper.CATEGORY_ITEM);
+
 			// Get item label
 			String itemXY = accessItemFile.getVertexXY(item+1);
 			String[] array = itemXY.split(", ");
@@ -1966,7 +2020,11 @@ public class MapEditorModel {
 			double itemY = Double.parseDouble(array[1]);
 			
 			// CREATE ITEM AND ADD IT TO MODEL
-			Item i = new Item(r, vertexLabel, new Point(itemX + xDisplacement, itemY + yDisplacement));
+			// Item i = new Item(r, vertexLabel, new Point(itemX + xDisplacement, itemY + yDisplacement));
+			
+			// Añadido por Nacho Palacio 2025-04-18.
+			Item i = new Item(r, rangedVertexLabel, new Point(itemX + xDisplacement, itemY + yDisplacement));
+
 			addItem(i);
 			
 			// Item attributes
@@ -2031,6 +2089,8 @@ public class MapEditorModel {
 		loadRoomFile(xDisplacement, yDisplacement);
 		loadGraphFile(numPrevRooms, numPrevDoors, numPrevStairs);
 		loadItemFile(xDisplacement, yDisplacement, numPrevRooms, numPrevItems);
+
+		idMapper.resetCounters(rooms, items, doors, stairs, corners, roomSeparators); // Añadido por Nacho Palacio 2025-04-18 para coherencia ids externos e internos
 	}
 	// --------------------------------------------------------------------------------------------
 	
@@ -2143,24 +2203,112 @@ public class MapEditorModel {
 		
 	}
 
+	/* Añadido por Nacho Palacio 2025-04-18 para coherencia ids externos e internos */
+	/**
+	 * Obtiene el siguiente ID disponible para habitaciones
+	 * @return ID único en el rango correcto para una nueva habitación
+	 */
+	public long getNextRoomId() {
+		return idMapper.getNextRoomId();
+	}
+
+	/**
+	 * Obtiene el siguiente ID disponible para ítems
+	 * @return ID único en el rango correcto para un nuevo ítem
+	 */
+	public long getNextItemId() {
+		return idMapper.getNextItemId();
+	}
+
+	/**
+	 * Obtiene el siguiente ID disponible para puertas
+	 * @return ID único en el rango correcto para una nueva puerta
+	 */
+	public long getNextDoorId() {
+		return idMapper.getNextDoorId();
+	}
+
+	/**
+	 * Obtiene el siguiente ID disponible para escaleras
+	 * @return ID único en el rango correcto para unas nuevas escaleras
+	 */
+	public long getNextStairsId() {
+		return idMapper.getNextStairsId();
+	}
+
+	/**
+	 * Obtiene el siguiente ID disponible para esquinas
+	 * @return ID único en el rango correcto para una nueva esquina
+	 */
+	public long getNextCornerId() {
+		return idMapper.getNextCornerId();
+	}
+
+	/**
+	 * Obtiene el siguiente ID disponible para separadores de habitaciones
+	 * @return ID único en el rango correcto para un nuevo separador
+	 */
+	public long getNextSeparatorId() {
+		return idMapper.getNextSeparatorId();
+	}
+
 	/**
 	 * Reassign IDs when elements are erased. As they are contained in an ordered list, IDs can be reassigned in order.
 	 */
+	// public void reassignIDs() {
+	// 	long id = 1;
+	// 	for (Item i: this.getItems()) {
+	// 		i.setVertex_label(id);
+	// 		id++;
+	// 	}
+	// 	id=1;
+	// 	for(Door d: this.getDoors()) {
+	// 		d.setVertex_label(id);
+	// 		id++;
+	// 	}
+	// 	id=1;
+	// 	for (Stairs s: this.getStairs()) {
+	// 		s.setVertex_label(id);
+	// 		id++;
+	// 	}
+	// }
+
+	/**
+	 * Reassign IDs when elements are erased. As they are contained in an ordered list, IDs can be reassigned in order.
+	 * Añadido por Nacho Palacio 2025-04-18 para coherencia ids externos e internos
+	 */
 	public void reassignIDs() {
-		long id = 1;
-		for (Item i: this.getItems()) {
-			i.setVertex_label(id);
-			id++;
+		// Reiniciar el mapeador de IDs con las listas actuales
+		idMapper.resetCounters(rooms, items, doors, stairs, corners, roomSeparators);
+		
+		// Reasignar IDs de habitaciones
+		for (int i = 0; i < rooms.size(); i++) {
+			rooms.get(i).setLabel(idMapper.getNextRoomId());
 		}
-		id=1;
-		for(Door d: this.getDoors()) {
-			d.setVertex_label(id);
-			id++;
+		
+		// Reasignar IDs de ítems
+		for (int i = 0; i < items.size(); i++) {
+			items.get(i).setVertex_label(idMapper.getNextItemId());
 		}
-		id=1;
-		for (Stairs s: this.getStairs()) {
-			s.setVertex_label(id);
-			id++;
+		
+		// Reasignar IDs de puertas
+		for (int i = 0; i < doors.size(); i++) {
+			doors.get(i).setVertex_label(idMapper.getNextDoorId());
+		}
+		
+		// Reasignar IDs de escaleras
+		for (int i = 0; i < stairs.size(); i++) {
+			stairs.get(i).setVertex_label(idMapper.getNextStairsId());
+		}
+		
+		// Reasignar IDs de esquinas persistentes
+		for (int i = 0; i < corners.size(); i++) {
+			corners.get(i).setVertex_label(idMapper.getNextCornerId());
+		}
+		
+		// Reasignar IDs de separadores de habitaciones
+		for (int i = 0; i < roomSeparators.size(); i++) {
+			roomSeparators.get(i).setVertex_label(idMapper.getNextSeparatorId());
 		}
 	}
 }
