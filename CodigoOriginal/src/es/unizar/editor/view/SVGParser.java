@@ -28,6 +28,7 @@ import es.unizar.editor.model.Room;
 import es.unizar.editor.model.RoomSeparator;
 import es.unizar.editor.model.Stairs;
 import es.unizar.util.Literals;
+import es.unizar.util.ElementIdMapper;
 
 public class SVGParser {
 	
@@ -143,9 +144,14 @@ public class SVGParser {
 						if(roomCorners.size() == roomWalls.size()) {
 							Room room;
 							if(roomWalls.get(0).hasAttribute("roomLabel")) {
-								room = new Room(Integer.parseInt(roomWalls.get(0).getAttribute("roomLabel")), roomCorners);
+								// room = new Room(Integer.parseInt(roomWalls.get(0).getAttribute("roomLabel")), roomCorners);
+								/* Añadido por Nacho Palacio 2025-04-21. */
+								long roomId = Long.parseLong(roomWalls.get(0).getAttribute("roomLabel"));
+								roomId = ElementIdMapper.convertToRangeId(roomId, ElementIdMapper.CATEGORY_ROOM);
+								room = new Room(roomId, roomCorners);
 							}else {
-								room = new Room(model.getNumRooms()+1, roomCorners);
+								// room = new Room(model.getNumRooms()+1, roomCorners);
+								room = new Room(model.getNextRoomId(), roomCorners); // Añadido por Nacho Palacio 2025-04-21.
 							}
 							if(rooms.stream().filter(r -> sameRoom(room,r)).findAny().orElse(null) == null) {
 								//System.out.println(room.getCorners());
@@ -342,9 +348,14 @@ public class SVGParser {
 //						System.out.println();
 //						if(r == null) {System.out.println(e.getAttribute("room"));}
 						if(e.hasAttribute("separatorLabel")) {
-							rs = new RoomSeparator(r, Long.parseLong(e.getAttribute("separatorLabel")), corner1, corner2);
+							// rs = new RoomSeparator(r, Long.parseLong(e.getAttribute("separatorLabel")), corner1, corner2);
+							/* Añadido por Nacho Palacio 2025-04-21. */
+							long separatorId = Long.parseLong(e.getAttribute("separatorLabel"));
+							separatorId = ElementIdMapper.convertToRangeId(separatorId, ElementIdMapper.CATEGORY_SEPARATOR);
+							rs = new RoomSeparator(r, separatorId, corner1, corner2);
 						}else {
-							rs = new RoomSeparator(r, r.getNumRoomSeparators()+1, corner1, corner2);
+							// rs = new RoomSeparator(r, r.getNumRoomSeparators()+1, corner1, corner2);
+							rs = new RoomSeparator(r, model.getNextSeparatorId(), corner1, corner2); // Añadido por Nacho Palacio 2025-04-21.
 						}
 						if(r != null && r.getRoomSeparators().stream().filter(s -> rs.getVertex_label() == s.getVertex_label()).count() == 0) {
 //							r.addRoomSeparator(rs);
@@ -361,8 +372,16 @@ public class SVGParser {
 					//if(e.getAttribute("roomLabel").equals("1")) System.out.println(lastCorner+" "+Long.parseLong(e.getAttribute("labelCorner1"))+" "+(Long.parseLong(e.getAttribute("labelCorner1")) == lastCorner));													
 					//if(e.getAttribute("roomLabel").equals("1")) System.out.println(lastCorner+" "+Long.parseLong(e.getAttribute("labelCorner2"))+" "+(Long.parseLong(e.getAttribute("labelCorner2")) == lastCorner));
 					Corner corner1, corner2;
-					corner1 = new Corner(null, e.getAttribute("labelCorner1").equals("") ? (0) : Long.parseLong(e.getAttribute("labelCorner1")), p1);
-					corner2 = new Corner(null, e.getAttribute("labelCorner2").equals("") ? (0) : Long.parseLong(e.getAttribute("labelCorner2")), p2);
+					// corner1 = new Corner(null, e.getAttribute("labelCorner1").equals("") ? (0) : Long.parseLong(e.getAttribute("labelCorner1")), p1);
+					// corner2 = new Corner(null, e.getAttribute("labelCorner2").equals("") ? (0) : Long.parseLong(e.getAttribute("labelCorner2")), p2);
+
+					// Añadido por Nacho Palacio 2025-04-21.
+					long cornerId1 = e.getAttribute("labelCorner1").equals("") ? (0) : Long.parseLong(e.getAttribute("labelCorner1"));
+					long cornerId2 = e.getAttribute("labelCorner2").equals("") ? (0) : Long.parseLong(e.getAttribute("labelCorner2"));
+					cornerId1 = ElementIdMapper.convertToRangeId(cornerId1, ElementIdMapper.CATEGORY_CORNER);
+					cornerId2 = ElementIdMapper.convertToRangeId(cornerId2, ElementIdMapper.CATEGORY_CORNER);
+					corner1 = new Corner(null, cornerId1, p1);
+					corner2 = new Corner(null, cornerId2, p2);
 					//if(e.getAttribute("roomLabel").equals("81")) System.out.println(e.getAttribute("labelCorner1")+" "+e.getAttribute("c1")+" "+e.getAttribute("labelCorner2")+" "+e.getAttribute("c2"));
 					if(!wallCollidesCorners(corner1,corner2,wallsPoints)) {
 						wallsPoints.add(new PointPair(p1,p2));
@@ -399,9 +418,15 @@ public class SVGParser {
 					Room doorRoom = model.getRooms().stream().filter(r -> r.getPolygon().contains(Double.parseDouble(e.getAttribute("x")), Double.parseDouble(e.getAttribute("y")))).findAny().orElse(null);
 					if(doorRoom == null && e.hasAttribute("room")) doorRoom = model.getRooms().stream().filter(r -> r.getLabel() == Integer.parseInt(e.getAttribute("room"))).findAny().orElse(null);
 					if(e.hasAttribute("label")) {
-						d = new Door(doorRoom, Long.parseLong(e.getAttribute("label")), new Point(Double.parseDouble(e.getAttribute("x")),Double.parseDouble(e.getAttribute("y"))));
+						// d = new Door(doorRoom, Long.parseLong(e.getAttribute("label")), new Point(Double.parseDouble(e.getAttribute("x")),Double.parseDouble(e.getAttribute("y"))));
+						
+						// Añadido por Nacho Palacio 2025-04-21.
+						long doorId = Long.parseLong(e.getAttribute("label"));
+						doorId = ElementIdMapper.convertToRangeId(doorId, ElementIdMapper.CATEGORY_DOOR);
+						d = new Door(doorRoom, doorId, new Point(Double.parseDouble(e.getAttribute("x")),Double.parseDouble(e.getAttribute("y"))));
 					}else {
-						d = new Door(doorRoom, model.getNumDoors()+1, new Point(Double.parseDouble(e.getAttribute("x")),Double.parseDouble(e.getAttribute("y"))));
+						// d = new Door(doorRoom, model.getNumDoors()+1, new Point(Double.parseDouble(e.getAttribute("x")),Double.parseDouble(e.getAttribute("y"))));
+						d = new Door(doorRoom, model.getNextDoorId(), new Point(Double.parseDouble(e.getAttribute("x")),Double.parseDouble(e.getAttribute("y")))); // Añadido por Nacho Palacio 2025-04-21.
 					}
 					//Door d = new Door(null, model.getNumDoors()+1, new Point(Double.parseDouble(e.getAttribute("x")),Double.parseDouble(e.getAttribute("y"))));
 					if(!model.addDoor(d)) {
@@ -414,9 +439,15 @@ public class SVGParser {
 					Room stairsRoom = model.getRooms().stream().filter(r -> r.getPolygon().contains(Double.parseDouble(e.getAttribute("x")), Double.parseDouble(e.getAttribute("y")))).findAny().orElse(null);
 					if(stairsRoom == null && e.hasAttribute("room")) stairsRoom = model.getRooms().stream().filter(r -> r.getLabel() == Integer.parseInt(e.getAttribute("room"))).findAny().orElse(null);
 					if(e.hasAttribute("label")) {
-						stairs = new Stairs(stairsRoom, Long.parseLong(e.getAttribute("label")), new Point(Double.parseDouble(e.getAttribute("x")),Double.parseDouble(e.getAttribute("y"))));
+						// stairs = new Stairs(stairsRoom, Long.parseLong(e.getAttribute("label")), new Point(Double.parseDouble(e.getAttribute("x")),Double.parseDouble(e.getAttribute("y"))));
+						
+						// Añadido por Nacho Palacio 2025-04-21.
+						long stairsId = Long.parseLong(e.getAttribute("label"));
+						stairsId = ElementIdMapper.convertToRangeId(stairsId, ElementIdMapper.CATEGORY_STAIRS);
+						stairs = new Stairs(stairsRoom, stairsId, new Point(Double.parseDouble(e.getAttribute("x")),Double.parseDouble(e.getAttribute("y"))));
 					}else {
-						stairs = new Stairs(stairsRoom, model.getNumStairs()+1, new Point(Double.parseDouble(e.getAttribute("x")),Double.parseDouble(e.getAttribute("y"))));
+						// stairs = new Stairs(stairsRoom, model.getNumStairs()+1, new Point(Double.parseDouble(e.getAttribute("x")),Double.parseDouble(e.getAttribute("y"))));
+						stairs = new Stairs(stairsRoom, model.getNextStairsId(), new Point(Double.parseDouble(e.getAttribute("x")),Double.parseDouble(e.getAttribute("y")))); // Añadido por Nacho Palacio 2025-04-21.
 					}
 					//Stairs stairs = new Stairs(null, model.getNumStairs()+1, new Point(Double.parseDouble(e.getAttribute("x")),Double.parseDouble(e.getAttribute("y"))));
 					if (!model.addStairs(stairs)) {
@@ -479,7 +510,17 @@ public class SVGParser {
 						//roomLabel += model.getNumRooms();
 //						r = (e.hasAttribute("room")) ? model.getRoom(Integer.parseInt(e.getAttribute("room"))) : r;
 						// Get item label
-						Long vertexLabel = (e.hasAttribute("label")) ? Long.parseLong(e.getAttribute("label")) : (long)model.getNumItems()+1;
+						// Long vertexLabel = (e.hasAttribute("label")) ? Long.parseLong(e.getAttribute("label")) : (long)model.getNumItems()+1;
+
+						// Añadido por Nacho Palacio 2025-04-21.
+						long vertexLabel;
+						if(e.hasAttribute("label")) {
+							vertexLabel = Long.parseLong(e.getAttribute("label"));
+							// Convertir al rango correcto para Item
+							vertexLabel = ElementIdMapper.convertToRangeId(vertexLabel, ElementIdMapper.CATEGORY_ITEM);
+						} else {
+							vertexLabel = model.getNextItemId();
+						}
 						//vertexLabel += model.getNumItems();
 						// Get item coordinates
 //						double itemX = Double.parseDouble(e.getAttribute("x"));
@@ -679,9 +720,14 @@ public class SVGParser {
 						String[] arrayDoor = connectedDoor.split("_");
 						long labelDoor = Long.valueOf(arrayDoor[0]);
 						int labelRoom = Integer.valueOf(arrayDoor[1]);
+
+						// Añadido por Nacho Palacio 2025-04-21.
+						labelDoor = ElementIdMapper.convertToRangeId(labelDoor, ElementIdMapper.CATEGORY_DOOR);
+						long roomId = ElementIdMapper.convertToRangeId(labelRoom, ElementIdMapper.CATEGORY_ROOM);
 										
 						//Room room = model.getRooms().stream().filter(r -> r.getLabel() == labelRoom).findAny().orElse(null);
-						Room room = model.getRoom(labelRoom);
+						// Room room = model.getRoom(labelRoom);
+						Room room = model.getRoom((int)roomId);
 						if(room != null) {
 							Door d2 = room.getDoor(labelDoor);
 							// Add connection (connectTo creates a connection for both doors)
@@ -695,6 +741,8 @@ public class SVGParser {
 					for(int i = 1; i <= numConnectedStairs; i++) {								
 						String connectedStairs = e.getAttribute("connectedStairs_"+i);
 						long label = Long.parseLong(connectedStairs);
+
+						label = ElementIdMapper.convertToRangeId(label, ElementIdMapper.CATEGORY_STAIRS); // Añadido por Nacho Palacio 2025-04-21.
 									
 						Stairs s = model.getStairs(label);
 //						d.connectTo(s);
@@ -712,6 +760,8 @@ public class SVGParser {
 										
 						String connectedStairs = e.getAttribute("connectedStairs_"+i);
 						long label = Long.parseLong(connectedStairs);
+
+						label = ElementIdMapper.convertToRangeId(label, ElementIdMapper.CATEGORY_STAIRS); // Añadido por Nacho Palacio 2025-04-21.
 									
 						Stairs s2 = model.getStairs(label);
 						s.connectTo(s2);
