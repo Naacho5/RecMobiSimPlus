@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.Random;
 
 import es.unizar.gui.Configuration;
+import es.unizar.util.ElementIdMapper;
 import es.unizar.util.Literals;
 
 /**
@@ -31,28 +32,69 @@ public class DataAccessGraphFile extends DataAccess {
 		return Integer.valueOf(getPropertyValue(Literals.NUMBER_ROOM)).intValue();
 	}
 
-	public int getRoom(int posRoom) {
-		return Integer.valueOf(getPropertyValue(Literals.ROOM + posRoom)).intValue();
+	// public int getRoom(int posRoom) {
+	// 	return Integer.valueOf(getPropertyValue(Literals.ROOM + posRoom)).intValue();
+	// }
+
+	// Modificado por Nacho Palacio 2025-04-22.
+	public long getRoom(int posRoom) {
+		int rawId = Integer.valueOf(getPropertyValue(Literals.ROOM + posRoom)).intValue();
+		return ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_ROOM);
 	}
 
 	public int getNumberOfItemsByRoom(int posRoom) {
 		return Integer.valueOf(getPropertyValue(Literals.NUMBER_ITEMS_BY_ROOM + posRoom)).intValue();
 	}
 
+	// public long getItemOfRoom(int posItem, int posRoom) {
+	// 	return Long.valueOf(getPropertyValue(Literals.ITEM_OF_ROOM + posItem + "_" + posRoom)).longValue();
+	// }
+
+	// Modificado por Nacho Palacio 2025-04-22.
 	public long getItemOfRoom(int posItem, int posRoom) {
-		return Long.valueOf(getPropertyValue(Literals.ITEM_OF_ROOM + posItem + "_" + posRoom)).longValue();
+		String itemId = getPropertyValue(Literals.ITEM_OF_ROOM + posItem + "_" + posRoom);
+		if (itemId == null || itemId.isEmpty()) {
+			return -1;
+		}
+		
+		long rawId = Long.valueOf(itemId).longValue();
+		return ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_ITEM);
 	}
 
 	public int getNumberOfDoorsByRoom(int posRoom) {
 		return Integer.valueOf(getPropertyValue(Literals.NUMBER_DOORS_BY_ROOM + posRoom)).intValue();
 	}
 
-	public long getDoorOfRoom(int posDoor, int posRoom) {
-		return Long.valueOf(getPropertyValue(Literals.DOOR_OF_ROOM + posDoor + "_" + posRoom)).longValue();
+	// public long getDoorOfRoom(int posDoor, int posRoom) {
+	// 	return Long.valueOf(getPropertyValue(Literals.DOOR_OF_ROOM + posDoor + "_" + posRoom)).longValue();
+	// }
+
+	// Modificado por Nacho Palacio 2025-04-22.
+	public long getDoorOfRoom(int door, int room) {
+		String doorId = getPropertyValue(Literals.DOOR + door + "_" + room);
+		if (doorId == null || doorId.isEmpty()) {
+			return -1;
+		}
+		
+		long rawId = Long.parseLong(doorId);
+		long internalId = ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_DOOR);
+		System.out.println("GraphFile: Convirtiendo Door ID externo " + rawId + " a interno " + internalId);
+		return internalId;
 	}
 
+	// public long getDoorOfRoom(String door) {
+	// 	return Long.valueOf(getPropertyValue(door)).longValue();
+	// }
+
+	// Modificado por Nacho Palacio 2025-04-22.
 	public long getDoorOfRoom(String door) {
-		return Long.valueOf(getPropertyValue(door)).longValue();
+		String doorId = getPropertyValue(door);
+		if (doorId == null || doorId.isEmpty()) {
+			return -1;
+		}
+		
+		long rawId = Long.valueOf(doorId).longValue();
+		return ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_DOOR);
 	}
 
 	public int getNumberOfConnectedDoor() {
@@ -67,12 +109,34 @@ public class DataAccessGraphFile extends DataAccess {
 		return Integer.valueOf(getPropertyValue(Literals.NUMBER_STAIRS_BY_MAP)).intValue();
 	}
 
+	// public long getStairsOfRoom(int pos) {
+	// 	return Long.valueOf(getPropertyValue(Literals.STAIRS_OF_ROOM + pos)).longValue();
+	// }
+
+	// Modificado por Nacho Palacio 2025-04-22.
 	public long getStairsOfRoom(int pos) {
-		return Long.valueOf(getPropertyValue(Literals.STAIRS_OF_ROOM + pos)).longValue();
+		String stairsId = getPropertyValue(Literals.STAIRS_OF_ROOM + pos);
+		if (stairsId == null || stairsId.isEmpty()) {
+			return -1;
+		}
+		
+		long rawId = Long.valueOf(stairsId).longValue();
+		return ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_STAIRS);
 	}
 
+	// public long getStairsOfRoom(String stairs) {
+	// 	return Long.valueOf(getPropertyValue(stairs)).longValue();
+	// }
+
+	// Modificado por Nacho Palacio 2025-04-22.
 	public long getStairsOfRoom(String stairs) {
-		return Long.valueOf(getPropertyValue(stairs)).longValue();
+		String stairsId = getPropertyValue(stairs);
+		if (stairsId == null || stairsId.isEmpty()) {
+			return -1;
+		}
+		
+		long rawId = Long.valueOf(stairsId).longValue();
+		return ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_STAIRS);
 	}
 
 	public int getNumberOfConnectedDoorStairs() {
@@ -157,12 +221,34 @@ public class DataAccessGraphFile extends DataAccess {
 		return Integer.valueOf(getPropertyValue(Literals.NUMBER_DOORS_BY_SUBROOM + posSubroom + "_" + posRoom)).intValue();
 	}
 
+	// public long getDoorOfSubroom(int posDoor, int posSubroom, int posRoom) {
+	// 	return Long.valueOf(getPropertyValue(Literals.DOOR_OF_SUBROOM + posDoor + "_" + posSubroom + "_" + posRoom)).longValue();
+	// }
+
+	// Modificado por Nacho Palacio 2025-04-22.
 	public long getDoorOfSubroom(int posDoor, int posSubroom, int posRoom) {
-		return Long.valueOf(getPropertyValue(Literals.DOOR_OF_SUBROOM + posDoor + "_" + posSubroom + "_" + posRoom)).longValue();
+		String doorId = getPropertyValue(Literals.DOOR_OF_SUBROOM + posDoor + "_" + posSubroom + "_" + posRoom);
+		if (doorId == null || doorId.isEmpty()) {
+			return -1;
+		}
+		
+		long rawId = Long.valueOf(doorId).longValue();
+		return ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_DOOR);
 	}
 
+	// public long getDoorOfSubroom(String doorOfSubroom) {
+	// 	return Long.valueOf(getPropertyValue(doorOfSubroom)).longValue();
+	// }
+
+	// Modificado por Nacho Palacio 2025-04-22.
 	public long getDoorOfSubroom(String doorOfSubroom) {
-		return Long.valueOf(getPropertyValue(doorOfSubroom)).longValue();
+		String doorId = getPropertyValue(doorOfSubroom);
+		if (doorId == null || doorId.isEmpty()) {
+			return -1;
+		}
+		
+		long rawId = Long.valueOf(doorId).longValue();
+		return ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_DOOR);
 	}
 	
 	// Invisible doors for graph file -> simulator
@@ -170,12 +256,34 @@ public class DataAccessGraphFile extends DataAccess {
 		return Integer.valueOf(getPropertyValue(Literals.NUMBER_INVISIBLE_DOORS_BY_SUBROOM + posSubroom + "_" + posRoom)).intValue();
 	}
 
+	// public long getInvisibleDoorOfSubroom(int posInvisibleDoor, int posSubroom, int posRoom) {
+	// 	return Long.valueOf(getPropertyValue(Literals.INVISIBLE_DOOR_OF_SUBROOM + posInvisibleDoor + "_" + posSubroom + "_" + posRoom)).longValue();
+	// }
+
+	// Modificado por Nacho Palacio 2025-04-22.
 	public long getInvisibleDoorOfSubroom(int posInvisibleDoor, int posSubroom, int posRoom) {
-		return Long.valueOf(getPropertyValue(Literals.INVISIBLE_DOOR_OF_SUBROOM + posInvisibleDoor + "_" + posSubroom + "_" + posRoom)).longValue();
+		String doorId = getPropertyValue(Literals.INVISIBLE_DOOR_OF_SUBROOM + posInvisibleDoor + "_" + posSubroom + "_" + posRoom);
+		if (doorId == null || doorId.isEmpty()) {
+			return -1;
+		}
+		
+		long rawId = Long.valueOf(doorId).longValue();
+		return ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_DOOR);
 	}
 	
+	// public long getInvisibleDoorOfSubroom(String invisibleDoorOfSubroom) {
+	// 	return Long.valueOf(getPropertyValue(invisibleDoorOfSubroom)).longValue();
+	// }
+
+	// Modificado por Nacho Palacio 2025-04-22.
 	public long getInvisibleDoorOfSubroom(String invisibleDoorOfSubroom) {
-		return Long.valueOf(getPropertyValue(invisibleDoorOfSubroom)).longValue();
+		String doorId = getPropertyValue(invisibleDoorOfSubroom);
+		if (doorId == null || doorId.isEmpty()) {
+			return -1;
+		}
+		
+		long rawId = Long.valueOf(doorId).longValue();
+		return ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_DOOR);
 	}
 	
 	public int getNumberOfConnectedInvisibleDoor() {
@@ -213,7 +321,22 @@ public class DataAccessGraphFile extends DataAccess {
 		setPropertyValue(Literals.NUMBER_ITEMS_BY_ROOM + posRoom, Integer.toString(numberOfItems));
 	}
 
+	// public void setItemOfRoom(int posItem, int posRoom, String itemLabel) {
+	// 	setPropertyValue(Literals.ITEM_OF_ROOM + posItem + "_" + posRoom, itemLabel);
+	// }
+
+	// Modificado por Nacho Palacio 2025-04-22.
 	public void setItemOfRoom(int posItem, int posRoom, String itemLabel) {
+		try {
+			long id = Long.parseLong(itemLabel);
+			if (ElementIdMapper.isInCorrectRange(id, ElementIdMapper.CATEGORY_ITEM)) {
+				id = id - ElementIdMapper.ITEM_ID_START;
+				itemLabel = String.valueOf(id);
+			}
+		} catch (NumberFormatException e) {
+			// Don't do anything
+		}
+		
 		setPropertyValue(Literals.ITEM_OF_ROOM + posItem + "_" + posRoom, itemLabel);
 	}
 
@@ -221,8 +344,23 @@ public class DataAccessGraphFile extends DataAccess {
 		setPropertyValue(Literals.NUMBER_DOORS_BY_ROOM + posRoom, Integer.toString(numberOfDoors));
 	}
 
-	public void setDoorOfRoom(int posDoor, int posRoom, String doorLabel) {
-		setPropertyValue(Literals.DOOR_OF_ROOM + posDoor + "_" + posRoom, doorLabel);
+	// public void setDoorOfRoom(int posDoor, int posRoom, String doorLabel) {
+	// 	setPropertyValue(Literals.DOOR_OF_ROOM + posDoor + "_" + posRoom, doorLabel);
+	// }
+
+	// Modificado por Nacho Palacio 2025-04-22.
+	public void setDoorOfRoom(int door, int room, String doorId) {
+		try {
+			long id = Long.parseLong(doorId);
+			if (ElementIdMapper.isInCorrectRange(id, ElementIdMapper.CATEGORY_DOOR)) {
+				id = id - ElementIdMapper.DOOR_ID_START;
+				doorId = String.valueOf(id);
+			}
+		} catch (NumberFormatException e) {
+			// Don't do anything
+		}
+		
+		setPropertyValue(Literals.DOOR + door + "_" + room, doorId);
 	}
 
 	public void setNumberOfConnectedDoor(int numberOfConnectedDoor) {
@@ -237,7 +375,22 @@ public class DataAccessGraphFile extends DataAccess {
 		setPropertyValue(Literals.NUMBER_STAIRS_BY_MAP, Integer.toString(numberOfStairs));
 	}
 
+	// public void setStairsOfRoom(int pos, String stairsLabel) {
+	// 	setPropertyValue(Literals.STAIRS_OF_ROOM + pos, stairsLabel);
+	// }
+
+	// Modificado por Nacho Palacio 2025-04-22.
 	public void setStairsOfRoom(int pos, String stairsLabel) {
+		try {
+			long id = Long.parseLong(stairsLabel);
+			if (ElementIdMapper.isInCorrectRange(id, ElementIdMapper.CATEGORY_STAIRS)) {
+				id = id - ElementIdMapper.STAIRS_ID_START;
+				stairsLabel = String.valueOf(id);
+			}
+		} catch (NumberFormatException e) {
+			// Don't do anything
+		}
+		
 		setPropertyValue(Literals.STAIRS_OF_ROOM + pos, stairsLabel);
 	}
 
@@ -291,7 +444,22 @@ public class DataAccessGraphFile extends DataAccess {
 		setPropertyValue(Literals.NUMBER_DOORS_BY_SUBROOM + posSubroom + "_" + posRoom, Integer.toString(numberDoorsSubroom));
 	}
 
+	// public void setDoorOfSubroom(int posDoor, int posSubroom, int posRoom, String doorLabel) {
+	// 	setPropertyValue(Literals.DOOR_OF_SUBROOM + posDoor + "_" + posSubroom + "_" + posRoom, doorLabel);
+	// }
+
+	// Modificado por Nacho Palacio 2025-04-22.
 	public void setDoorOfSubroom(int posDoor, int posSubroom, int posRoom, String doorLabel) {
+		try {
+			long id = Long.parseLong(doorLabel);
+			if (ElementIdMapper.isInCorrectRange(id, ElementIdMapper.CATEGORY_DOOR)) {
+				id = id - ElementIdMapper.DOOR_ID_START;
+				doorLabel = String.valueOf(id);
+			}
+		} catch (NumberFormatException e) {
+			// Don't do anything
+		}
+		
 		setPropertyValue(Literals.DOOR_OF_SUBROOM + posDoor + "_" + posSubroom + "_" + posRoom, doorLabel);
 	}
 	
@@ -300,7 +468,22 @@ public class DataAccessGraphFile extends DataAccess {
 		setPropertyValue(Literals.NUMBER_INVISIBLE_DOORS_BY_SUBROOM + posSubroom + "_" + posRoom, Integer.toString(numberInvisibleDoorsSubroom));
 	}
 
+	// public void setInvisibleDoorOfSubroom(int posDoor, int posSubroom, int posRoom, String invisibleDoorLabel) {
+	// 	setPropertyValue(Literals.INVISIBLE_DOOR_OF_SUBROOM + posDoor + "_" + posSubroom + "_" + posRoom, invisibleDoorLabel);
+	// }
+
+	// Modificado por Nacho Palacio 2025-04-22.
 	public void setInvisibleDoorOfSubroom(int posDoor, int posSubroom, int posRoom, String invisibleDoorLabel) {
+		try {
+			long id = Long.parseLong(invisibleDoorLabel);
+			if (ElementIdMapper.isInCorrectRange(id, ElementIdMapper.CATEGORY_DOOR)) {
+				id = id - ElementIdMapper.DOOR_ID_START;
+				invisibleDoorLabel = String.valueOf(id);
+			}
+		} catch (NumberFormatException e) {
+			// Don't do anything
+		}
+		
 		setPropertyValue(Literals.INVISIBLE_DOOR_OF_SUBROOM + posDoor + "_" + posSubroom + "_" + posRoom, invisibleDoorLabel);
 	}
 	
@@ -386,6 +569,47 @@ public class DataAccessGraphFile extends DataAccess {
 				return getDoorOfSubroom(posDoor, sr, r);
 			}
 		}
+	}
+
+
+	/**
+	 * Método para verificar la conversión de IDs
+	 */
+	public void verifyIdConversion() {
+		System.out.println("\n=== VERIFICACIÓN DE CONVERSIÓN DE IDs EN DataAccessGraphFile ===");
+		
+		// Verificar conversión de IDs de habitaciones
+		if (getNumberOfRoom() > 0) {
+			System.out.println("Verificando IDs de habitaciones:");
+			for (int i = 1; i <= Math.min(3, getNumberOfRoom()); i++) {
+				long roomId = getRoom(i);
+				System.out.println("Room #" + i + ": ID interno " + roomId + 
+								", rango correcto: " + ElementIdMapper.isInCorrectRange(roomId, ElementIdMapper.CATEGORY_ROOM));
+				
+				// Verificar puertas en esta habitación
+				int numDoors = getNumberOfDoorsByRoom(i);
+				if (numDoors > 0) {
+					System.out.println("  Puertas en Room #" + i + ":");
+					for (int j = 1; j <= Math.min(2, numDoors); j++) {
+						long doorId = getDoorOfRoom(j, i);
+						System.out.println("    Door #" + j + ": ID interno " + doorId + 
+										", rango correcto: " + ElementIdMapper.isInCorrectRange(doorId, ElementIdMapper.CATEGORY_DOOR));
+					}
+				}
+			}
+		}
+		
+		// Verificar conversión de IDs de escaleras
+		if (getNumberOfStairs() > 0) {
+			System.out.println("\nVerificando IDs de escaleras:");
+			for (int i = 1; i <= Math.min(2, getNumberOfStairs()); i++) {
+				long stairsId = getStairsOfRoom(i);
+				System.out.println("Stairs #" + i + ": ID interno " + stairsId + 
+								", rango correcto: " + ElementIdMapper.isInCorrectRange(stairsId, ElementIdMapper.CATEGORY_STAIRS));
+			}
+		}
+		
+		System.out.println("====================================================\n");
 	}
 	
 }

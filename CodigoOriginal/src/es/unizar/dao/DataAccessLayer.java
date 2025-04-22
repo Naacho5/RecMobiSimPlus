@@ -36,10 +36,12 @@ import org.apache.mahout.cf.taste.common.TasteException;
 import es.unizar.database.DBConnection;
 import es.unizar.database.Database;
 import es.unizar.gui.Configuration;
+import es.unizar.util.ElementIdMapper;
 import es.unizar.util.Literals;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import es.unizar.util.ElementIdMapper;
 
 /**
  * Access to the data from a database. File taken from MOONRISE.jar (and optimized).
@@ -723,6 +725,9 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 	 * @return The item latitude.
 	 */
 	public long getItemLatitude(long itemID) {
+		// Añadido por Nacho Palacio 2025-04-22
+		long externalItemId = convertToExternalId(itemID, ElementIdMapper.CATEGORY_ITEM);
+
 		long latitude = 0;
 		ResultSet resultSet = null;
 		try {
@@ -730,7 +735,8 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 			// Query
 			PreparedStatement select = getConnection()
 					.prepareStatement("SELECT latitude_gps FROM item WHERE id_item= ?");
-			select.setInt(1, (int) itemID);
+			// select.setInt(1, (int) itemID);
+			select.setInt(1, (int) externalItemId); // Modificado por Nacho Palacio 2025-04-22
 			resultSet = select.executeQuery();
 			
 			latitude = resultSet.getInt(1);
@@ -750,6 +756,9 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 	 * @return The item longitude.
 	 */
 	public long getItemLongitude(long itemID) {
+		// Añadido por Nacho Palacio 2025-04-22
+		long externalItemId = convertToExternalId(itemID, ElementIdMapper.CATEGORY_ITEM);
+
 		long latitude = 0;
 		ResultSet resultSet = null;
 		try {
@@ -757,7 +766,8 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 			// Query
 			PreparedStatement select = getConnection()
 					.prepareStatement("SELECT longitude_gps FROM item WHERE id_item= ?");
-			select.setInt(1, (int) itemID);
+			// select.setInt(1, (int) itemID);
+			select.setInt(1, (int) externalItemId); // Modificado por Nacho Palacio 2025-04-22
 			resultSet = select.executeQuery();
 			
 			latitude = resultSet.getInt(1);
@@ -918,8 +928,14 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 			resultSet = select.executeQuery();
 			
 			while (resultSet.next()) {
-				long itemId = resultSet.getLong(1);
-				list.add(itemId);
+				// long itemId = resultSet.getLong(1);
+				// list.add(itemId);
+
+				// Modificado por Nacho Palacio 2025-04-22
+				long externalItemId = resultSet.getLong(1);
+				long internalItemId = convertToInternalId(externalItemId, ElementIdMapper.CATEGORY_ITEM);
+				System.out.println("DB: Convirtiendo Item ID externo " + externalItemId + " a interno " + internalItemId);
+				list.add(internalItemId);;
 			}
 			
 		} catch (SQLException e) {
@@ -1130,5 +1146,123 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 				System.out.println("No items found to add preferences for user " + userId);
 			}
 		}
+	}
+
+	// Añadido por Nacho Palacio 2025-04-22.
+	/**
+	 * Convierte un ID externo (de base de datos) a ID interno (usado en el modelo)
+	 * @param externalId ID almacenado en la base de datos
+	 * @param category Categoría del elemento (CATEGORY_ITEM, CATEGORY_DOOR, etc.)
+	 * @return ID interno en el rango correcto
+	 */
+	public long convertToInternalId(long externalId, int category) {
+		return ElementIdMapper.convertToRangeId(externalId, category);
+	}
+
+	/**
+	 * Convierte un ID interno (usado en el modelo) a ID externo (para almacenar en base de datos)
+	 * @param internalId ID utilizado en el modelo
+	 * @param category Categoría del elemento
+	 * @return ID externo para usar en la base de datos
+	 */
+	public long convertToExternalId(long internalId, int category) {
+		// Si el ID ya está en el rango correcto, extraer el ID base
+		if (ElementIdMapper.isInCorrectRange(internalId, category)) {
+			long rangeStart = 0;
+			switch (category) {
+				case ElementIdMapper.CATEGORY_ITEM:
+					rangeStart = ElementIdMapper.ITEM_ID_START;
+					break;
+				case ElementIdMapper.CATEGORY_DOOR:
+					rangeStart = ElementIdMapper.DOOR_ID_START;
+					break;
+				case ElementIdMapper.CATEGORY_STAIRS:
+					rangeStart = ElementIdMapper.STAIRS_ID_START;
+					break;
+				case ElementIdMapper.CATEGORY_ROOM:
+					rangeStart = ElementIdMapper.ROOM_ID_START;
+					break;
+				case ElementIdMapper.CATEGORY_CORNER:
+					rangeStart = ElementIdMapper.CORNER_ID_START;
+					break;
+				case ElementIdMapper.CATEGORY_SEPARATOR:
+					rangeStart = ElementIdMapper.SEPARATOR_ID_START;
+					break;
+			}
+			
+			// Extraer el ID base, asegurando un valor mínimo de 1
+			long baseId = internalId - rangeStart;
+			return baseId > 0 ? baseId : 1;
+		}
+		
+		// Si no está en el rango correcto, devolverlo tal cual
+		return internalId;
+	}
+
+	/**
+	 * Convierte una lista de IDs externos a sus equivalentes internos
+	 * @param externalIds Lista de IDs externos
+	 * @param category Categoría de los elementos
+	 * @return Lista de IDs internos en los rangos correctos
+	 */
+	public List<Long> convertToInternalIds(List<Long> externalIds, int category) {
+		List<Long> internalIds = new ArrayList<>(externalIds.size());
+		for (Long externalId : externalIds) {
+			internalIds.add(convertToInternalId(externalId, category));
+		}
+		return internalIds;
+	}
+
+	/**
+	 * Convierte una lista de IDs internos a sus equivalentes externos
+	 * @param internalIds Lista de IDs internos
+	 * @param category Categoría de los elementos
+	 * @return Lista de IDs externos para usar en la base de datos
+	 */
+	public List<Long> convertToExternalIds(List<Long> internalIds, int category) {
+		List<Long> externalIds = new ArrayList<>(internalIds.size());
+		for (Long internalId : internalIds) {
+			externalIds.add(convertToExternalId(internalId, category));
+		}
+		return externalIds;
+	}
+
+
+	/**
+	 * Método para verificar la conversión de IDs en la capa de acceso a datos
+	 */
+	public void verifyIdConversion() {
+		System.out.println("\n=== VERIFICACIÓN DE CONVERSIÓN DE IDs EN DataAccessLayer ===");
+		
+		// Crear algunos IDs de prueba
+		long externalItemId = 25;  // ID externo de ejemplo
+		long internalItemId = convertToInternalId(externalItemId, ElementIdMapper.CATEGORY_ITEM);
+		
+		System.out.println("Item: externo " + externalItemId + " -> interno " + internalItemId + 
+						" -> convertido de nuevo " + convertToExternalId(internalItemId, ElementIdMapper.CATEGORY_ITEM));
+		
+		// Verificar conversión en getItemsOrderByRoom
+		List<Long> items = getItemsOrderByRoom();
+		if (!items.isEmpty()) {
+			System.out.println("\nVerificando IDs de ítems obtenidos por getItemsOrderByRoom:");
+			for (int i = 0; i < Math.min(5, items.size()); i++) {
+				long itemId = items.get(i);
+				long externalId = convertToExternalId(itemId, ElementIdMapper.CATEGORY_ITEM);
+				System.out.println("Item #" + i + ": ID interno " + itemId + 
+								", ID externo " + externalId + 
+								", rango correcto: " + ElementIdMapper.isInCorrectRange(itemId, ElementIdMapper.CATEGORY_ITEM));
+			}
+		}
+		
+		// Verificar conversión en otras funciones
+		System.out.println("\nPrueba de getItemLatitude con conversión de ID:");
+		if (!items.isEmpty()) {
+			long itemId = items.get(0);
+			long latitude = getItemLatitude(itemId);
+			System.out.println("Item ID " + itemId + " (externo: " + convertToExternalId(itemId, ElementIdMapper.CATEGORY_ITEM) + 
+							") tiene latitud: " + latitude);
+		}
+		
+		System.out.println("====================================================\n");
 	}
 }

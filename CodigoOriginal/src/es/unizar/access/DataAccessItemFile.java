@@ -1,11 +1,13 @@
 package es.unizar.access;
 
+import es.unizar.util.ElementIdMapper;
 import es.unizar.util.Literals;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Properties;
+import es.unizar.util.ElementIdMapper;
 
 /**
  * Access to the values of the properties stored in the floor files. Getters and setters.
@@ -43,8 +45,16 @@ public class DataAccessItemFile extends DataAccess {
         return Integer.valueOf(getPropertyValue(Literals.VERTEX_DIMENSION_WIDTH)).intValue();
     }
 
-    public int getItemID(int position) {
-        return Integer.valueOf(getPropertyValue(Literals.ITEM_ID + position)).intValue();
+    // public int getItemID(int position) {
+    //     return Integer.valueOf(getPropertyValue(Literals.ITEM_ID + position)).intValue();
+    // }
+
+    // Modificado por Nacho Palacio 2025-04-22.
+    public long getItemID(int position) {
+        int rawId = Integer.valueOf(getPropertyValue(Literals.ITEM_ID + position)).intValue();
+        long internalId = ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_ITEM);
+        System.out.println("ItemFile: Convirtiendo ID externo " + rawId + " a interno " + internalId);
+        return internalId;
     }
 
     public String getItemTitle(int position) {
@@ -175,8 +185,17 @@ public class DataAccessItemFile extends DataAccess {
     	setPropertyValue(Literals.VERTEX_DIMENSION_WIDTH, Integer.toString(width));
     }
 
-    public void setItemID(int position, int id) {
-        setPropertyValue(Literals.ITEM_ID + position, Integer.toString(id));
+    // public void setItemID(int position, int id) {
+    //     setPropertyValue(Literals.ITEM_ID + position, Integer.toString(id));
+    // }
+
+    // Modificado por Nacho Palacio 2025-04-22.
+    public void setItemID(int position, long id) {
+        long baseId = (id % ElementIdMapper.ITEM_ID_START);
+        if (baseId == 0 && id >= ElementIdMapper.ITEM_ID_START) {
+            baseId = ElementIdMapper.ITEM_ID_START;
+        }
+        setPropertyValue(Literals.ITEM_ID + position, Long.toString(baseId));
     }
     
     public void setItemTitle(int position, String title) {
@@ -493,4 +512,82 @@ public class DataAccessItemFile extends DataAccess {
 	//-- END VISITABLE SETTERS																									--
 	//--------------------------------------------------------------------------------------------------------------------
     
+
+    /**
+     * Convierte un ID externo (almacenado en archivo) a ID interno (usado en el modelo)
+     * @param externalId ID almacenado en el archivo
+     * @param category Categoría del elemento (CATEGORY_ITEM, CATEGORY_DOOR, etc.)
+     * @return ID interno en el rango correcto
+     */
+    public static long externalToInternalId(int externalId, int category) {
+        return ElementIdMapper.convertToRangeId(externalId, category);
+    }
+
+    /**
+     * Convierte un ID interno (usado en el modelo) a ID externo (para almacenar en archivo)
+     * @param internalId ID utilizado en el modelo
+     * @param category Categoría del elemento (CATEGORY_ITEM, CATEGORY_DOOR, etc.)
+     * @return ID externo (sin el rango)
+     */
+    public static int internalToExternalId(long internalId, int category) {
+        if (!ElementIdMapper.isInCorrectRange(internalId, category)) {
+            internalId = ElementIdMapper.convertToRangeId(internalId, category);
+        }
+        
+        long rangeStart = 0;
+        switch (category) {
+            case ElementIdMapper.CATEGORY_ITEM:
+                rangeStart = ElementIdMapper.ITEM_ID_START;
+                break;
+            case ElementIdMapper.CATEGORY_DOOR:
+                rangeStart = ElementIdMapper.DOOR_ID_START;
+                break;
+            case ElementIdMapper.CATEGORY_STAIRS:
+                rangeStart = ElementIdMapper.STAIRS_ID_START;
+                break;
+            case ElementIdMapper.CATEGORY_ROOM:
+                rangeStart = ElementIdMapper.ROOM_ID_START;
+                break;
+            case ElementIdMapper.CATEGORY_CORNER:
+                rangeStart = ElementIdMapper.CORNER_ID_START;
+                break;
+            case ElementIdMapper.CATEGORY_SEPARATOR:
+                rangeStart = ElementIdMapper.SEPARATOR_ID_START;
+                break;
+        }
+        
+        int baseId = (int)(internalId - rangeStart);
+        if (baseId <= 0) {
+            baseId = 1;
+        }
+        
+        return baseId;
+    }
+
+    /**
+     * Método para verificar la conversión de IDs
+     */
+    public void verifyIdConversion() {
+        System.out.println("\n=== VERIFICACIÓN DE CONVERSIÓN DE IDs EN DataAccessItemFile ===");
+        
+        // Crear algunos IDs de prueba
+        int externalItemId = 42;  // ID externo de ejemplo
+        long internalItemId = externalToInternalId(externalItemId, ElementIdMapper.CATEGORY_ITEM);
+        
+        System.out.println("Item: externo " + externalItemId + " -> interno " + internalItemId + 
+                        " -> convertido de nuevo " + internalToExternalId(internalItemId, ElementIdMapper.CATEGORY_ITEM));
+        
+        // Verificar conversión de IDs existentes
+        if (getNumberOfItems() > 0) {
+            System.out.println("\nVerificando IDs de ítems existentes:");
+            for (int i = 1; i <= Math.min(5, getNumberOfItems()); i++) {
+                long itemId = getItemID(i);
+                int convertedBack = internalToExternalId(itemId, ElementIdMapper.CATEGORY_ITEM);
+                System.out.println("Item #" + i + ": ID interno " + itemId + 
+                                ", ID externo " + convertedBack);
+            }
+        }
+        
+        System.out.println("====================================================\n");
+    }
 }
