@@ -62,10 +62,12 @@ import es.unizar.util.DebugFilter;
 import es.unizar.util.DebugFormatter;
 import es.unizar.util.Distance;
 import es.unizar.util.DistancesBetweenUsersAndTime;
+import es.unizar.util.ElementIdMapper;
 import es.unizar.util.Literals;
 import es.unizar.util.Pair;
 import es.unizar.util.PredictedRatingsInfo;
 import es.unizar.util.Seed;
+import es.unizar.recommendation.path.RandomPath;
 
 /**
  * Configuration parameters of the simulation.
@@ -459,6 +461,66 @@ public class Simulation {
 		System.out.println("Generating non-special user paths...");
 		System.out.println("Path strategy: " + strategy.getClass().getSimpleName());
 		System.out.println("Output file: " + nonSpecialUserPaths);
+
+		// Añadido por Nacho Palacio 2025-04-22
+		// Si la estrategia es RandomPath, inicializar itemsByRoom con IDs internos
+		if (strategy instanceof RandomPath) {
+			System.out.println("Inicializando RandomPath con información de habitaciones e ítems...");
+			RandomPath randomPath = (RandomPath) strategy;
+			
+			try {
+				// Cargar ítems por habitación con IDs internos
+				Map<Integer, List<Long>> roomItems = new HashMap<>();
+				
+				// Para cada habitación, obtener sus ítems
+				for (int i = 1; i <= dataAccessGraphFile.getNumberOfRoom(); i++) {
+					List<Long> items = new LinkedList<>();
+					
+					// Obtener todos los ítems de la habitación actual
+					for (int j = 1; j <= dataAccessGraphFile.getNumberOfItemsByRoom(i); j++) {
+						// Obtenemos directamente el ID externo (sin convertir)
+						long itemId = dataAccessGraphFile.getItemOfRoom(j, i);
+						
+						// Si el ID es válido, lo añadimos a la lista
+						if (itemId > 0) {
+							items.add(itemId);
+							System.out.println("Añadiendo ítem " + itemId + " a habitación " + i);
+						}
+					}
+					
+					// Obtener también puertas y escaleras para esta habitación si es necesario
+					for (int j = 1; j <= dataAccessGraphFile.getNumberOfDoorsByRoom(i); j++) {
+						long doorId = dataAccessGraphFile.getDoorOfRoom(j, i);
+						if (doorId > 0) {
+							items.add(doorId);
+							System.out.println("Añadiendo puerta " + doorId + " a habitación " + i);
+						}
+					}
+					
+					// Si la habitación tiene escaleras
+					long stairsId = dataAccessGraphFile.getStairsOfRoom(i);
+					if (stairsId > 0) {
+						items.add(stairsId);
+						System.out.println("Añadiendo escaleras " + stairsId + " a habitación " + i);
+					}
+					
+					// Guardar la lista de ítems para esta habitación
+					if (!items.isEmpty()) {
+						roomItems.put(i, items);
+					}
+				}
+				
+				// Inicializar RandomPath con los ítems (mantiene IDs externos para compatibilidad)
+				// Usa la función de inicialización que debes añadir a RandomPath
+				randomPath.initializeItemsByRoom(roomItems);
+				
+				System.out.println("RandomPath inicializado con " + roomItems.size() + " habitaciones y sus ítems");
+				
+			} catch (Exception e) {
+				System.out.println("Error al inicializar RandomPath: " + e.getMessage());
+				e.printStackTrace();
+			}
+		}
 		
 		this.pathStrategyUsed = strategy;
 		
@@ -483,6 +545,14 @@ public class Simulation {
 				int start_item = random.nextInt((strategy.accessItemFile.getNumberOfItems() - 1) + 1) + 1;
 				if (start_item <= 0)
 					System.out.println("ERROR: " + start_item);
+
+				// Añadido por Nacho Palacio 2025-04-23
+				// Convertir a ID interno para coherencia
+				long internalStartItem = ElementIdMapper.convertToRangeId(start_item, ElementIdMapper.CATEGORY_ITEM);
+				System.out.println("Generando ruta para: ID externo " + start_item + " -> ID interno " + internalStartItem);
+
+
+				// Verificar que el ID interno esté en el rango correcto
 				int tryCount = 0;
 				while(strategy.generatePath(start_item).toString().isEmpty() && tryCount < 20) {
 					tryCount++;
@@ -490,8 +560,12 @@ public class Simulation {
 					if (start_item <= 0)
 						System.out.println("ERROR: " + start_item);
 				}
-				MainSimulator.printConsole("User generated path: " + (i + 1) + "; " + "Starting point: " + start_item, Level.INFO);
-				pw.writeBytes(strategy.generatePath(start_item) + "\n");
+				// MainSimulator.printConsole("User generated path: " + (i + 1) + "; " + "Starting point: " + start_item, Level.INFO);
+				// pw.writeBytes(strategy.generatePath(start_item) + "\n");
+
+				// Modificado por Nacho Palacio 2025-04-23
+				MainSimulator.printConsole("User generated path: " + (i + 1) + "; " + "Starting point interno: " + internalStartItem + " (externo: " + start_item + ")", Level.INFO);
+				pw.writeBytes(strategy.generatePath(internalStartItem) + "\n");
 			}
 		} catch (IOException e) {
 			log.log(Level.SEVERE, "IOException: \n" + e);
@@ -653,6 +727,27 @@ public class Simulation {
 						//System.out.println("Executing: NPOI (not exception)");
 						throw new Exception("Debe ejecutarse solo NPOI");
 					}
+				}
+			}
+
+			/* Añadido por Nacho Palacio 2025-04-16. */
+			if (currentPath == null) {
+				log.log(Level.WARNING, "Generated path is null for user " + currentUser.userID + ". Using default path.");
+				
+				if (!(pathStrategy instanceof NearestPath)) {
+					pathStrategy = new NearestPath();
+				}
+				
+				if (finishPath) {
+					currentPath = pathStrategy.generatePath(endVertex);
+				} else {
+					currentPath = pathStrategy.generatePath(startVertex);
+				}
+				
+				// Si aún así el camino es nulo, usar un camino vacío
+				if (currentPath == null) {
+					log.log(Level.SEVERE, "Failed to generate default path. Using empty path.");
+					currentPath = "";
 				}
 			}
 

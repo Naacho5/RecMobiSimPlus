@@ -295,6 +295,7 @@ public class GraphForSpecialUser {
 	 */
 	public int getRoomFromItem(long startVertex) {
 		int numberOfRooms = accessGraphFile.getNumberOfRoom();
+		System.out.println("GraphForSpecialUser: getRoomFromItem: numberOfRooms = " + numberOfRooms);
 		int currentRoom = 0;
 		// Si startVertex es un item o una puerta
 		for (int i = 1; i <= numberOfRooms;) {

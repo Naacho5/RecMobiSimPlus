@@ -21,7 +21,7 @@ import es.unizar.editor.model.Stairs;
 public class ElementIdMapper {
     
     // Rangos de IDs por tipo de elemento
-    public static final long ROOM_ID_START = 1;          // 1-999
+    public static final long ROOM_ID_START = 0;          // 1-999
     public static final long ITEM_ID_START = 1000;       // 1000-1999
     public static final long DOOR_ID_START = 2000;       // 2000-2999
     public static final long STAIRS_ID_START = 3000;     // 3000-3999
@@ -361,6 +361,29 @@ public class ElementIdMapper {
                 return id >= SEPARATOR_ID_START;
             default:
                 return false;
+        }
+    }
+
+    /**
+     * Obtiene el ID base (externo) a partir de un ID interno
+     * @param internalId ID interno del elemento
+     * @return ID base (externo) del elemento
+     */
+    public static long getBaseId(long internalId) {
+        // Para cada categoría, obtener el ID base restando el offset correspondiente
+        if (internalId >= ITEM_ID_START && internalId < DOOR_ID_START) {
+            return internalId - ITEM_ID_START;
+        } else if (internalId >= DOOR_ID_START && internalId < STAIRS_ID_START) {
+            return internalId - DOOR_ID_START;
+        } else if (internalId >= STAIRS_ID_START && internalId < CORNER_ID_START) {
+            return internalId - STAIRS_ID_START;
+        } else if (internalId >= CORNER_ID_START && internalId < SEPARATOR_ID_START) {
+            return internalId - CORNER_ID_START;
+        } else if (internalId >= SEPARATOR_ID_START) {
+            return internalId - SEPARATOR_ID_START;
+        } else {
+            // Para habitaciones o IDs desconocidos, devolver tal cual
+            return internalId;
         }
     }
 }
