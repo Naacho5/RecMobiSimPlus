@@ -49,6 +49,7 @@ public class UserRunnable implements Runnable { // , Cloneable
 
 	@Override
 	public void run() {
+		System.out.println("***DEBUG-UserRunnable: Iniciando thread de simulación"); // Añadido por Nacho Palacio 2025-04-24
 		
 		/* Logger configuration */
 		log.setUseParentHandlers(false);
@@ -115,12 +116,22 @@ public class UserRunnable implements Runnable { // , Cloneable
 				}
 
 				// It initializes the initial position of users.
+				System.out.println("***DEBUG-UserRunnable: Antes de initializeUsers()"); // Añadido por Nacho Palacio 2025-04-24 
+
 				Configuration.simulation.initializeUsers();
+
+				System.out.println("***DEBUG-UserRunnable: Después de initializeUsers(), tamaño de userList: " + 
+                  (Configuration.simulation.userList != null ? Configuration.simulation.userList.size() : "NULL")); // Añadido por Nacho Palacio 2025-04-24
+
 				// UserRunnable "user" list is null; Same for MainMuseumSimulator
 				MainSimulator.floor.addUsersToFloorGraph(Configuration.simulation.userList);
+
+				System.out.println("***DEBUG-UserRunnable: Después de addUsersToFloorGraph"); // 
 				
 				if (MainSimulator.gui.isSelected()) {
+					System.out.println("***DEBUG-UserRunnable: Antes de repaint()"); // Añadido por Nacho Palacio 2025-04-24
 					repaint();
+					System.out.println("***DEBUG-UserRunnable: Después de repaint()"); // Añadido por Nacho Palacio 2025-04-24
 				}
 				
 				if (Literals.COMPILE_DISTANCES_STATS) {
@@ -131,6 +142,8 @@ public class UserRunnable implements Runnable { // , Cloneable
 				
 				// Print time when finished initializing users and dbs
 				Configuration.simulation.currentTime();
+
+				System.out.println("***DEBUG-UserRunnable: Finalizada inicialización (firstTime)"); // Añadido por Nacho Palacio 2025-04-24
 				
 			} else {
 				

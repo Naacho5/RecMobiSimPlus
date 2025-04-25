@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -21,6 +22,7 @@ import es.unizar.access.DataAccessRoomFile;
 import es.unizar.gui.Configuration;
 import es.unizar.gui.MainSimulator;
 import es.unizar.util.Distance;
+import es.unizar.util.ElementIdMapper;
 import es.unizar.util.Literals;
 
 /**
@@ -220,6 +222,11 @@ public class GraphForSpecialUser {
 	 * @throws IOException
 	 */
 	public void getPathsFromFile() {
+		// Añadido por Nacho Palacio 2025-04-24
+		System.out.println("***DEBUG: Entrando en getPathsFromFile()");
+		System.out.println("***DEBUG: Intentando cargar rutas desde: " + Configuration.simulation.getNonSpecialUserPaths());
+		File pathFile = new File(Configuration.simulation.getNonSpecialUserPaths());
+		System.out.println("***DEBUG: El archivo existe: " + pathFile.exists() + ", tamaño: " + (pathFile.exists() ? pathFile.length() : "N/A"));
 		try {
 			// Load non-RS user paths:
 			String path = Configuration.simulation.getNonSpecialUserPaths();
@@ -227,14 +234,38 @@ public class GraphForSpecialUser {
 			BufferedReader br = new BufferedReader(new FileReader(new File(path)));
 			String line = null;
 			while ((line = br.readLine()) != null) {
-				String[] array = line.split(", ");
-				paths.add(Arrays.asList(array));
+
+				// Añadido por Nacho Palacio 2025-04-24
+				if (line.trim().isEmpty()) {
+					// Crear una ruta simple por defecto para líneas vacías
+					List<String> defaultPath = new ArrayList<>();
+					defaultPath.add("(1 : 2)");  // Arista ficticia mínima
+					paths.add(defaultPath);
+					System.out.println("***DEBUG: Línea vacía reemplazada con ruta por defecto");
+				}
+				else {
+					String[] array = line.split(", ");
+					// Convertir IDs externos a internos en las rutas leídas
+					List<String> internalPathEdges = new ArrayList<>();
+					for (String edge : array) {
+						if (!edge.trim().isEmpty()) {
+							internalPathEdges.add(convertEdgeIdsToInternal(edge));
+						}
+					}
+					paths.add(internalPathEdges);
+				}
+
+				// System.out.println("***DEBUG: Leyendo línea: '" + line + "', longitud: " + line.length()); // Añadido por Nacho Palacio 2025-04-24
+				// String[] array = line.split(", ");
+				// paths.add(Arrays.asList(array));
 			}
 			// Add RS user paths with null information:
 			for (int i = 0; i < Configuration.simulation.getNumberOfSpecialUser(); i++) {
 				paths.add(null);
+				System.out.println("***DEBUG: Añadida ruta nula para usuario RS #" + i); // Añadido por Nacho Palacio 2025-04-24
 			}
 			br.close();
+			System.out.println("***DEBUG: Total de rutas añadidas: " + paths.size()); // Añadido por Nacho Palacio 2025-04-24
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -320,5 +351,35 @@ public class GraphForSpecialUser {
 			i++;
 		}
 		return currentRoom;
+	}
+
+	// Añadido por Nacho Palacio 2025-04-24
+	private String convertEdgeIdsToInternal(String edge) {
+		String[] vertices = edge.replace("(", "").replace(")", "").split(" : ");
+		if (vertices.length == 2) {
+			long v1 = Long.parseLong(vertices[0]);
+			long v2 = Long.parseLong(vertices[1]);
+			
+			// Obtener valores directamente
+			int numberOfItems = accessItemFile.getNumberOfItems();
+			
+			// Convertir a IDs internos si son externos
+			if (v1 > 0 && v1 <= numberOfItems) {
+				v1 = ElementIdMapper.convertToRangeId(v1, ElementIdMapper.CATEGORY_ITEM);
+			} else if (v1 > numberOfItems) {
+				// Asumir que es una puerta
+				v1 = ElementIdMapper.convertToRangeId(v1, ElementIdMapper.CATEGORY_DOOR);
+			}
+			
+			if (v2 > 0 && v2 <= numberOfItems) {
+				v2 = ElementIdMapper.convertToRangeId(v2, ElementIdMapper.CATEGORY_ITEM);
+			} else if (v2 > numberOfItems) {
+				// Asumir que es una puerta
+				v2 = ElementIdMapper.convertToRangeId(v2, ElementIdMapper.CATEGORY_DOOR);
+			}
+			
+			return "(" + v1 + " : " + v2 + ")";
+		}
+		return edge;
 	}
 }

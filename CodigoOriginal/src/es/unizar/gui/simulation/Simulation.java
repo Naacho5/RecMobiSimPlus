@@ -411,11 +411,16 @@ public class Simulation {
 	 * 
 	 */
 	public void initializeUsers() {
+		System.out.println("***DEBUG-Simulation: Iniciando initializeUsers()"); // Añadido por Nacho Palacio 2025-04-24
+
 		MainSimulator.printConsole("Initializing users: ", Level.WARNING);
 		System.out.println("Total users: " + userList.size()); // Depuración: Verificar el número total de usuarios
 		// Get the non-special and RS user paths. The non-RS user path is obtained from generated path file (e.g., nearest_non_special_user_paths.txt), by using the strategy (Nearest,
 		// Random or Exhaustive) specified in the Configuration form. While the RS user path (initially null) is generated with the recommender specified in the Configuration form.
+		
+		System.out.println("***DEBUG: Comprobando llamada a getPathsFromFile()"); // Añadido por Nacho Palacio 2025-04-24
 		graphSpecialUser.getPathsFromFile();
+		System.out.println("***DEBUG: Después de getPathsFromFile(), tamaño de paths: " + graphSpecialUser.paths.size()); // Añadido por Nacho Palacio 2025-04-24
 
 		String edge = null;
 		for (int i = 0; i < userList.size(); i++) {
@@ -426,13 +431,26 @@ public class Simulation {
 				System.out.println("User " + (i + 1) + " is a special user."); // Depuración: Usuario especial
 				// Gets the randomly door where RS users will enter.
 				long startVertex = dataAccessGraphFile.getRandomDoor();
+				System.out.println("***DEBUG: Puerta inicial aleatoria: " + startVertex); // Añadido por Nacho Palacio 2025-04-24
 				// The RS user path is updated with the hybrid recommendation algorithm.
 				//System.out.println(currentUser.userID);
 				updateSpecialUserPath(startVertex, startVertex, false, 0, false, currentUser);
+				System.out.println("***DEBUG: Después de updateSpecialUserPath para usuario " + currentUser.userID); // Añadido por Nacho Palacio 2025-04-24
 			}
-
+			System.out.println("***DEBUG: Intentando obtener ruta para usuario " + (i + 1)); // Añadido por Nacho Palacio 2025-04-24
 			// Get the current non-RS user path.
 			path = graphSpecialUser.paths.get(i);
+			System.out.println("***DEBUG: Ruta obtenida para usuario " + (i + 1) + ", tamaño: " + (path != null ? path.size() : "null")); // Añadido por Nacho Palacio 2025-04-24
+
+			// Añadido por Nacho Palacio 2025-04-24
+			if (path == null || path.isEmpty() || (path.size() == 1 && path.get(0).isEmpty())) {
+				System.out.println("ADVERTENCIA: Ruta vacía o inválida para usuario " + (i + 1) + ". Generando ruta sencilla por defecto.");
+				// Crear una ruta simple por defecto
+				path = new ArrayList<>();
+				path.add("(1 : 2)");  // Arista ficticia mínima
+				graphSpecialUser.paths.set(i, path);
+			}
+
 			// System.out.println("Path of user " + (i + 1) + ": " + path); // Depuración: Verificar la ruta del usuario
 			MainSimulator.printConsole("Path of user " + (i + 1) + ": " + path, Level.WARNING);
 			// Get the current edge.
@@ -565,7 +583,18 @@ public class Simulation {
 
 				// Modificado por Nacho Palacio 2025-04-23
 				MainSimulator.printConsole("User generated path: " + (i + 1) + "; " + "Starting point interno: " + internalStartItem + " (externo: " + start_item + ")", Level.INFO);
-				pw.writeBytes(strategy.generatePath(internalStartItem) + "\n");
+				// pw.writeBytes(strategy.generatePath(internalStartItem) + "\n");
+
+				System.out.println("Intentando generar ruta con start_item=" + start_item); // Añadido por Nacho Palacio 2025-04-25
+				// Modificado por Nacho Palacio 2025-04-24
+				String generatedPath = strategy.generatePath(internalStartItem);
+
+				System.out.println("Ruta generada: '" + generatedPath + "', longitud=" + generatedPath.length()); // Añadido por Nacho Palacio 2025-04-25
+				// Convertir todos los IDs internos a externos en el path antes de guardar
+				generatedPath = convertPathIdsToExternal(generatedPath);
+
+				System.out.println("Escribiendo ruta en archivo: '" + generatedPath + "'"); // Añadido por Nacho Palacio 2025-04-25
+				pw.writeBytes(generatedPath + "\n");
 			}
 		} catch (IOException e) {
 			log.log(Level.SEVERE, "IOException: \n" + e);
@@ -2812,5 +2841,42 @@ public class Simulation {
 		else {
 			return false;
 		}
+	}
+
+	// Añadido por Nacho Palacio 2025-04-24
+	private String convertPathIdsToExternal(String path) {
+		if (path == null || path.isEmpty())
+			return path;
+			
+		StringBuilder externalPath = new StringBuilder();
+		String[] edges = path.split(", ");
+		
+		for (String edge : edges) {
+			if (edge.trim().isEmpty())
+				continue;
+				
+			String[] vertices = cleanEdge(edge);
+			if (vertices.length == 2) {
+				long v1 = Long.parseLong(vertices[0]);
+				long v2 = Long.parseLong(vertices[1]);
+				
+				// Convertir a IDs externos si son internos
+				if (ElementIdMapper.isInCorrectRange(v1, ElementIdMapper.CATEGORY_ITEM)) {
+					v1 = ElementIdMapper.getBaseId(v1);
+				} else if (ElementIdMapper.isInCorrectRange(v1, ElementIdMapper.CATEGORY_DOOR)) {
+					v1 = ElementIdMapper.getBaseId(v1);
+				}
+				
+				if (ElementIdMapper.isInCorrectRange(v2, ElementIdMapper.CATEGORY_ITEM)) {
+					v2 = ElementIdMapper.getBaseId(v2);
+				} else if (ElementIdMapper.isInCorrectRange(v2, ElementIdMapper.CATEGORY_DOOR)) {
+					v2 = ElementIdMapper.getBaseId(v2);
+				}
+				
+				externalPath.append("(").append(v1).append(" : ").append(v2).append("), ");
+			}
+		}
+		
+		return externalPath.toString();
 	}
 }

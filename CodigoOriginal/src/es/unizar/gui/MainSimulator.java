@@ -670,12 +670,25 @@ public class MainSimulator {
 		startMenuItem = new JMenuItem("Start");
 		startMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
+				System.out.println("***DEBUG-MainSimulator: Botón Start pulsado"); // Añadido por Nacho Palacio 2025-04-24
 				printConsole("Simulation started", Level.WARNING);
 				// Create and execute the threads.
 				reloadInfoTables();
+
+				System.out.println("***DEBUG-MainSimulator: Antes de crear UserRunnable"); // Añadido por Nacho Palacio 2025-04-24
+
 				userRunnable = new UserRunnable(user,stateOfUsers,timeUsersInRooms);
+
+				System.out.println("***DEBUG-MainSimulator: UserRunnable creado"); // Añadido por Nacho Palacio 2025-04-24
+
+				System.out.println("***DEBUG-MainSimulator: Antes de crear Thread"); // Añadido por Nacho Palacio 2025-04-24
+
 				userRunnableThread = new Thread(userRunnable);
 				
+				System.out.println("***DEBUG-MainSimulator: Thread creado"); // Añadido por Nacho Palacio 2025-04-24
+
+				
+
 				try {
 					if(db.isConnected() && db.getLoadedMapName() != null && db.getMap(db.getLoadedMapName()).next()) {
 						RegisterSimInDB regSim = new RegisterSimInDB(frmSimulator);
@@ -686,7 +699,11 @@ public class MainSimulator {
 					e.printStackTrace();
 				}
 				
+				System.out.println("***DEBUG-MainSimulator: Antes de iniciar Thread"); // Añadido por Nacho Palacio 2025-04-24
+
 				userRunnableThread.start();
+
+				System.out.println("***DEBUG-MainSimulator: Thread iniciado"); // Añadido por Nacho Palacio 2025-04-24
 				if (gui.isSelected())
 					UserRunnable.repaint();
 				

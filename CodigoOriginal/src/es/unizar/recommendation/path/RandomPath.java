@@ -24,6 +24,7 @@ public class RandomPath extends Path {
 	@SuppressWarnings("unchecked")
 	@Override
 	public String generatePath(long startVertex) {
+		System.out.println("***DEBUG-RandomPath: Inicio de generatePath con startVertex=" + startVertex); // Añadido por Nacho Palacio 2025-04-24.
 
 		// Añadido por Nacho Palacio 2025-04-23.
 		// Verificar si el startVertex está en el formato interno correcto
@@ -54,11 +55,17 @@ public class RandomPath extends Path {
 
 		// Get the room to which the item (or non-RS user) belongs.
 		int room = getRoomFromItem(startVertex);
+
+		System.out.println("***DEBUG-RandomPath: Obtenida habitación " + room + " para ítem " + startVertex); // Añadido por Nacho Palacio 2025-04-24.
+		
 		roomVisited.add(room);
 		// Get the items (sculptures, paintings and doors) from a specified room.
 		Map<Object, Object> itemsDoorVisited_cloned = itemsDoorVisited.entrySet().stream()
 				.collect(Collectors.toMap(e -> e.getKey(), e -> new LinkedList<Object>(e.getValue())));
 		LinkedList<Long> itemsByRoom = (LinkedList<Long>) itemsDoorVisited_cloned.get(room);
+
+		System.out.println("***DEBUG-RandomPath: itemsByRoom para room=" + room + " tiene " + 
+                  (itemsByRoom != null ? itemsByRoom.size() : "NULL") + " ítems"); // Añadido por Nacho Palacio 2025-04-24.
 		
 		// Añadido por Nacho Palacio 2025-04-22.
 		// Verify null value
@@ -67,6 +74,18 @@ public class RandomPath extends Path {
             itemsByRoom = new LinkedList<>();
             itemsDoorVisited_cloned.put(room, itemsByRoom);
         }
+
+		// Añadido por Nacho Palacio 2025-04-25.
+		if (itemsByRoom != null && itemsByRoom.size() == 1 && itemsByRoom.contains(startVertex)) {
+			System.out.println("***DEBUG-RandomPath: El ítem inicial " + startVertex + 
+						   " es el único disponible en la habitación " + room + 
+						   ". Generando una ruta mínima.");
+			// Generar una ruta mínima con el ítem mismo
+			finalPath = "(" + startVertex + " : " + startVertex + "), ";
+			System.out.println("***DEBUG-RandomPath: Finalizado generatePath con " + 
+							 (finalPath.length() >= 2 ? finalPath.length() : 0) + " caracteres");
+			return finalPath.substring(0, finalPath.length() - 2); // Eliminar la coma final
+		}
 
 		itemsByRoom.remove(startVertex);
 		itemToVisit = startVertex;
@@ -112,10 +131,18 @@ public class RandomPath extends Path {
 					// If the next item to visit is a door or stairs (range: 241-312):
 					// Get the connection of the current door.
 					long connectedDoor = getConnectedDoor(itemToVisit);
+
+					// Añadido por Nacho Palacio 2025-04-25.
+					System.out.println("***DEBUG-RandomPath: Verificando puerta conectada para ítem " + 
+               			itemToVisit + ": connectedDoor=" + connectedDoor);
 					if (connectedDoor > 0) {
 						// Get the sub-path necessary to go from one item (sculpture or painting) to
 						// another through doors.
 						String subpath = getToConnectedDoor(startVertex, itemToVisit, itemVisited, connectedDoor);
+
+						// Añadido por Nacho Palacio 2025-04-25.
+						System.out.println("***DEBUG-RandomPath: Generado subpath para puerta conectada: '" + 
+               				subpath + "', longitud=" + subpath.length());
 						// Get the room to which the item (or non-RS user) or door belongs.
 						room = getRoomFromItem(connectedDoor);
 						// Get the items (sculptures, paintings and doors) from a specified room.
@@ -128,17 +155,27 @@ public class RandomPath extends Path {
 						startVertex = getEndVertex(subpath);
 					}
 					else {
+						// Añadido por Nacho Palacio 2025-04-25.
+						System.out.println("ADVERTENCIA: Puerta " + itemToVisit + 
+                     		" sin conexión válida. Intentando encontrar otra puerta.");
 						// This element is wrong -> remove
 						itemsByRoom.remove(itemToVisit);
+
 					}
 				}
 			}
 			else {
+				// Añadido por Nacho Palacio 2025-04-25.
+				System.out.println("***DEBUG-RandomPath: No hay más ítems disponibles en habitación " + 
+                   room + ". Finalizando generación de ruta.");
 				break;
 			}
 		}
 		
 		finalPath = eraseRepeatedObjects(finalPath);
+
+		System.out.println("***DEBUG-RandomPath: Finalizado generatePath con " + 
+                  (finalPath.length() >= 2 ? finalPath.length() : 0) + " caracteres"); // Añadido por Nacho Palacio 2025-04-24.
 		
 		if (finalPath.length() >= 2) {
 			// To remove the "," at the end of the generated path.
@@ -182,6 +219,13 @@ public class RandomPath extends Path {
 			// Convertir la lista a LinkedList y guardarla en el mapa
 			itemsDoorVisited.put(roomId, new LinkedList<>(validItems));
 			System.out.println("  - Habitación " + roomId + ": " + validItems.size() + " ítems válidos");
+
+			// Añadido por Nacho Palacio 2025-04-25.
+			if (validItems.isEmpty()) {
+				System.out.println("ADVERTENCIA: La habitación " + roomId + " no tiene ítems válidos, añadiendo ítem genérico");
+				// Añadir un ítem genérico para evitar habitaciones vacías
+				validItems.add(1001L); // Un ítem genérico que sabemos que existe
+			}
 		}
 	}
 
