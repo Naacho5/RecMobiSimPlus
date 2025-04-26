@@ -136,6 +136,14 @@ public abstract class Path {
 			// Obtener IDs externos
 			long door1External = accessGraphFile.getDoorOfRoom(doors.split(", ")[0]);
 			long door2External = accessGraphFile.getDoorOfRoom(doors.split(", ")[1]);
+
+			// Añadido por Nacho Palacio 2025-04-26
+			if (door1External <= this.numberOfItems || door2External <= this.numberOfItems) {
+				System.out.println("ADVERTENCIA: Ignorando supuesta conexión entre puertas donde al menos una es un ítem: " 
+							   + door1External + " <-> " + door2External);
+				mon.stop();
+				continue;
+			}
 			
 			// Convertir a IDs internos
 			long door1Internal = ElementIdMapper.convertToRangeId(door1External, ElementIdMapper.CATEGORY_DOOR);
