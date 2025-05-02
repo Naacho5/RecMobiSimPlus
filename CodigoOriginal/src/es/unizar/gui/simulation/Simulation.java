@@ -509,6 +509,7 @@ public class Simulation {
 					// Obtener también puertas y escaleras para esta habitación si es necesario
 					for (int j = 1; j <= dataAccessGraphFile.getNumberOfDoorsByRoom(i); j++) {
 						long doorId = dataAccessGraphFile.getDoorOfRoom(j, i);
+						System.out.println("Generate_non_special_user_path: ID puerta " + doorId); // Añadido por Nacho Palacio 2025-05-02
 						if (doorId > 0) {
 							items.add(doorId);
 							System.out.println("Añadiendo puerta " + doorId + " a habitación " + i);

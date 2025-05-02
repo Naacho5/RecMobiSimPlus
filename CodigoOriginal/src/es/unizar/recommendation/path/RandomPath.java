@@ -342,7 +342,87 @@ public class RandomPath extends Path {
 	 * Inicializa el mapa de ítems por habitación usando IDs externos (compatible con el resto del código).
 	 */
 	public void initializeItemsByRoom(Map<Integer, List<Long>> roomItems) {
-		System.out.println("RandomPath: Inicializando mapa de ítems por habitación");
+		// Añadido por Nacho Palacio 2025-05-01.
+		System.out.println("DEBUG-InitItems: ==========================================");
+		System.out.println("DEBUG-InitItems: Iniciando inicialización de ítems por habitación");
+		System.out.println("DEBUG-InitItems: Total de habitaciones a procesar: " + roomItems.size());
+
+		// Añadido por Nacho Palacio 2025-05-02.
+		int totalExternalIds = 0;
+		int totalInternalIds = 0;
+		int totalItemsToAnalyze = 0;
+		
+		for (Map.Entry<Integer, List<Long>> entry : roomItems.entrySet()) {
+			List<Long> items = entry.getValue();
+			for (Long itemId : items) {
+				if (itemId == null || itemId <= 0) continue;
+				totalItemsToAnalyze++;
+				
+				if (isProbablyExternalId(itemId)) {
+					totalExternalIds++;
+				} else {
+					totalInternalIds++;
+				}
+			}
+		}
+		
+		System.out.println("DEBUG-InitItems: Análisis de IDs:");
+		System.out.println("DEBUG-InitItems: Total de IDs analizados: " + totalItemsToAnalyze);
+		System.out.println("DEBUG-InitItems: IDs que parecen externos: " + totalExternalIds + 
+						" (" + (totalItemsToAnalyze > 0 ? (float)totalExternalIds*100/totalItemsToAnalyze : 0) + "%)");
+		System.out.println("DEBUG-InitItems: IDs que parecen internos: " + totalInternalIds + 
+						" (" + (totalItemsToAnalyze > 0 ? (float)totalInternalIds*100/totalItemsToAnalyze : 0) + "%)");
+		
+		if (totalExternalIds > totalInternalIds) {
+			System.out.println("DEBUG-InitItems: ¡ATENCIÓN! La mayoría de IDs parecen ser EXTERNOS");
+		} else {
+			System.out.println("DEBUG-InitItems: La mayoría de IDs parecen ser INTERNOS");
+		}
+		
+		// Añadido por Nacho Palacio 2025-05-02.
+		System.out.println("DEBUG-InitItems: Verificando IDs de elementos recibidos:");
+		int totalDoorIds = 0;
+		int totalDoorIdsInRange = 0;
+
+		int num = this.numberOfItems + this.numberOfDoors;
+		System.out.println("DEBUG-InitItems Las puertas inician en id:" + num);
+		System.out.println("DEBUG-InitItems numero de items:" + this.numberOfItems);
+		System.out.println("DEBUG-InitItems numero de puertas:" + this.numberOfDoors);
+		
+		// Recorrer todos los elementos para buscar puertas
+		for (Map.Entry<Integer, List<Long>> entry : roomItems.entrySet()) {
+			int roomId = entry.getKey();
+			List<Long> items = entry.getValue();
+			
+			for (Long itemId : items) {
+				if (itemId == null || itemId <= 0) continue;
+				System.out.println("DEBUG-InitItems: Verificando ítem " + itemId + 
+								" en habitación " + roomId);
+				// Verificar si es una puerta según su rango numérico
+				if (itemId > this.numberOfItems && itemId <= this.numberOfItems + this.numberOfDoors) {
+					totalDoorIds++;
+					System.out.println("DEBUG-InitItems: Puerta detectada por rango numérico: " + itemId + 
+									" en habitación " + roomId);
+				}
+				
+				// Verificar si es una puerta según ElementIdMapper
+				if (ElementIdMapper.isInCorrectRange(itemId, ElementIdMapper.CATEGORY_DOOR)) {
+					totalDoorIdsInRange++;
+					System.out.println("DEBUG-InitItems: Puerta detectada por ElementIdMapper: " + itemId + 
+									" en habitación " + roomId);
+				}
+			}
+		}
+		
+		System.out.println("DEBUG-InitItems: Total de puertas detectadas por rango numérico: " + totalDoorIds);
+		System.out.println("DEBUG-InitItems: Total de puertas detectadas por ElementIdMapper: " + totalDoorIdsInRange);
+
+
+		int totalItemsProcessed = 0;
+		int totalValidItems = 0;
+		int totalValidDoors = 0;
+		int totalInvalidItems = 0;
+		int totalRoomsWithNoItems = 0;
 		
 		// Crear nuevo mapa si es nulo
 		if (itemsDoorVisited == null) {
@@ -360,6 +440,12 @@ public class RandomPath extends Path {
 			List<Long> items = entry.getValue();
 			List<Long> validItems = new LinkedList<>();
 			List<Long> validDoors = new LinkedList<>();
+
+			// Añadido por Nacho Palacio 2025-05-01.
+			System.out.println("DEBUG-InitItems: --------------------------------------");
+			System.out.println("DEBUG-InitItems: Procesando habitación " + roomId + 
+							" con " + items.size() + " elementos totales");
+			totalItemsProcessed += items.size();
 			
 			// Verificar cada ítem para asegurarnos que tienen ubicaciones válidas
 			// for (Long itemId : items) { // For antiguo
@@ -379,22 +465,37 @@ public class RandomPath extends Path {
 					// Es un ítem regular
 					if (hasValidLocation(itemId)) {
 						validItems.add(itemId);
+						// Añadido por Nacho Palacio 2025-05-01.
+						totalValidItems++;
+						System.out.println("DEBUG-InitItems:   ✓ Ítem " + itemId + 
+										" añadido a habitación " + roomId);
 					} else {
-						System.out.println("  - Ignorando ítem " + itemId + " en habitación " + roomId + " (sin ubicación válida)");
+						// Añadido por Nacho Palacio 2025-05-01.
+						totalInvalidItems++;
+						System.out.println("DEBUG-InitItems:   ✗ Ítem " + itemId + 
+										" descartado de habitación " + roomId + " (sin ubicación válida)");
 					}
 				} 
 				else if (ElementIdMapper.isInCorrectRange(itemId, ElementIdMapper.CATEGORY_DOOR)) {
 					// Es una puerta
 					if (hasValidLocation(itemId)) {
 						validDoors.add(itemId);
+						// Añadido por Nacho Palacio 2025-05-01.
+						totalValidDoors++;
+						System.out.println("DEBUG-InitItems:   ✓ Puerta " + itemId + 
+										" añadida a habitación " + roomId);
 					} else {
 						// Intentar con id externo
 						long externalId = ElementIdMapper.getBaseId(itemId);
 						if (hasValidLocation(externalId)) {
 							validDoors.add(itemId);
+							totalValidDoors++; // Añadido por Nacho Palacio 2025-05-01.
 							// También almacenar ubicación para ID interno
 							String location = diccionaryItemLocation.get(externalId);
 							diccionaryItemLocation.put(itemId, location);
+							// Añadido por Nacho Palacio 2025-05-01.
+							System.out.println("DEBUG-InitItems:   ✓ Puerta " + itemId + 
+                          				" (con ID externo: " + externalId + ") añadida a habitación " + roomId);
 						} else {
 							System.out.println("  - Ignorando puerta " + itemId + " en habitación " + roomId + " (sin ubicación válida)");
 						}
@@ -418,6 +519,11 @@ public class RandomPath extends Path {
 			doorsByRoomMap.put(roomId, new LinkedList<>(validDoors)); // Añadido por Nacho Palacio 2025-04-26.
 			// System.out.println("  - Habitación " + roomId + ": " + validItems.size() + " ítems válidos");
 
+			// Añadido por Nacho Palacio 2025-05-01.
+			System.out.println("DEBUG-InitItems: Resultado habitación " + roomId + 
+                  ": " + validItems.size() + " ítems válidos, " + 
+                  validDoors.size() + " puertas válidas");
+
 			System.out.println("  - Habitación " + roomId + ": " + validItems.size() + " ítems y " + validDoors.size() + " puertas válidas"); // Modificado por Nacho Palacio 2025-04-26.
 
 			// Añadido por Nacho Palacio 2025-04-25.
@@ -429,12 +535,30 @@ public class RandomPath extends Path {
 
 			// Modificado por Nacho Palacio 2025-04-26.
 			if (validItems.isEmpty()) {
-				System.out.println("ADVERTENCIA: La habitación " + roomId + " no tiene ítems válidos, añadiendo ítem genérico");
+				// Añadido por Nacho Palacio 2025-05-01.
+				totalRoomsWithNoItems++;
+    			System.out.println("DEBUG-InitItems: ⚠️ ADVERTENCIA: Habitación " + roomId + 
+                      " quedó sin ítems válidos, añadiendo ítem genérico 1001L");
+
 				LinkedList<Long> defaultItems = new LinkedList<>();
 				defaultItems.add(1001L); // Un ítem genérico que sabemos que existe
 				itemsDoorVisited.put(roomId, defaultItems);
 			}
 		}
+		// Añadido por Nacho Palacio 2025-05-01.
+		System.out.println("DEBUG-InitItems: ==========================================");
+		System.out.println("DEBUG-InitItems: RESUMEN DE INICIALIZACIÓN:");
+		System.out.println("DEBUG-InitItems: Total de elementos procesados: " + totalItemsProcessed);
+		System.out.println("DEBUG-InitItems: Total de ítems válidos: " + totalValidItems);
+		System.out.println("DEBUG-InitItems: Total de puertas válidas: " + totalValidDoors);
+		System.out.println("DEBUG-InitItems: Total de elementos descartados: " + totalInvalidItems);
+		System.out.println("DEBUG-InitItems: Habitaciones sin ítems (corregidas): " + totalRoomsWithNoItems);
+		System.out.println("DEBUG-InitItems: Porcentaje de elementos válidos: " + 
+						(totalItemsProcessed > 0 ? 
+						(float)(totalValidItems + totalValidDoors) * 100 / totalItemsProcessed : 0) + "%");
+		System.out.println("DEBUG-InitItems: Iniciando configuración de conexiones entre puertas...");
+
+
 		initializeDoorConnections();
 	}
 
@@ -444,17 +568,30 @@ public class RandomPath extends Path {
 	 */
 	private boolean hasValidLocation(long itemId) {
 		try {
+			System.out.println("DEBUG-hasValidLocation: Verificando ubicación para ítem " + itemId + 
+                  " (categoria: " + ElementIdMapper.determineCategoryFromInternalId(itemId) + ")"); // Añadido por Nacho Palacio 2025-05-01.
+
 			// 1. Verificar primero en diccionaryItemLocation
 			String location = diccionaryItemLocation.get(itemId);
+			if (location != null) {
+				System.out.println("DEBUG-hasValidLocation: Ítem " + itemId + 
+								  " encontrado en diccionaryItemLocation con ubicación: " + location);
+			}
 			
 			// 2. Si no existe, intentar obtenerlo del objeto floor
 			if (location == null && MainSimulator.floor != null) {
+				System.out.println("DEBUG-hasValidLocation: Buscando ítem " + itemId + " en MainSimulator.floor");
 				location = MainSimulator.floor.diccionaryItemLocation.get(itemId);
 				
 				// Si lo encontramos en floor, actualizamos nuestro diccionario local
 				if (location != null) {
 					diccionaryItemLocation.put(itemId, location);
-					System.out.println("Recuperada ubicación de ítem " + itemId + " desde MainSimulator.floor");
+					System.out.println("DEBUG-hasValidLocation: Recuperada ubicación de ítem " + itemId + 
+                                  " desde MainSimulator.floor: " + location); // Añadido por Nacho Palacio 2025-05-01.
+				}
+				else {
+					System.out.println("DEBUG-hasValidLocation: Ítem " + itemId + 
+								  " no encontrado en MainSimulator.floor"); // Añadido por Nacho Palacio 2025-05-01.
 				}
 			}
 			
@@ -462,6 +599,8 @@ public class RandomPath extends Path {
 			if (location == null) {
 				// Convertir a ID externo para usar con los métodos de accessItemFile
 				int externalId = DataAccessItemFile.internalToExternalId(itemId, ElementIdMapper.CATEGORY_ITEM);
+				System.out.println("DEBUG-hasValidLocation: Intentando reconstruir ubicación para ítem " + 
+                              itemId + " usando ID externo: " + externalId); // Añadido por Nacho Palacio 2025-05-01.
 				
 				// Obtener coordenadas desde el formato de texto de ubicación (XY)
 				String vertexXY = accessItemFile.getVertexXY(externalId);
@@ -469,7 +608,37 @@ public class RandomPath extends Path {
 					// vertexXY normalmente tiene el formato "x,y"
 					location = vertexXY;
 					diccionaryItemLocation.put(itemId, location);
-					System.out.println("Reconstruida ubicación de ítem " + itemId + " (externo: " + externalId + ") desde getVertexXY: " + location);
+					System.out.println("DEBUG-hasValidLocation: Reconstruida ubicación de ítem " + itemId + 
+                                  " (externo: " + externalId + ") desde getVertexXY: " + location); // Añadido por Nacho Palacio 2025-05-01.
+				}
+				else { // Añadido por Nacho Palacio 2025-05-01.
+					System.out.println("DEBUG-hasValidLocation: No se pudo obtener ubicación para ítem " + 
+									  itemId + " (externo: " + externalId + ") desde getVertexXY");
+					
+					// Intentar con otros tipos de elementos (puertas, escaleras)
+					if (ElementIdMapper.isInCorrectRange(itemId, ElementIdMapper.CATEGORY_DOOR)) {
+						externalId = DataAccessItemFile.internalToExternalId(itemId, ElementIdMapper.CATEGORY_DOOR);
+						System.out.println("DEBUG-hasValidLocation: Intentando como PUERTA con ID externo: " + externalId);
+						vertexXY = accessItemFile.getVertexXY(externalId);
+						if (vertexXY != null && !vertexXY.isEmpty()) {
+							location = vertexXY;
+							diccionaryItemLocation.put(itemId, location);
+							System.out.println("DEBUG-hasValidLocation: Reconstruida ubicación de PUERTA " + 
+											  itemId + " como: " + location);
+						}
+					}
+					
+					if (location == null && ElementIdMapper.isInCorrectRange(itemId, ElementIdMapper.CATEGORY_STAIRS)) {
+						externalId = DataAccessItemFile.internalToExternalId(itemId, ElementIdMapper.CATEGORY_STAIRS);
+						System.out.println("DEBUG-hasValidLocation: Intentando como ESCALERA con ID externo: " + externalId);
+						vertexXY = accessItemFile.getVertexXY(externalId);
+						if (vertexXY != null && !vertexXY.isEmpty()) {
+							location = vertexXY;
+							diccionaryItemLocation.put(itemId, location);
+							System.out.println("DEBUG-hasValidLocation: Reconstruida ubicación de ESCALERA " + 
+											  itemId + " como: " + location);
+						}
+					}
 				}
 			}
 			
@@ -579,5 +748,46 @@ public class RandomPath extends Path {
 				System.out.println("Inicializado mapa de puertas vacío para habitación " + roomId);
 			}
 		}
+	}
+
+
+	/**
+	 * Añadido por Nacho Palacio 2025-05-02.
+	 * Diagnostica si un ID corresponde a formato interno o externo
+	 * @param itemId ID a verificar
+	 * @return true si es probablemente un ID externo, false si es interno
+	 */
+	private boolean isProbablyExternalId(long itemId) {
+		// Debug detallado para puertas
+		if (itemId > this.numberOfItems && itemId <= this.numberOfItems + this.numberOfDoors) {
+			System.out.println("DEBUG-ExternalID: ID " + itemId + 
+							" parece ser una puerta externa (por rango numérico)");
+							
+			// Verificar si se considera interno por ElementIdMapper
+			if (ElementIdMapper.isInCorrectRange(itemId, ElementIdMapper.CATEGORY_DOOR)) {
+				System.out.println("DEBUG-ExternalID: INCONSISTENCIA - ID " + itemId + 
+								" se considera puerta interna por ElementIdMapper pero externa por rango numérico");
+			}
+		}
+		
+		if (ElementIdMapper.isInCorrectRange(itemId, ElementIdMapper.CATEGORY_DOOR)) {
+			System.out.println("DEBUG-ExternalID: ID " + itemId + 
+							" se considera puerta interna por ElementIdMapper (rango 2000-2999)");
+			return false;
+		}
+		
+		// Los IDs internos de ítems comienzan en 1000
+		if (itemId >= ElementIdMapper.ITEM_ID_START && itemId < ElementIdMapper.DOOR_ID_START) {
+			return false; // Es un ID interno de ítem
+		}
+		
+		// Los IDs externos de ítems suelen ser números pequeños
+		if (itemId > 0 && itemId < 1000) {
+			return true; // Probablemente es un ID externo de ítem
+		}
+		
+		// Si no estamos seguros, hay que examinar el tipo específico
+		int category = ElementIdMapper.determineCategoryFromInternalId(itemId);
+		return category == -1; // Si no se identifica una categoría, probablemente es un ID externo
 	}
 }

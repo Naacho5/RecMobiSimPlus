@@ -71,14 +71,16 @@ public class DataAccessGraphFile extends DataAccess {
 
 	// Modificado por Nacho Palacio 2025-04-22.
 	public long getDoorOfRoom(int door, int room) {
-		String doorId = getPropertyValue(Literals.DOOR + door + "_" + room);
+		// String doorId = getPropertyValue(Literals.DOOR + door + "_" + room);
+		String doorId = getPropertyValue(Literals.DOOR_OF_ROOM + door + "_" + room); // Modificado por Nacho Palacio 2025-05-02
+		// System.out.println("GraphFile: Obteniendo Door ID " + doorId); // Añadido por Nacho Palacio 2025-05-02
 		if (doorId == null || doorId.isEmpty()) {
 			return -1;
 		}
 		
 		long rawId = Long.parseLong(doorId);
 		long internalId = ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_DOOR);
-		System.out.println("GraphFile: Convirtiendo Door ID externo " + rawId + " a interno " + internalId);
+		// System.out.println("GraphFile: Convirtiendo Door ID externo " + rawId + " a interno " + internalId);
 		return internalId;
 	}
 

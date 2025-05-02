@@ -38,6 +38,12 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 	// Para P2P
 	@Override
 	public List<RecommendedItem> recommend(long userID, int howMany) throws TasteException {
+		/* Añadido por Nacho Palacio 2025-04-17. */
+		// if (userID >= es.unizar.util.Literals.TOTAL_USERS) {
+		// 	System.out.println("Warning: Attempted to recommend for non-existent user " + userID);
+		// 	return new LinkedList<>();
+		// }
+
 		// Traditional recommendation
 		List<RecommendedItem> candidateItemsFromRecommender = getRecommender().recommend(userID, howMany);
 
@@ -47,7 +53,7 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 		/* Añadido por Nacho Palacio 2025-04-14. */
 		if (candidateItemsFiltered == null || candidateItemsFiltered.isEmpty()) {
             System.out.println("Warning: No items passed the threshold filter for user " + userID);
-            return candidateItemsFromRecommender; // O retornar una lista vacía: return new LinkedList<>();
+            return candidateItemsFromRecommender;
         }
 
 		// Las lista previamente filtrada se lleva a una lista de entero con solo los items a recomendar
