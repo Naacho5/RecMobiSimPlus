@@ -618,8 +618,11 @@ public class Simulation {
 	 */
 	public void updateSpecialUserPath(long startVertex, long endVertex, boolean disobedience, long nextItemSelected, boolean finishPath, User currentUser) {
 		
+		System.out.println("DEBUG-START: Iniciando updateSpecialUserPath para usuario " + currentUser.userID); // Añadido por Nacho Palacio 2025-05-02
+
 		long initialTimeTotal = 0, finalTimeTotal = 0, initialTimeNetwork = 0, finalTimeNetwork = 0;
 		initialTimeTotal = System.currentTimeMillis();
+		System.out.println("DEBUG-1: Variables inicializadas"); // Añadido por Nacho Palacio 2025-05-02
 		
 		List<String> finalPath = null;
 		List<RecommendedItem> recommendedItems = null;
@@ -632,19 +635,25 @@ public class Simulation {
 		String special_user_dbURL = null;
 		Database db_special_user = null;
 
+		System.out.println("DEBUG-2: Antes de obtener el tipo de red"); // Añadido por Nacho Palacio 2025-05-02
+
 		if (getNetworkType().equalsIgnoreCase("Centralized (Centralized)")) {
 			special_user_dbURL = Literals.SQL_DRIVER + Literals.DB_CENTRALIZED_USER_PATH;
 			db_special_user = dataInstanceUserDB_Centralized;
+			System.out.println("DEBUG-2.1: Tipo de red Centralizada"); // Añadido por Nacho Palacio 2025-05-02
 		}
 		else if (getNetworkType().equalsIgnoreCase("Peer To Peer (P2P)")) {
 			special_user_dbURL = Literals.SQL_DRIVER + Literals.DB_P2P_USER_PATH + currentUser.userID + ".db";
 			db_special_user = dataInstanceUserDBList_P2P.get(currentUser.userID - 1);
+			System.out.println("DEBUG-2.2: Tipo de red P2P, usando DB " + special_user_dbURL); // Añadido por Nacho Palacio 2025-05-02
 		}
 
 		finalTimeTotal = System.currentTimeMillis();
 		log.log(Level.FINE, "[updateSpecialUserPath]: PRE - " + (finalTimeTotal - initialTimeTotal));
 		log.log(Level.FINER, "[updateSpecialUserPath]: PRE NETWORK - " + (finalTimeNetwork - initialTimeNetwork));
 		
+		System.out.println("DEBUG-3: Antes de crear DBDataModel y DataAccessLayer"); // Añadido por Nacho Palacio 2025-05-02
+
 		// DBDataModel and DataAccessLayer that are going to open DB connections
 		// Declared before try block so that they can be disconnected from db in finally method
 		DBDataModel dataModelSpecialUser = null;
@@ -659,11 +668,15 @@ public class Simulation {
 			initialTimeTry = System.currentTimeMillis();
 			// For the database connection of the current RS user.
 			initialTimeDBDataModel = System.currentTimeMillis();
+			System.out.println("DEBUG-5: Antes de crear DBDataModel"); // Añadido por Nacho Palacio 2025-05-02
 			dataModelSpecialUser = new DBDataModel(special_user_dbURL, db_special_user, this.numberOfUser-1);
+			System.out.println("DEBUG-6: DBDataModel creado"); // Añadido por Nacho Palacio 2025-05-02
 			finalTimeDBDataModel = System.currentTimeMillis();
 			
 			initialTimeDataAccessLayer = System.currentTimeMillis();
+			System.out.println("DEBUG-7: Antes de crear DataAccessLayer"); // Añadido por Nacho Palacio 2025-05-02
 			dataAccesLayerDBMuseum = new DataAccessLayer(Literals.SQL_DRIVER + Literals.DB_ALL_USERS_PATH, dataInstanceMuseumDB);
+			System.out.println("DEBUG-8: DataAccessLayer creado"); // Añadido por Nacho Palacio 2025-05-02
 			finalTimeDataAccessLayer = System.currentTimeMillis();
 			
 			finalTimeTry = System.currentTimeMillis();
@@ -673,32 +686,42 @@ public class Simulation {
 			
 			
 			initialTimeTry = System.currentTimeMillis();
+			System.out.println("DEBUG-9: Antes de construir grafo"); // Añadido por Nacho Palacio 2025-05-02
 			// Build a graph for the RS user.
 			graphSpecialUser.graphRecommender = graphSpecialUser.buildGraphForSpecialUser();
+			System.out.println("DEBUG-10: Grafo construido"); // Añadido por Nacho Palacio 2025-05-02
+			System.out.println("DEBUG-11: Antes de crear ShortestTrajectoryStrategy"); // Añadido por Nacho Palacio 2025-05-02
 			ShortestTrajectoryStrategy trajectoryStrategy = new ShortestTrajectoryStrategy(graphSpecialUser.graphRecommender, MainSimulator.floor.diccionaryItemLocation);
-			
+			System.out.println("DEBUG-12: Después de crear ShortestTrajectoryStrategy"); // Añadido por Nacho Palacio 2025-05-02
+
 			finalTimeTry = System.currentTimeMillis();
 			log.log(Level.WARNING, "[updateSpecialUserPath]: TRY - Build graph: " + (finalTimeTry - initialTimeTry));
 
 			
 			initialTimeTry = System.currentTimeMillis();
 			// The recommendation threshold.
+			System.out.println("DEBUG-13: Antes de inicializar TrajectoryPostfilteringBasedRecommendation"); // Añadido por Nacho Palacio 2025-05-02
 			float threshold = getThresholdRecommendation();
 			if (finishPath) {
 				// When the path is finished.
 				postfiltering = new TrajectoryPostfilteringBasedRecommendation(dataModelSpecialUser, special_user_dbURL, trajectoryStrategy, endVertex, threshold);
+				System.out.println("DEBUG-13.1: Inicializado con finishPath=true"); // Añadido por Nacho Palacio 2025-05-02
 			} else {
 				// When the path is not finished.
 				postfiltering = new TrajectoryPostfilteringBasedRecommendation(dataModelSpecialUser, special_user_dbURL, trajectoryStrategy, startVertex, threshold);
+				System.out.println("DEBUG-13.2: Inicializado con finishPath=false"); // Añadido por Nacho Palacio 2025-05-02
 			}
+			System.out.println("DEBUG-14: TrajectoryPostfilteringBasedRecommendation inicializado"); // Añadido por Nacho Palacio 2025-05-02
 			
 			finalTimeTry = System.currentTimeMillis();
 			log.log(Level.WARNING, "[updateSpecialUserPath]: TRY - Threshold: " + (finalTimeTry - initialTimeTry));
 			
 			
 			initialTimeTry = System.currentTimeMillis();
+			System.out.println("DEBUG-15: Antes de obtener algoritmo de recomendación: " + getRecommendationAlgorithm()); // Añadido por Nacho Palacio 2025-05-02
 			// Recommendation type
 			recommendationType = getRecommendationAlgorithm();
+			System.out.println("DEBUG-16: Procesando algoritmo: " + recommendationType); // Añadido por Nacho Palacio 2025-05-02
 			if (recommendationType.equalsIgnoreCase("Completely-random (FULLY-RAND)")) {
 				RandomRecommendation recommender = new RandomRecommendation(dataModelSpecialUser, dataAccesLayerDBMuseum);
 				recommendedItems = recommender.recommend(currentUser.userID, getHowMany());
@@ -778,14 +801,20 @@ public class Simulation {
 				if (currentPath == null) {
 					log.log(Level.SEVERE, "Failed to generate default path. Using empty path.");
 					currentPath = "";
+					System.out.println("DEBUG-17: currentPath es nulo, generando ruta alternativa"); // Añadido por Nacho Palacio 2025-05-02
+				}
+				else { // Añadido por Nacho Palacio 2025-05-02
+					System.out.println("DEBUG-18: currentPath generado correctamente");
 				}
 			}
-
+			System.out.println("DEBUG-19: Antes de combinar rutas"); // Añadido por Nacho Palacio 2025-05-02
 			List<String> pathSpecialUser = Arrays.asList(currentPath.split(", "));
 			if (disobedience) {
 				finalPath = combinePathsDisobedience(nextItemSelected, startVertex, endVertex, pathSpecialUser, currentUser.userID);
+				System.out.println("DEBUG-19.1: Ruta combinada con disobedience=true"); // Añadido por Nacho Palacio 2025-05-02
 			} else {
 				finalPath = combinePaths(startVertex, endVertex, pathSpecialUser, finishPath);
+				System.out.println("DEBUG-19.2: Ruta combinada con disobedience=false"); // Añadido por Nacho Palacio 2025-05-02
 			}
 			
 			// Almacenar valoraciones predichas y tiempos para cada id_item
@@ -909,7 +938,9 @@ public class Simulation {
 		/*
 		 * THE PURPOSE OF THIS FUNCTION: SET RS user'S PATH
 		 */
+		System.out.println("DEBUG-FINAL: Asignando ruta a usuario " + currentUser.userID); // Añadido por Nacho Palacio 2025-05-02
 		graphSpecialUser.paths.set(((int) currentUser.userID) - 1, finalPath);
+		System.out.println("DEBUG-END: Finalizado updateSpecialUserPath para usuario " + currentUser.userID); // Añadido por Nacho Palacio 2025-05-02
 		
 		// System.out.println(graphSpecialUser.paths.get(((int) currentUser.userID) - 1));
 

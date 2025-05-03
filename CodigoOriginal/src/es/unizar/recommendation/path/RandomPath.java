@@ -89,16 +89,16 @@ public class RandomPath extends Path {
 		}
 
 		// Añadido por Nacho Palacio 2025-04-25.
-		if (itemsByRoom != null && itemsByRoom.size() == 1 && itemsByRoom.contains(startVertex)) {
-			System.out.println("***DEBUG-RandomPath: El ítem inicial " + startVertex + 
-						   " es el único disponible en la habitación " + room + 
-						   ". Generando una ruta mínima.");
-			// Generar una ruta mínima con el ítem mismo
-			finalPath = "(" + startVertex + " : " + startVertex + "), ";
-			System.out.println("***DEBUG-RandomPath: Finalizado generatePath con " + 
-							 (finalPath.length() >= 2 ? finalPath.length() : 0) + " caracteres");
-			return finalPath.substring(0, finalPath.length() - 2); // Eliminar la coma final
-		}
+		// if (itemsByRoom != null && itemsByRoom.size() == 1 && itemsByRoom.contains(startVertex)) {
+		// 	System.out.println("***DEBUG-RandomPath: El ítem inicial " + startVertex + 
+		// 				   " es el único disponible en la habitación " + room + 
+		// 				   ". Generando una ruta mínima.");
+		// 	// Generar una ruta mínima con el ítem mismo
+		// 	finalPath = "(" + startVertex + " : " + startVertex + "), ";
+		// 	System.out.println("***DEBUG-RandomPath: Finalizado generatePath con " + 
+		// 					 (finalPath.length() >= 2 ? finalPath.length() : 0) + " caracteres");
+		// 	return finalPath.substring(0, finalPath.length() - 2); // Eliminar la coma final
+		// }
 
 		itemsByRoom.remove(startVertex);
 		itemToVisit = startVertex;
