@@ -139,8 +139,8 @@ public abstract class Path {
 
 			// Añadido por Nacho Palacio 2025-04-26
 			if (door1External <= this.numberOfItems || door2External <= this.numberOfItems) {
-				System.out.println("ADVERTENCIA: Ignorando supuesta conexión entre puertas donde al menos una es un ítem: " 
-							   + door1External + " <-> " + door2External);
+				// System.out.println("ADVERTENCIA: Ignorando supuesta conexión entre puertas donde al menos una es un ítem: " 
+				// 			   + door1External + " <-> " + door2External);
 				mon.stop();
 				continue;
 			}
@@ -371,8 +371,8 @@ public abstract class Path {
 		long externalId = startVertex;
 		if (ElementIdMapper.isInCorrectRange(startVertex, ElementIdMapper.CATEGORY_ITEM)) {
 			externalId = ElementIdMapper.getBaseId(startVertex);
-			System.out.println("getRoomFromItem: Convirtiendo ID interno de ítem " + originalId + 
-							" a externo " + externalId + " para búsqueda");
+			// System.out.println("getRoomFromItem: Convirtiendo ID interno de ítem " + originalId + 
+			// 				" a externo " + externalId + " para búsqueda");
 			
 			// Probar con ID externo en el mapa
 			roomFromMap = itemToRoomMap.get(externalId);
@@ -383,8 +383,8 @@ public abstract class Path {
 			}
 		} else if (ElementIdMapper.isInCorrectRange(startVertex, ElementIdMapper.CATEGORY_DOOR)) {
 			externalId = ElementIdMapper.getBaseId(startVertex);
-			System.out.println("getRoomFromItem: Convirtiendo ID interno de puerta " + originalId + 
-							" a externo " + externalId + " para búsqueda");
+			// System.out.println("getRoomFromItem: Convirtiendo ID interno de puerta " + originalId + 
+			// 				" a externo " + externalId + " para búsqueda");
 			
 			// Probar con ID externo en el mapa
 			roomFromMap = itemToRoomMap.get(externalId);
@@ -395,8 +395,8 @@ public abstract class Path {
 			}
 		} else if (ElementIdMapper.isInCorrectRange(startVertex, ElementIdMapper.CATEGORY_STAIRS)) {
 			externalId = ElementIdMapper.getBaseId(startVertex);
-			System.out.println("getRoomFromItem: Convirtiendo ID interno de escalera " + originalId + 
-							" a externo " + externalId + " para búsqueda");
+			// System.out.println("getRoomFromItem: Convirtiendo ID interno de escalera " + originalId + 
+			// 				" a externo " + externalId + " para búsqueda");
 			
 			// Probar con ID externo en el mapa
 			roomFromMap = itemToRoomMap.get(externalId);
@@ -445,8 +445,8 @@ public abstract class Path {
 						itemToRoomMap.put(originalId, currentRoom);
 						itemToRoomMap.put(idToSearch, currentRoom);
 						
-						System.out.println("getRoomFromItem: Encontrada habitación " + currentRoom + 
-										" para ítem " + originalId);
+						// System.out.println("getRoomFromItem: Encontrada habitación " + currentRoom + 
+						// 				" para ítem " + originalId);
 						
 						return currentRoom;
 					}
@@ -496,8 +496,8 @@ public abstract class Path {
 		}
 		// Añadido por Nacho Palacio 2025-04-23
 		if (currentRoom == 0) {
-			System.out.println("ADVERTENCIA: No se encontró habitación para el ítem " + originalId + 
-							" (buscado como: " + idToSearch + "). Usando habitación 1 como respaldo");
+			// System.out.println("ADVERTENCIA: No se encontró habitación para el ítem " + originalId + 
+			// 				" (buscado como: " + idToSearch + "). Usando habitación 1 como respaldo");
 			return 1;  // Devolver habitación 1 como respaldo
 		}
 		// System.out.println("Room from item " + startVertex + " = " + currentRoom);
@@ -786,23 +786,23 @@ public abstract class Path {
 		long externalDoor = currentDoor;
 		if (ElementIdMapper.isInCorrectRange(currentDoor, ElementIdMapper.CATEGORY_DOOR)) {
 			externalDoor = ElementIdMapper.getBaseId(currentDoor);
-			System.out.println("getConnectedDoor: Convirtiendo ID interno " + currentDoor + 
-							" a externo " + externalDoor + " para buscar conexión");
+			// System.out.println("getConnectedDoor: Convirtiendo ID interno " + currentDoor + 
+			// 				" a externo " + externalDoor + " para buscar conexión");
 		}
 		
 		// Intentar obtener la puerta conectada directamente del mapa
 		Long connectedDoorFromMap = mapDoorConnected.get(currentDoor);
 		if (connectedDoorFromMap != null && connectedDoorFromMap > 0) {
-			System.out.println("getConnectedDoor: Encontrada conexión para ID original " + 
-							currentDoor + " -> " + connectedDoorFromMap);
+			// System.out.println("getConnectedDoor: Encontrada conexión para ID original " + 
+			// 				currentDoor + " -> " + connectedDoorFromMap);
 			return connectedDoorFromMap;
 		}
 		
 		// Si no se encontró con el ID original, intentar con el ID externo
 		connectedDoorFromMap = mapDoorConnected.get(externalDoor);
 		if (connectedDoorFromMap != null && connectedDoorFromMap > 0) {
-			System.out.println("getConnectedDoor: Encontrada conexión para ID externo " + 
-							externalDoor + " -> " + connectedDoorFromMap);
+			// System.out.println("getConnectedDoor: Encontrada conexión para ID externo " + 
+			// 				externalDoor + " -> " + connectedDoorFromMap);
 			return connectedDoorFromMap;
 		}
 

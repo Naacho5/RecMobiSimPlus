@@ -27,6 +27,7 @@ public class ElementIdMapper {
     public static final long STAIRS_ID_START = 3000;     // 3000-3999
     public static final long CORNER_ID_START = 4000;     // 4000-4999
     public static final long SEPARATOR_ID_START = 5000;  // 5000-5999
+    public static final long USER_ID_START = 6000;       // 6000-6999 Añadido por Nacho Palacio 2025-05-07
     
     // Constantes para categorías de elementos
     public static final int CATEGORY_ROOM = 1;
@@ -35,6 +36,7 @@ public class ElementIdMapper {
     public static final int CATEGORY_STAIRS = 4;
     public static final int CATEGORY_CORNER = 5;
     public static final int CATEGORY_SEPARATOR = 6;
+    public static final int CATEGORY_USER = 7;           // Añadido por Nacho Palacio 2025-05-07
     
     // Contadores actuales para cada tipo de elemento
     private long nextRoomId = ROOM_ID_START;

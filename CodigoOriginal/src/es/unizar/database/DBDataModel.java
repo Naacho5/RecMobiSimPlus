@@ -40,6 +40,7 @@ import org.apache.mahout.cf.taste.model.PreferenceArray;
 import com.google.common.collect.Lists;
 
 import es.unizar.dao.DataAccessLayer;
+import es.unizar.util.ElementIdMapper;
 
 /**
  * Data model extracted from a database. File taken from MOONRISE.jar (and optimized).
@@ -100,21 +101,48 @@ public class DBDataModel extends AbstractDataModel {
 			long userIDKey = entry.getKey();
 			int numberOfItems = entry.getValue(); // Añadido por Nacho Palacio 2025-04-15.
 
-			if (numberOfItems == 0) { // Añadido por Nacho Palacio 2025-04-15.
+			// System.out.println("DEBUG-USER: ID " + userIDKey + 
+			// 				  " tiene " + numberOfItems + " valoraciones de ítems"); // Añadido por Nacho Palacio 2025-05-08.
+
+			if (numberOfItems > 0) { // Añadido por Nacho Palacio 2025-04-15. Modificado por Nacho Palacio 2025-05-08, antes == 0
 				List<String> listByUser = dataAccess.getUserItemRatingFrom(userIDKey);
 				// int numberOfItems = hashWithNumberItemsByUser.get(userIDKey);
 				preferenceArray = new GenericUserPreferenceArray(numberOfItems);
+				// for (int k = 0; k < listByUser.size(); k++) {
+				// 	String user_item_rating = listByUser.get(k);
+				// 	String array[] = user_item_rating.split(";");
+				// 	long userID = Long.valueOf(array[0]).longValue();
+				// 	long itemID = Long.valueOf(array[1]).longValue();
+				// 	float rating = Float.valueOf(array[2]).floatValue();
+				// 	preferenceArray.setUserID(k, userID);
+				// 	preferenceArray.setItemID(k, itemID);
+				// 	preferenceArray.setValue(k, rating);
+				// }
+
+				// Modificado por Nacho Palacio 2025-05-08.
 				for (int k = 0; k < listByUser.size(); k++) {
 					String user_item_rating = listByUser.get(k);
 					String array[] = user_item_rating.split(";");
 					long userID = Long.valueOf(array[0]).longValue();
 					long itemID = Long.valueOf(array[1]).longValue();
 					float rating = Float.valueOf(array[2]).floatValue();
-					preferenceArray.setUserID(k, userID);
-					preferenceArray.setItemID(k, itemID);
+					
+					// Convertir los IDs externos a internos
+					long internalUserID = userID; // Los IDs de usuario ya están en el formato correcto
+					long internalItemID = ElementIdMapper.convertToRangeId(itemID, ElementIdMapper.CATEGORY_ITEM);
+					
+					if (k == 176) {
+						System.out.println("DEBUG-CONVERSION: Convirtiendo item ID externo " + itemID + 
+									  " a interno " + internalItemID + " para usuario " + userID);
+					}
+					
+					preferenceArray.setUserID(k, internalUserID);
+					preferenceArray.setItemID(k, internalItemID);
 					preferenceArray.setValue(k, rating);
 				}
 			} else { // Añadido por Nacho Palacio 2025-04-15.
+				// System.out.println("DEBUG-USER: ID " + userIDKey + 
+                //          " no tiene valoraciones de ítems"); // Añadido por Nacho Palacio 2025-05-08.
 				// Crear un array de preferencias vacío para usuarios sin preferencias
 				preferenceArray = new GenericUserPreferenceArray(0);
 			}
@@ -227,6 +255,23 @@ public class DBDataModel extends AbstractDataModel {
 		for (int i = 0; i < size; i++) {
 			result.add(prefs.getItemID(i));
 		}
+
+		// Añadido por Nacho Palacio 2025-05-08 para depurar.
+		if (size > 0 && userID == 176) { // Solo para el usuario 176
+			System.out.println("DEBUG-ITEMS: Usuario " + userID + 
+							  " tiene " + size + " valoraciones de ítems");
+			int count = 0;
+			StringBuilder sb = new StringBuilder("Primeros IDs (internos): ");
+			for (int i = 0; i < Math.min(5, size); i++) {
+				long internalId = prefs.getItemID(i);
+				long externalId = ElementIdMapper.getBaseId(internalId);
+				sb.append("[int=").append(internalId)
+				  .append(",ext=").append(externalId).append("] ");
+			}
+			System.out.println(sb.toString());
+		}
+
+
 		return result;
 	}
 
@@ -270,13 +315,37 @@ public class DBDataModel extends AbstractDataModel {
 	 */
 	@Override
 	public Float getPreferenceValue(long userID, long itemID) throws TasteException {
+		// PreferenceArray prefs = getPreferencesFromUser(userID);
+		// int size = prefs.length();
+		// for (int i = 0; i < size; i++) {
+		// 	if (prefs.getItemID(i) == itemID) {
+		// 		return prefs.getValue(i);
+		// 	}
+		// }
+		// return null;
+
+		// Añadido por Nacho Palacio 2025-05-08
+		System.out.println("DEBUG-PREFERENCE: Consultando preferencia de usuario " + userID + 
+                 " para ítem " + itemID + 
+                 " (¿formato interno? " + ElementIdMapper.isInCorrectRange(itemID, ElementIdMapper.CATEGORY_ITEM) + ")");
+
+		// Modificado por Nacho Palacio 2025-05-08.
+		long internalItemID = ElementIdMapper.isInCorrectRange(itemID, ElementIdMapper.CATEGORY_ITEM) 
+                         ? itemID 
+                         : ElementIdMapper.convertToRangeId(itemID, ElementIdMapper.CATEGORY_ITEM);
+    
+		System.out.println("DEBUG-PREFERENCE: Ítem convertido a interno: " + internalItemID);
+
 		PreferenceArray prefs = getPreferencesFromUser(userID);
 		int size = prefs.length();
 		for (int i = 0; i < size; i++) {
-			if (prefs.getItemID(i) == itemID) {
+			if (prefs.getItemID(i) == internalItemID) {
+				System.out.println("DEBUG-PREFERENCE: Resultado: " + prefs.getValue(i));
 				return prefs.getValue(i);
 			}
 		}
+
+		
 		return null;
 	}
 
@@ -566,5 +635,24 @@ public class DBDataModel extends AbstractDataModel {
 	 */
 	public DataAccessLayer getDataAccessLayer(){
 		return dataAccess;
+	}
+
+	// Añadido por Nacho Palacio 2025-05-08.
+	/**
+	 * Convierte un ID externo de ítem a su formato interno.
+	 * @param externalItemId El ID externo del ítem
+	 * @return El ID interno correspondiente
+	 */
+	public static long convertExternalToInternalItemId(long externalItemId) {
+		return ElementIdMapper.convertToRangeId(externalItemId, ElementIdMapper.CATEGORY_ITEM);
+	}
+
+	/**
+	 * Convierte un ID interno de ítem a su formato externo.
+	 * @param internalItemId El ID interno del ítem
+	 * @return El ID externo correspondiente
+	 */
+	public static long convertInternalToExternalItemId(long internalItemId) {
+		return ElementIdMapper.getBaseId(internalItemId);
 	}
 }

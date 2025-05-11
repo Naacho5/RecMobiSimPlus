@@ -62,19 +62,17 @@ import es.unizar.util.DebugFilter;
 import es.unizar.util.DebugFormatter;
 import es.unizar.util.Distance;
 import es.unizar.util.DistancesBetweenUsersAndTime;
-import es.unizar.util.ElementIdMapper;
 import es.unizar.util.Literals;
 import es.unizar.util.Pair;
 import es.unizar.util.PredictedRatingsInfo;
 import es.unizar.util.Seed;
-import es.unizar.recommendation.path.RandomPath;
 
 /**
  * Configuration parameters of the simulation.
  *
  * @author Maria del Carmen Rodriguez-Hernandez and Alejandro Piedrafita Barrantes
  */
-public class Simulation {
+public class SimulationOld {
 
 	// Simulation
 	private int timeAvailableUser; // =1;
@@ -192,7 +190,7 @@ public class Simulation {
 	public static final Logger log = Logger.getLogger(Literals.DEBUG_MESSAGES);
 	public static final Logger logRecommender = Logger.getLogger("RECOMMENDER");
 
-	public Simulation(int timeAvailableUser, int delayObservingPainting, double timeForIteration, double screenRefreshTime, double timeForThePaths, double userVelocity, double kmToPixel, int ttl,
+	public SimulationOld(int timeAvailableUser, int delayObservingPainting, double timeForIteration, double screenRefreshTime, double timeForThePaths, double userVelocity, double kmToPixel, int ttl,
 			int timeOnStairs, int minimumTimeToUpdateRecommendation, int communicationRange, int maxKnowledgeBaseSize, int communicationBandwidth, int latencyOfTransmission, int numberOfSpecialUser,
 			int numberOfNonSpecialUser, String nonSpecialUserPaths, String pathStrategy, String recommendationAlgorithm, float thresholdRecommendation, int howMany, String propagationStrategy,
 			double probabilityUserDisobedience, int numberVoteReceived, double thresholdSimilarity, String networkType, int timeToChangeMood, boolean useFixedSeed, long seed) {
@@ -411,47 +409,25 @@ public class Simulation {
 	 * 
 	 */
 	public void initializeUsers() {
-		System.out.println("***DEBUG-Simulation: Iniciando initializeUsers()"); // Añadido por Nacho Palacio 2025-04-24
-
 		MainSimulator.printConsole("Initializing users: ", Level.WARNING);
-		System.out.println("Total users: " + userList.size()); // Depuración: Verificar el número total de usuarios
 		// Get the non-special and RS user paths. The non-RS user path is obtained from generated path file (e.g., nearest_non_special_user_paths.txt), by using the strategy (Nearest,
 		// Random or Exhaustive) specified in the Configuration form. While the RS user path (initially null) is generated with the recommender specified in the Configuration form.
-		
-		System.out.println("***DEBUG: Comprobando llamada a getPathsFromFile()"); // Añadido por Nacho Palacio 2025-04-24
 		graphSpecialUser.getPathsFromFile();
-		System.out.println("***DEBUG: Después de getPathsFromFile(), tamaño de paths: " + graphSpecialUser.paths.size()); // Añadido por Nacho Palacio 2025-04-24
 
 		String edge = null;
 		for (int i = 0; i < userList.size(); i++) {
 			User currentUser = userList.get(i);
-			System.out.println("Initializing user: " + (i + 1)); // Depuración: Verificar el usuario actual
 			// Identify to RS users to generate their paths.
 			if (currentUser.isSpecialUser) {
-				System.out.println("User " + (i + 1) + " is a special user."); // Depuración: Usuario especial
 				// Gets the randomly door where RS users will enter.
 				long startVertex = dataAccessGraphFile.getRandomDoor();
-				System.out.println("***DEBUG: Puerta inicial aleatoria: " + startVertex); // Añadido por Nacho Palacio 2025-04-24
 				// The RS user path is updated with the hybrid recommendation algorithm.
 				//System.out.println(currentUser.userID);
 				updateSpecialUserPath(startVertex, startVertex, false, 0, false, currentUser);
-				System.out.println("***DEBUG: Después de updateSpecialUserPath para usuario " + currentUser.userID); // Añadido por Nacho Palacio 2025-04-24
 			}
-			System.out.println("***DEBUG: Intentando obtener ruta para usuario " + (i + 1)); // Añadido por Nacho Palacio 2025-04-24
+
 			// Get the current non-RS user path.
 			path = graphSpecialUser.paths.get(i);
-			System.out.println("***DEBUG: Ruta obtenida para usuario " + (i + 1) + ", tamaño: " + (path != null ? path.size() : "null")); // Añadido por Nacho Palacio 2025-04-24
-
-			// Añadido por Nacho Palacio 2025-04-24
-			if (path == null || path.isEmpty() || (path.size() == 1 && path.get(0).isEmpty())) {
-				// System.out.println("ADVERTENCIA: Ruta vacía o inválida para usuario " + (i + 1) + ". Generando ruta sencilla por defecto.");
-				// Crear una ruta simple por defecto
-				path = new ArrayList<>();
-				path.add("(1 : 2)");  // Arista ficticia mínima
-				graphSpecialUser.paths.set(i, path);
-			}
-
-			// System.out.println("Path of user " + (i + 1) + ": " + path); // Depuración: Verificar la ruta del usuario
 			MainSimulator.printConsole("Path of user " + (i + 1) + ": " + path, Level.WARNING);
 			// Get the current edge.
 			edge = path.get(this.userPositionInPath[i]);
@@ -475,71 +451,6 @@ public class Simulation {
 	 * @param strategy The path generation strategy.
 	 */
 	public void generate_non_special_user_path(Path strategy) {
-		/* Añadido por Nacho Palacio 2025-4-13. */
-		System.out.println("Generating non-special user paths...");
-		System.out.println("Path strategy: " + strategy.getClass().getSimpleName());
-		System.out.println("Output file: " + nonSpecialUserPaths);
-
-		// Añadido por Nacho Palacio 2025-04-22
-		// Si la estrategia es RandomPath, inicializar itemsByRoom con IDs internos
-		if (strategy instanceof RandomPath) {
-			System.out.println("Inicializando RandomPath con información de habitaciones e ítems...");
-			RandomPath randomPath = (RandomPath) strategy;
-			
-			try {
-				// Cargar ítems por habitación con IDs internos
-				Map<Integer, List<Long>> roomItems = new HashMap<>();
-				
-				// Para cada habitación, obtener sus ítems
-				for (int i = 1; i <= dataAccessGraphFile.getNumberOfRoom(); i++) {
-					List<Long> items = new LinkedList<>();
-					
-					// Obtener todos los ítems de la habitación actual
-					for (int j = 1; j <= dataAccessGraphFile.getNumberOfItemsByRoom(i); j++) {
-						// Obtenemos directamente el ID externo (sin convertir)
-						long itemId = dataAccessGraphFile.getItemOfRoom(j, i);
-						
-						// Si el ID es válido, lo añadimos a la lista
-						if (itemId > 0) {
-							items.add(itemId);
-							System.out.println("Añadiendo ítem " + itemId + " a habitación " + i);
-						}
-					}
-					
-					// Obtener también puertas y escaleras para esta habitación si es necesario
-					for (int j = 1; j <= dataAccessGraphFile.getNumberOfDoorsByRoom(i); j++) {
-						long doorId = dataAccessGraphFile.getDoorOfRoom(j, i);
-						System.out.println("Generate_non_special_user_path: ID puerta " + doorId); // Añadido por Nacho Palacio 2025-05-02
-						if (doorId > 0) {
-							items.add(doorId);
-							System.out.println("Añadiendo puerta " + doorId + " a habitación " + i);
-						}
-					}
-					
-					// Si la habitación tiene escaleras
-					long stairsId = dataAccessGraphFile.getStairsOfRoom(i);
-					if (stairsId > 0) {
-						items.add(stairsId);
-						System.out.println("Añadiendo escaleras " + stairsId + " a habitación " + i);
-					}
-					
-					// Guardar la lista de ítems para esta habitación
-					if (!items.isEmpty()) {
-						roomItems.put(i, items);
-					}
-				}
-				
-				// Inicializar RandomPath con los ítems (mantiene IDs externos para compatibilidad)
-				// Usa la función de inicialización que debes añadir a RandomPath
-				randomPath.initializeItemsByRoom(roomItems);
-				
-				System.out.println("RandomPath inicializado con " + roomItems.size() + " habitaciones y sus ítems");
-				
-			} catch (Exception e) {
-				System.out.println("Error al inicializar RandomPath: " + e.getMessage());
-				e.printStackTrace();
-			}
-		}
 		
 		this.pathStrategyUsed = strategy;
 		
@@ -564,14 +475,6 @@ public class Simulation {
 				int start_item = random.nextInt((strategy.accessItemFile.getNumberOfItems() - 1) + 1) + 1;
 				if (start_item <= 0)
 					System.out.println("ERROR: " + start_item);
-
-				// Añadido por Nacho Palacio 2025-04-23
-				// Convertir a ID interno para coherencia
-				long internalStartItem = ElementIdMapper.convertToRangeId(start_item, ElementIdMapper.CATEGORY_ITEM);
-				System.out.println("Generando ruta para: ID externo " + start_item + " -> ID interno " + internalStartItem);
-
-
-				// Verificar que el ID interno esté en el rango correcto
 				int tryCount = 0;
 				while(strategy.generatePath(start_item).toString().isEmpty() && tryCount < 20) {
 					tryCount++;
@@ -579,23 +482,8 @@ public class Simulation {
 					if (start_item <= 0)
 						System.out.println("ERROR: " + start_item);
 				}
-				// MainSimulator.printConsole("User generated path: " + (i + 1) + "; " + "Starting point: " + start_item, Level.INFO);
-				// pw.writeBytes(strategy.generatePath(start_item) + "\n");
-
-				// Modificado por Nacho Palacio 2025-04-23
-				MainSimulator.printConsole("User generated path: " + (i + 1) + "; " + "Starting point interno: " + internalStartItem + " (externo: " + start_item + ")", Level.INFO);
-				// pw.writeBytes(strategy.generatePath(internalStartItem) + "\n");
-
-				System.out.println("Intentando generar ruta con start_item=" + start_item); // Añadido por Nacho Palacio 2025-04-25
-				// Modificado por Nacho Palacio 2025-04-24
-				String generatedPath = strategy.generatePath(internalStartItem);
-
-				// System.out.println("Ruta generada: '" + generatedPath + "', longitud=" + generatedPath.length()); // Añadido por Nacho Palacio 2025-04-25
-				// Convertir todos los IDs internos a externos en el path antes de guardar
-				generatedPath = convertPathIdsToExternal(generatedPath);
-
-				// System.out.println("Escribiendo ruta en archivo: '" + generatedPath + "'"); // Añadido por Nacho Palacio 2025-04-25
-				pw.writeBytes(generatedPath + "\n");
+				MainSimulator.printConsole("User generated path: " + (i + 1) + "; " + "Starting point: " + start_item, Level.INFO);
+				pw.writeBytes(strategy.generatePath(start_item) + "\n");
 			}
 		} catch (IOException e) {
 			log.log(Level.SEVERE, "IOException: \n" + e);
@@ -616,385 +504,6 @@ public class Simulation {
 	 * @param finishPath:       If finish the RS user path.
 	 * @param specialUserID:    The RS user ID.
 	 */
-	public void updateSpecialUserPathOld(long startVertex, long endVertex, boolean disobedience, long nextItemSelected, boolean finishPath, User currentUser) {
-		
-		System.out.println("DEBUG-START: Iniciando updateSpecialUserPath para usuario " + currentUser.userID); // Añadido por Nacho Palacio 2025-05-02
-
-		long initialTimeTotal = 0, finalTimeTotal = 0, initialTimeNetwork = 0, finalTimeNetwork = 0;
-		initialTimeTotal = System.currentTimeMillis();
-		System.out.println("DEBUG-1: Variables inicializadas"); // Añadido por Nacho Palacio 2025-05-02
-		
-		List<String> finalPath = null;
-		List<RecommendedItem> recommendedItems = null;
-		String recommendationType = null;
-		String currentPath = null;
-		TrajectoryPostfilteringBasedRecommendation postfiltering = null;
-		initialTimeNetwork = System.currentTimeMillis();
-		Path pathStrategy = new NearestPath();
-		finalTimeNetwork = System.currentTimeMillis();
-		String special_user_dbURL = null;
-		Database db_special_user = null;
-
-		System.out.println("DEBUG-2: Antes de obtener el tipo de red"); // Añadido por Nacho Palacio 2025-05-02
-
-		if (getNetworkType().equalsIgnoreCase("Centralized (Centralized)")) {
-			special_user_dbURL = Literals.SQL_DRIVER + Literals.DB_CENTRALIZED_USER_PATH;
-			db_special_user = dataInstanceUserDB_Centralized;
-			System.out.println("DEBUG-2.1: Tipo de red Centralizada"); // Añadido por Nacho Palacio 2025-05-02
-		}
-		else if (getNetworkType().equalsIgnoreCase("Peer To Peer (P2P)")) {
-			special_user_dbURL = Literals.SQL_DRIVER + Literals.DB_P2P_USER_PATH + currentUser.userID + ".db";
-			db_special_user = dataInstanceUserDBList_P2P.get(currentUser.userID - 1);
-			System.out.println("DEBUG-2.2: Tipo de red P2P, usando DB " + special_user_dbURL); // Añadido por Nacho Palacio 2025-05-02
-		}
-
-		finalTimeTotal = System.currentTimeMillis();
-		log.log(Level.FINE, "[updateSpecialUserPath]: PRE - " + (finalTimeTotal - initialTimeTotal));
-		log.log(Level.FINER, "[updateSpecialUserPath]: PRE NETWORK - " + (finalTimeNetwork - initialTimeNetwork));
-		
-		System.out.println("DEBUG-3: Antes de crear DBDataModel y DataAccessLayer"); // Añadido por Nacho Palacio 2025-05-02
-
-		// DBDataModel and DataAccessLayer that are going to open DB connections
-		// Declared before try block so that they can be disconnected from db in finally method
-		DBDataModel dataModelSpecialUser = null;
-		DataAccessLayer dataAccesLayerDBMuseum = null;
-		
-		try {
-			long initialTimeTry = 0, finalTimeTry = 0;
-			long initialTimeDBDataModel = 0, finalTimeDBDataModel = 0, initialTimeDataAccessLayer = 0, finalTimeDataAccessLayer = 0;
-			
-			initialTimeTotal = System.currentTimeMillis();
-			
-			initialTimeTry = System.currentTimeMillis();
-			// For the database connection of the current RS user.
-			initialTimeDBDataModel = System.currentTimeMillis();
-			System.out.println("DEBUG-5: Antes de crear DBDataModel"); // Añadido por Nacho Palacio 2025-05-02
-			dataModelSpecialUser = new DBDataModel(special_user_dbURL, db_special_user, this.numberOfUser - 1); // Modificado por Nacho Palacio 2025-05-08 antes this.numberOfUser-1
-
-			verifyThresholdSimilarity(dataModelSpecialUser); // Añadido por Nacho Palacio 2025-05-08
-
-			System.out.println("DEBUG-6: DBDataModel creado"); // Añadido por Nacho Palacio 2025-05-02
-			finalTimeDBDataModel = System.currentTimeMillis();
-			
-			initialTimeDataAccessLayer = System.currentTimeMillis();
-			System.out.println("DEBUG-7: Antes de crear DataAccessLayer"); // Añadido por Nacho Palacio 2025-05-02
-			dataAccesLayerDBMuseum = new DataAccessLayer(Literals.SQL_DRIVER + Literals.DB_ALL_USERS_PATH, dataInstanceMuseumDB);
-			System.out.println("DEBUG-8: DataAccessLayer creado"); // Añadido por Nacho Palacio 2025-05-02
-			finalTimeDataAccessLayer = System.currentTimeMillis();
-			
-			finalTimeTry = System.currentTimeMillis();
-			log.log(Level.WARNING, "[updateSpecialUserPath]: TRY - DB connection: " + (finalTimeTry - initialTimeTry));	
-					//+ " -> DBDataModel: " + (finalTimeDBDataModel - initialTimeDBDataModel) + 
-					//"; DataAccessLayer: "+ (finalTimeDataAccessLayer - initialTimeDataAccessLayer));
-			
-			
-			initialTimeTry = System.currentTimeMillis();
-			System.out.println("DEBUG-9: Antes de construir grafo"); // Añadido por Nacho Palacio 2025-05-02
-			// Build a graph for the RS user.
-			graphSpecialUser.graphRecommender = graphSpecialUser.buildGraphForSpecialUser();
-			System.out.println("DEBUG-10: Grafo construido"); // Añadido por Nacho Palacio 2025-05-02
-			System.out.println("DEBUG-11: Antes de crear ShortestTrajectoryStrategy"); // Añadido por Nacho Palacio 2025-05-02
-			ShortestTrajectoryStrategy trajectoryStrategy = new ShortestTrajectoryStrategy(graphSpecialUser.graphRecommender, MainSimulator.floor.diccionaryItemLocation);
-			System.out.println("DEBUG-12: Después de crear ShortestTrajectoryStrategy"); // Añadido por Nacho Palacio 2025-05-02
-
-			finalTimeTry = System.currentTimeMillis();
-			log.log(Level.WARNING, "[updateSpecialUserPath]: TRY - Build graph: " + (finalTimeTry - initialTimeTry));
-
-			
-			initialTimeTry = System.currentTimeMillis();
-			// The recommendation threshold.
-			System.out.println("DEBUG-13: Antes de inicializar TrajectoryPostfilteringBasedRecommendation"); // Añadido por Nacho Palacio 2025-05-02
-			float threshold = getThresholdRecommendation();
-			System.out.println("DEBUG-13.0: Threshold: " + threshold); // Añadido por Nacho Palacio 2025-05-03
-			if (finishPath) {
-				// When the path is finished.
-				postfiltering = new TrajectoryPostfilteringBasedRecommendation(dataModelSpecialUser, special_user_dbURL, trajectoryStrategy, endVertex, threshold);
-				System.out.println("DEBUG-13.1: Inicializado con finishPath=true"); // Añadido por Nacho Palacio 2025-05-02
-			} else {
-				// When the path is not finished.
-				postfiltering = new TrajectoryPostfilteringBasedRecommendation(dataModelSpecialUser, special_user_dbURL, trajectoryStrategy, startVertex, threshold);
-				System.out.println("DEBUG-13.2: Inicializado con finishPath=false"); // Añadido por Nacho Palacio 2025-05-02
-			}
-			System.out.println("DEBUG-14: TrajectoryPostfilteringBasedRecommendation inicializado"); // Añadido por Nacho Palacio 2025-05-02
-			
-			finalTimeTry = System.currentTimeMillis();
-			log.log(Level.WARNING, "[updateSpecialUserPath]: TRY - Threshold: " + (finalTimeTry - initialTimeTry));
-			
-			
-			initialTimeTry = System.currentTimeMillis();
-			System.out.println("DEBUG-15: Antes de obtener algoritmo de recomendación: " + getRecommendationAlgorithm()); // Añadido por Nacho Palacio 2025-05-02
-			// Recommendation type
-			recommendationType = getRecommendationAlgorithm();
-			System.out.println("DEBUG-16: Procesando algoritmo: " + recommendationType); // Añadido por Nacho Palacio 2025-05-02
-			if (recommendationType.equalsIgnoreCase("Completely-random (FULLY-RAND)")) {
-				RandomRecommendation recommender = new RandomRecommendation(dataModelSpecialUser, dataAccesLayerDBMuseum);
-				recommendedItems = recommender.recommend(currentUser.userID, getHowMany());
-				//log.log(Level.WARNING, "Recommended items: " + recommendedItems.toString());
-				// The path is obtained from the recommended items.
-				postfiltering.recommendBaseline(recommendedItems);	// NoSuchUserException -> SOLUCIONADO (Check de l�mites en funci�n recommend
-																	// IndexOutOfBoundsException -> Index: 0, Size: 0
-				currentPath = postfiltering.getFinalPath();
-				
-				finalTimeTry = System.currentTimeMillis();
-				log.log(Level.WARNING, "[updateSpecialUserPath]: TRY - Recommendation (FULLY-RAND): " + (finalTimeTry - initialTimeTry));
-				log.log(Level.SEVERE, "Finished: FULLY-RAND");
-				
-				
-			} else if (recommendationType.equalsIgnoreCase("User-Based Collaborative Filtering (UBCF)") || recommendationType.equalsIgnoreCase("Know-It-All (Know-It-All)")) {
-				UserSimilarity similarity = new PearsonCorrelationSimilarity(dataModelSpecialUser);
-				UserNeighborhood neighborhood = new ThresholdUserNeighborhood(getThresholdSimilarity(), similarity, dataModelSpecialUser);
-				// For debugging UserNeighborhood
-				//System.out.println(Arrays.toString(neighborhood.getUserNeighborhood(currentUser.userID)));
-				
-				GenericUserBasedRecommender recommender = new GenericUserBasedRecommender(dataModelSpecialUser, neighborhood, similarity);
-				postfiltering.setRecommender(recommender);
-				recommendedItems = postfiltering.recommend(currentUser.userID, getHowMany()); // NoSuchUserException
-				// The path is obtained from the recommended items.
-				currentPath = postfiltering.getFinalPath();
-				
-				if (recommendationType.equalsIgnoreCase("User-Based Collaborative Filtering (UBCF)")) {
-					log.log(Level.SEVERE, "Finished: UBCF");
-				}
-				else {
-					log.log(Level.SEVERE, "Finished: Know-It-All");
-				}
-				
-			} else if (recommendationType.equalsIgnoreCase("K-Ideal (K-Ideal)")) { // Baseline
-				IdealRecommendation recommender = new IdealRecommendation(dataModelSpecialUser, dataAccesLayerDBMuseum);
-				long currentContext = getCurrentContext(currentUser);
-				List<RecommendedItem> candidateItemsFromRecommender = recommender.recommend(currentUser.userID, getHowMany(), currentContext);
-				recommendedItems = postfiltering.recommendIdeal(candidateItemsFromRecommender);
-				// The path is obtained from the recommended items.
-				currentPath = postfiltering.getFinalPath();
-				
-				log.log(Level.SEVERE, "Finished: K-Ideal");
-			} else {
-				if (recommendationType.equalsIgnoreCase("Exhaustive visit (ALL)")) {
-					ExhaustiveRecommendation recommender = new ExhaustiveRecommendation(dataModelSpecialUser, dataAccesLayerDBMuseum);
-					recommendedItems = recommender.recommend(currentUser.userID, 1);
-					// The path is obtained from the recommended items.
-					postfiltering.recommendBaseline(recommendedItems); // NoSuchUserException
-					// The path is obtained from the recommended items.
-					currentPath = postfiltering.getFinalPath();
-					
-					log.log(Level.SEVERE, "Finished: Exhaustive (ALL)");
-				} else {
-					if (recommendationType.equalsIgnoreCase("Near POI (NPOI)")) {
-						// NPOI exception -> to catch block
-						//System.out.println("Executing: NPOI (not exception)");
-						throw new Exception("Debe ejecutarse solo NPOI");
-					}
-				}
-			}
-			
-			// Añadido por Nacho Palacio 2025-05-03
-			if (recommendedItems == null || recommendedItems.isEmpty()) {
-                // System.out.println("ADVERTENCIA: No hay recomendaciones para el usuario " + 
-                //                 currentUser.userID + ". Generando ruta por defecto.");
-                
-                // Generar una ruta mínima con al menos un ítem válido
-                List<String> defaultPath = new LinkedList<>();
-                defaultPath.add("(" + startVertex + " : " + startVertex + ")");
-                
-                // Asignar la ruta por defecto
-                finalPath = defaultPath;
-                
-                // Y asegurarse de que finalPath no sea nulo cuando se asigne al final del método
-                graphSpecialUser.paths.set(((int) currentUser.userID) - 1, finalPath);
-                
-                System.out.println("DEBUG-END: Finalizado updateSpecialUserPath con ruta por defecto para usuario " + 
-                                currentUser.userID);
-                return; // Terminar el método sin seguir procesando
-            }
-
-			/* Añadido por Nacho Palacio 2025-04-16. */
-			if (currentPath == null) {
-				log.log(Level.WARNING, "Generated path is null for user " + currentUser.userID + ". Using default path.");
-				
-				if (!(pathStrategy instanceof NearestPath)) {
-					pathStrategy = new NearestPath();
-				}
-				
-				if (finishPath) {
-					currentPath = pathStrategy.generatePath(endVertex);
-				} else {
-					currentPath = pathStrategy.generatePath(startVertex);
-				}
-				
-				// Si aún así el camino es nulo, usar un camino vacío
-				if (currentPath == null) {
-					log.log(Level.SEVERE, "Failed to generate default path. Using empty path.");
-					currentPath = "";
-					System.out.println("DEBUG-17: currentPath es nulo, generando ruta alternativa"); // Añadido por Nacho Palacio 2025-05-02
-				}
-				else { // Añadido por Nacho Palacio 2025-05-02
-					System.out.println("DEBUG-18: currentPath generado correctamente");
-				}
-			}
-			System.out.println("DEBUG-19: Antes de combinar rutas"); // Añadido por Nacho Palacio 2025-05-02
-			List<String> pathSpecialUser = Arrays.asList(currentPath.split(", "));
-			if (disobedience) {
-				finalPath = combinePathsDisobedience(nextItemSelected, startVertex, endVertex, pathSpecialUser, currentUser.userID);
-				System.out.println("DEBUG-19.1: Ruta combinada con disobedience=true"); // Añadido por Nacho Palacio 2025-05-02
-			} else {
-				finalPath = combinePaths(startVertex, endVertex, pathSpecialUser, finishPath);
-				System.out.println("DEBUG-19.2: Ruta combinada con disobedience=false"); // Añadido por Nacho Palacio 2025-05-02
-			}
-			
-			// Almacenar valoraciones predichas y tiempos para cada id_item
-			storePredictedRatings(recommendedItems, currentUser);
-			
-			/*
-			 * Connection reused -> Don't disconnect till the end of the simulation
-			// Close DB connections
-			dataModelSpecialUser.disconnect();
-			dataAccesLayerDBMuseum.disconnect();
-			*/
-			
-			finalTimeTotal = System.currentTimeMillis();
-			log.log(Level.WARNING, "[updateSpecialUserPath]: TRY - " + (finalTimeTotal - initialTimeTotal));
-			
-		} // end try
-		catch (Exception ex) {
-			ex.printStackTrace();
-			if (recommendationType.equalsIgnoreCase("Near POI (NPOI)")) {
-				log.log(Level.SEVERE, "NPOI");
-				
-				//ex.printStackTrace();
-			}
-			
-			/*
-			 * NPOI STRATEGY IN CASE OF EXCETION
-			 */
-			// Prints exception without trace
-			// log.log(Level.SEVERE, ex.toString()); // + "\n" + ex.getStackTrace().toString());
-			
-			/*
-			 * https://stackoverflow.com/questions/6822968/print-the-stack-trace-of-an-exception
-			 * 
-			 * For printing stacktrace
-			 * 
-			 * The 5 following lines
-			 */
-			StringWriter writer = new StringWriter();
-			PrintWriter printWriter = new PrintWriter( writer );
-			ex.printStackTrace( printWriter );
-			printWriter.flush();
-
-			String stackTrace = writer.toString();
-			log.log(Level.SEVERE, stackTrace);
-			
-			log.log(Level.WARNING, "[updateSpecialUserPath]: TRY - TIME TILL IT REACHES CATCH: " + (System.currentTimeMillis() - initialTimeTotal));
-			
-			initialTimeTotal = System.currentTimeMillis();
-			
-			long catchCurrentPath = 0, catchCurrentPathFinal = 0, catchPathSpecialUser = 0, catchPathSpecialUserFinal = 0, catchFinalPath = 0, catchFinalPathFinal = 0;
-			catchCurrentPath = System.currentTimeMillis();
-			
-			
-			// If there is not information to apply the specified recommender, then the path is generated by using the NPOI strategy.
-			try {
-				if (finishPath) {
-					currentPath = pathStrategy.generatePath(endVertex);
-				} else {
-					currentPath = pathStrategy.generatePath(startVertex);
-				}
-			}
-			catch (Exception e) {
-				//e.printStackTrace();
-			}
-			
-			catchCurrentPathFinal = System.currentTimeMillis();
-			
-			catchPathSpecialUser = System.currentTimeMillis();
-			List<String> pathSpecialUser = Arrays.asList(currentPath.split(", "));
-			catchPathSpecialUserFinal = System.currentTimeMillis();
-			
-			catchFinalPath = System.currentTimeMillis();
-			// If the first time, is not necessary to combine the old path with the updated path.
-			if (UserRunnable.firstTime) {
-				finalPath = pathSpecialUser;
-				UserRunnable.firstTime = false;
-			} else {
-				// In order not to repeat, for example (22 : 22), which is only for the first
-				// time.
-				List<String> pathSpecialUserTemp = new ArrayList<String>(pathSpecialUser);
-				String edge[] = cleanEdge(pathSpecialUserTemp.get(0));
-				if (edge.length > 1) {
-					if (edge[0] == edge[1]) {
-						pathSpecialUserTemp.remove(0);
-					}
-				}
-				// If is the second time, is necessary to combine the old path with the updated path.
-				finalPath = combinePaths(startVertex, endVertex, pathSpecialUserTemp, finishPath);
-				
-			}
-			catchFinalPathFinal = System.currentTimeMillis();
-			
-			log.log(Level.WARNING, "[updateSpecialUserPath / CURRENTPATH]: CATCH - " + (catchCurrentPathFinal - catchCurrentPath));
-			log.log(Level.WARNING, "[updateSpecialUserPath / PATHSPECIALUSER]: CATCH - " + (catchPathSpecialUserFinal - catchPathSpecialUser));
-			log.log(Level.WARNING, "[updateSpecialUserPath / FINALPATH]: CATCH - " + (catchFinalPathFinal - catchFinalPath));
-			
-			finalTimeTotal = System.currentTimeMillis();
-			log.log(Level.FINE, "[updateSpecialUserPath]: CATCH - " + (finalTimeTotal - initialTimeTotal));
-			
-			
-		} // End catch
-		
-		// Close db connections (if opened) to reduce db delays
-		/*
-		 * Connection reused -> Don't disconnect till the end of the simulation
-		 * finally {
-			
-			try {
-				// Close DB connections
-				dataModelSpecialUser.disconnect();
-				dataAccesLayerDBMuseum.disconnect();
-			} catch (SQLException disconnectEX) {
-				System.out.println(disconnectEX);
-			} catch (Exception e) {
-				System.out.println(e);
-			}
-		}*/
-		
-		initialTimeTotal = System.currentTimeMillis();
-		
-		/*
-		 * THE PURPOSE OF THIS FUNCTION: SET RS user'S PATH
-		 */
-		System.out.println("DEBUG-FINAL: Asignando ruta a usuario " + currentUser.userID); // Añadido por Nacho Palacio 2025-05-02
-		graphSpecialUser.paths.set(((int) currentUser.userID) - 1, finalPath);
-		System.out.println("DEBUG-END: Finalizado updateSpecialUserPath para usuario " + currentUser.userID); // Añadido por Nacho Palacio 2025-05-02
-		
-		// System.out.println(graphSpecialUser.paths.get(((int) currentUser.userID) - 1));
-
-		// Print in file the paths.
-		stopTime = System.currentTimeMillis();
-		// Divide by 1000 to print the result in seconds.
-		elapsedTime = (stopTime - startTime) / 1000;
-
-		if (!UserRunnable.firstTime) {
-			// Check if the user changed from the item he was evaluating to a new item.
-			path = graphSpecialUser.paths.get((int) ((int) currentUser.userID - 1));
-			String edge = path.get(userPositionInPath[(int) ((int) currentUser.userID - 1)]);
-			long currentEndVertex = -1;
-			if (edge.length() > 1) {
-				currentEndVertex = Long.valueOf(cleanEdge(edge)[1]).longValue();
-			}
-			isChangedItemByRecommender = false;
-			if (endVertex != currentEndVertex && endVertex <= this.numberOfITems && currentEndVertex <= this.numberOfITems && voting[(int) ((int) currentUser.userID - 1)] == true) {
-				isChangedItemByRecommender = true;
-				log.log(Level.SEVERE, "ITEM CHANGED BY RECOMMENDER");
-			}
-		}
-		
-		finalTimeTotal = System.currentTimeMillis();
-		log.log(Level.FINE, "[updateSpecialUserPath]: POST - " + (finalTimeTotal - initialTimeTotal));
-		
-		// System.out.println("End recommendation");
-	}
-
-	// Añadido por Nacho Palacio 2025-05-11
 	public void updateSpecialUserPath(long startVertex, long endVertex, boolean disobedience, long nextItemSelected, boolean finishPath, User currentUser) {
 		
 		long initialTimeTotal = 0, finalTimeTotal = 0, initialTimeNetwork = 0, finalTimeNetwork = 0;
@@ -1138,23 +647,13 @@ public class Simulation {
 					}
 				}
 			}
-			List<String> pathSpecialUser = new LinkedList<>();
-			if (currentPath != null) {
-				pathSpecialUser = Arrays.asList(currentPath.split(", "));
-				if (disobedience) {
-					finalPath = combinePathsDisobedience(nextItemSelected, startVertex, endVertex, pathSpecialUser, currentUser.userID);
-				} else {
-					finalPath = combinePaths(startVertex, endVertex, pathSpecialUser, finishPath);
-				}
+
+			List<String> pathSpecialUser = Arrays.asList(currentPath.split(", "));
+			if (disobedience) {
+				finalPath = combinePathsDisobedience(nextItemSelected, startVertex, endVertex, pathSpecialUser, currentUser.userID);
+			} else {
+				finalPath = combinePaths(startVertex, endVertex, pathSpecialUser, finishPath);
 			}
-
-
-			// List<String> pathSpecialUser = Arrays.asList(currentPath.split(", "));
-			// if (disobedience) {
-			// 	finalPath = combinePathsDisobedience(nextItemSelected, startVertex, endVertex, pathSpecialUser, currentUser.userID);
-			// } else {
-			// 	finalPath = combinePaths(startVertex, endVertex, pathSpecialUser, finishPath);
-			// }
 			
 			// Almacenar valoraciones predichas y tiempos para cada id_item
 			storePredictedRatings(recommendedItems, currentUser);
@@ -1222,16 +721,7 @@ public class Simulation {
 			catchCurrentPathFinal = System.currentTimeMillis();
 			
 			catchPathSpecialUser = System.currentTimeMillis();
-
-
-			List<String> pathSpecialUser = new LinkedList<>();
-			if (currentPath != null) {
-				pathSpecialUser = Arrays.asList(currentPath.split(", "));
-			}
-
-			// List<String> pathSpecialUser = Arrays.asList(currentPath.split(", "));
-
-
+			List<String> pathSpecialUser = Arrays.asList(currentPath.split(", "));
 			catchPathSpecialUserFinal = System.currentTimeMillis();
 			
 			catchFinalPath = System.currentTimeMillis();
@@ -1295,55 +785,18 @@ public class Simulation {
 		// Divide by 1000 to print the result in seconds.
 		elapsedTime = (stopTime - startTime) / 1000;
 
-		// if (!UserRunnable.firstTime) {
-		// 	// Check if the user changed from the item he was evaluating to a new item.
-		// 	path = graphSpecialUser.paths.get((int) ((int) currentUser.userID - 1));
-		// 	String edge = path.get(userPositionInPath[(int) ((int) currentUser.userID - 1)]);
-		// 	long currentEndVertex = -1;
-		// 	if (edge.length() > 1) {
-		// 		currentEndVertex = Long.valueOf(cleanEdge(edge)[1]).longValue();
-		// 	}
-		// 	isChangedItemByRecommender = false;
-		// 	if (endVertex != currentEndVertex && endVertex <= this.numberOfITems && currentEndVertex <= this.numberOfITems && voting[(int) ((int) currentUser.userID - 1)] == true) {
-		// 		isChangedItemByRecommender = true;
-		// 		log.log(Level.SEVERE, "ITEM CHANGED BY RECOMMENDER");
-		// 	}
-		// }
-
-		// Modificado por Nacho Palacio 2025-05-11
 		if (!UserRunnable.firstTime) {
 			// Check if the user changed from the item he was evaluating to a new item.
-			if (graphSpecialUser != null && graphSpecialUser.paths != null && 
-				((int) currentUser.userID - 1) < graphSpecialUser.paths.size() && 
-				graphSpecialUser.paths.get((int) currentUser.userID - 1) != null) {
-				
-				path = graphSpecialUser.paths.get((int) ((int) currentUser.userID - 1));
-				
-				if (path != null && !path.isEmpty() && 
-					userPositionInPath != null && 
-					userPositionInPath[(int) ((int) currentUser.userID - 1)] < path.size()) {
-					
-					String edge = path.get(userPositionInPath[(int) ((int) currentUser.userID - 1)]);
-					long currentEndVertex = -1;
-					
-					if (edge != null && edge.length() > 1) {
-						String[] cleanedEdge = cleanEdge(edge);
-						if (cleanedEdge != null && cleanedEdge.length > 1) {
-							currentEndVertex = Long.valueOf(cleanedEdge[1]).longValue();
-						}
-					}
-					
-					isChangedItemByRecommender = false;
-					if (endVertex != currentEndVertex && 
-						endVertex <= this.numberOfITems && 
-						currentEndVertex <= this.numberOfITems && 
-						voting != null &&
-						voting[(int) ((int) currentUser.userID - 1)] == true) {
-						
-						isChangedItemByRecommender = true;
-						log.log(Level.SEVERE, "ITEM CHANGED BY RECOMMENDER");
-					}
-				}
+			path = graphSpecialUser.paths.get((int) ((int) currentUser.userID - 1));
+			String edge = path.get(userPositionInPath[(int) ((int) currentUser.userID - 1)]);
+			long currentEndVertex = -1;
+			if (edge.length() > 1) {
+				currentEndVertex = Long.valueOf(cleanEdge(edge)[1]).longValue();
+			}
+			isChangedItemByRecommender = false;
+			if (endVertex != currentEndVertex && endVertex <= this.numberOfITems && currentEndVertex <= this.numberOfITems && voting[(int) ((int) currentUser.userID - 1)] == true) {
+				isChangedItemByRecommender = true;
+				log.log(Level.SEVERE, "ITEM CHANGED BY RECOMMENDER");
 			}
 		}
 		
@@ -1426,12 +879,6 @@ public class Simulation {
 				//boolean emptyLast = ((path.size() - 1) == userPositionInPath[userPosition]) && ((path.get(path.size()-1) != "")  || (path.get(path.size()-1) != null));
 				// CHECK && !emptyLast IN IF
 				
-				// Añadido por Nacho Palacio 2025-05-11
-				if (path == null) {
-					// Si el path es nulo, simplemente saltamos este usuario en esta iteración
-					log.log(Level.WARNING, "Path nulo encontrado para usuario " + currentUser.userID + ", saltando iteración.");
-					continue;
-				}
 				
 				// If the path has not finished.
 				if ((path.size() - 1) >= userPositionInPath[userPosition]) {
@@ -1766,24 +1213,9 @@ public class Simulation {
 					 * 		list is being used in iterations because then the loop gets in trouble
 					*/
 					
-					// UserInfo.UserState ui = stateOfUsers.get(currentUser.userID);
-					// ui.action = "Finished";
-					// ui.item = null;
-
-					// Modificado por Nacho Palacio 2025-05-10
 					UserInfo.UserState ui = stateOfUsers.get(currentUser.userID);
-					if (ui != null) {
-						System.out.println("DEBUG-20: Se ha encontrado el estado del usuario " + currentUser.userID);
-						ui.action = "Finished";
-						ui.item = null;
-					} else {
-						System.out.println("DEBUG-21: No se ha encontrado el estado del usuario " + currentUser.userID);
-						// Crear un nuevo objeto UserState pasando una habitación válida
-						ui = new UserInfo.UserState(MainSimulator.floor.roomLabels.get(currentUser.room));
-						ui.action = "Finished";
-						ui.item = null;
-						stateOfUsers.put(currentUser.userID, ui);
-					}
+					ui.action = "Finished";
+					ui.item = null;
 					
 					finalTime = System.currentTimeMillis();
 					log.log(Level.INFO, "    Tiempo en actualizar PATH de " + (userPosition+1) + " (acabado): " + (finalTime - initialTime));
@@ -3276,68 +2708,6 @@ public class Simulation {
 		}
 		else {
 			return false;
-		}
-	}
-
-	// Añadido por Nacho Palacio 2025-04-24
-	private String convertPathIdsToExternal(String path) {
-		if (path == null || path.isEmpty())
-			return path;
-			
-		StringBuilder externalPath = new StringBuilder();
-		String[] edges = path.split(", ");
-		
-		for (String edge : edges) {
-			if (edge.trim().isEmpty())
-				continue;
-				
-			String[] vertices = cleanEdge(edge);
-			if (vertices.length == 2) {
-				long v1 = Long.parseLong(vertices[0]);
-				long v2 = Long.parseLong(vertices[1]);
-				
-				// Convertir a IDs externos si son internos
-				if (ElementIdMapper.isInCorrectRange(v1, ElementIdMapper.CATEGORY_ITEM)) {
-					v1 = ElementIdMapper.getBaseId(v1);
-				} else if (ElementIdMapper.isInCorrectRange(v1, ElementIdMapper.CATEGORY_DOOR)) {
-					v1 = ElementIdMapper.getBaseId(v1);
-				}
-				
-				if (ElementIdMapper.isInCorrectRange(v2, ElementIdMapper.CATEGORY_ITEM)) {
-					v2 = ElementIdMapper.getBaseId(v2);
-				} else if (ElementIdMapper.isInCorrectRange(v2, ElementIdMapper.CATEGORY_DOOR)) {
-					v2 = ElementIdMapper.getBaseId(v2);
-				}
-				
-				externalPath.append("(").append(v1).append(" : ").append(v2).append("), ");
-			}
-		}
-		
-		return externalPath.toString();
-	}
-
-	// Añadido por Nacho Palacio 2025-05-08
-	private void verifyThresholdSimilarity(DBDataModel dataModel) {
-		System.out.println("DEBUG-THRESHOLD: Umbral de similitud actual: " + getThresholdSimilarity());
-		// Probar con diferentes umbrales para ver cuándo comienza a encontrar vecinos
-		double[] thresholds = {0.5, 0.4, 0.3, 0.2, 0.1, 0.05, 0.01};
-		for (double threshold : thresholds) {
-			System.out.println("DEBUG-THRESHOLD: Probando con umbral " + threshold);
-			try {
-				UserSimilarity similarity = new PearsonCorrelationSimilarity(dataModel);
-				UserNeighborhood neighborhood = 
-					new ThresholdUserNeighborhood(threshold, similarity, dataModel);
-				
-				long[] neighbors = neighborhood.getUserNeighborhood(176);
-				System.out.println("DEBUG-THRESHOLD: Usuario 176 tiene " + 
-								 (neighbors != null ? neighbors.length : 0) + 
-								 " vecinos con umbral " + threshold);
-				if (neighbors != null && neighbors.length > 0) {
-					break;  // Ya encontramos un umbral que funciona
-				}
-			} catch (Exception e) {
-				System.out.println("DEBUG-THRESHOLD: Error: " + e.getMessage());
-			}
 		}
 	}
 }
