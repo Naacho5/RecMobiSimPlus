@@ -579,41 +579,58 @@ public abstract class Path {
 
 	// Modificado por Nacho Palacio 2025-04-25
 	public List<Long> getItemsByRoom(int room) {
+		System.out.println("DEBUG-getItemsByRoom: Inicio de getItemsByRoom, room=" + room + ", numero de habitaciones: " + this.numberOfRooms); // Añadido por Nacho Palacio 2025-05-13
 		List<Long> itemsByRoom = new LinkedList<>();
 		List<Long> doorsByRoom = new LinkedList<>();  // Lista separada para puertas
 		
 		if (room <= this.numberOfRooms) {
 			// Get the number of items from specified room.
 			int numberOfItemsByRoom = accessGraphFile.getNumberOfItemsByRoom(room);
+			System.out.println("DEBUG-getItemsByRoom: Número de ítems en la habitación " + room + ": " + numberOfItemsByRoom); // Añadido por Nacho Palacio 2025-05-13
 			for (int j = 1; j <= numberOfItemsByRoom; j++) {
 				long itemId = accessGraphFile.getItemOfRoom(j, room);
-				
+				System.out.println("DEBUG-getItemsByRoom: Ítem obtenido en la habitación " + room + ": " + itemId); // Añadido por Nacho Palacio 2025-05-13
 				// Verificar si es realmente un ítem (no una puerta)
-				if (itemId <= this.numberOfItems) {
+				// if (itemId <= this.numberOfItems) {
+				if (ElementIdMapper.isInCorrectRange(itemId, ElementIdMapper.CATEGORY_ITEM)) {  // Modificado por Nacho Palacio 2025-05-17
 					itemsByRoom.add(itemId);
+					System.out.println("DEBUG-getItemsByRoom: Ítem añadido a la lista: " + itemId); // Añadido por Nacho Palacio 2025-05-13
 					
 					// Añadir también versión con ID interno
 					long internalId = ElementIdMapper.convertToRangeId(itemId, ElementIdMapper.CATEGORY_ITEM);
 					if (!itemsByRoom.contains(internalId)) {
 						itemsByRoom.add(internalId);
+						System.out.println("DEBUG-getItemsByRoom: ID interno añadido a la lista: " + internalId); // Añadido por Nacho Palacio 2025-05-13
 					}
+				}
+				else { // Añadido por Nacho Palacio 2025-05-13
+					System.out.println("DEBUG-getItemsByRoom: El ítem " + itemId + " no es válido (ID > numberOfItems)"); // Añadido por Nacho Palacio 2025-05-13
+				
 				}
 			}
 			
 			// Get the doors from specified room (conservadas separadamente).
 			int numberOfDoorsByRoom = accessGraphFile.getNumberOfDoorsByRoom(room);
+			System.out.println("DEBUG-getItemsByRoom: Número de puertas en la habitación " + room + ": " + numberOfDoorsByRoom); // Añadido por Nacho Palacio 2025-05-13
 			for (int j = 1; j <= numberOfDoorsByRoom; j++) {
 				long doorId = accessGraphFile.getDoorOfRoom(j, room);
+				System.out.println("DEBUG-getItemsByRoom: Puerta obtenida en la habitación " + room + ": " + doorId); // Añadido por Nacho Palacio 2025-05-13
 				
 				// Solo añadir si es realmente una puerta (ID > numberOfItems)
-				if (doorId > this.numberOfItems && doorId <= this.numberOfItems + this.numberOfDoors) {
+				// if (doorId > this.numberOfItems && doorId <= this.numberOfItems + this.numberOfDoors) {
+				if (ElementIdMapper.isInCorrectRange(doorId, ElementIdMapper.CATEGORY_DOOR)) { // Modificado por Nacho Palacio 2025-05-17
 					doorsByRoom.add(doorId);
+					System.out.println("DEBUG-getItemsByRoom: Puerta añadida a la lista: " + doorId); // Añadido por Nacho Palacio 2025-05-13
 					
 					// Añadir también versión con ID interno
 					long internalId = ElementIdMapper.convertToRangeId(doorId, ElementIdMapper.CATEGORY_DOOR);
 					if (!doorsByRoom.contains(internalId)) {
 						doorsByRoom.add(internalId);
+						System.out.println("DEBUG-getItemsByRoom: ID interno de puerta añadido a la lista: " + internalId); // Añadido por Nacho Palacio 2025-05-13
 					}
+				}
+				else { // Añadido por Nacho Palacio 2025-05-13
+					System.out.println("DEBUG-getItemsByRoom: La puerta " + doorId + " no es válida (ID fuera de rango)");
 				}
 			}
 		}
@@ -622,6 +639,7 @@ public abstract class Path {
 			int posRoom = 0, posSubroom = 0;
 			for (int i = 1; i <= numberOfRooms; i++) {
 				int numberOfSubrooms = accessGraphFile.getRoomNumberSubrooms(i);
+				System.out.println("DEBUG-getItemsByRoom: Número de subhabitaciones en la habitación " + room + ": " + numberOfSubrooms); // Añadido por Nacho Palacio 2025-05-13
 				for (int sub = 1; sub <= numberOfSubrooms; sub++) {
 					if (accessGraphFile.getSubroom(sub, i) == room) {
 						posRoom = i;
@@ -640,7 +658,8 @@ public abstract class Path {
 				long itemId = accessGraphFile.getItemOfSubroom(j, posSubroom, posRoom);
 				
 				// Verificar si es realmente un ítem (no una puerta)
-				if (itemId <= this.numberOfItems) {
+				// if (itemId <= this.numberOfItems) {
+				if (ElementIdMapper.isInCorrectRange(itemId, ElementIdMapper.CATEGORY_ITEM)) { // Modificado por Nacho Palacio 2025-05-17
 					itemsByRoom.add(itemId);
 					
 					// Añadir también versión con ID interno
@@ -657,7 +676,8 @@ public abstract class Path {
 				long doorId = accessGraphFile.getDoorOfSubroom(j, posSubroom, posRoom);
 				
 				// Solo añadir si es realmente una puerta (ID > numberOfItems)
-				if (doorId > this.numberOfItems && doorId <= this.numberOfItems + this.numberOfDoors) {
+				// if (doorId > this.numberOfItems && doorId <= this.numberOfItems + this.numberOfDoors) {
+				if (ElementIdMapper.isInCorrectRange(doorId, ElementIdMapper.CATEGORY_DOOR)) { // Modificado por Nacho Palacio 2025-05-17
 					doorsByRoom.add(doorId);
 					
 					// Añadir también versión con ID interno
@@ -698,6 +718,10 @@ public abstract class Path {
 		
 		System.out.println("getItemsByRoom: Habitación " + room + " tiene " + itemsByRoom.size() + 
 						 " ítems y " + doorsByRoom.size() + " puertas");
+
+		// Añadido por Nacho Palacio 2025-05-13
+		System.out.println("DEBUG-getItemsByRoom: Total ítems en la habitación " + room + ": " + itemsByRoom.size());
+		System.out.println("DEBUG-getItemsByRoom: Total puertas en la habitación " + room + ": " + doorsByRoom.size());
 		
 		return combinedList;
 	}
@@ -723,6 +747,14 @@ public abstract class Path {
 		long itemToVisit = 0;
 		double initialDistance = 9999999;
 		String startVertexLocation = diccionaryItemLocation.get(startVertex);
+
+		// Añadido por Nacho Palacio 2025-05-17
+		System.out.println("DEBUG-getItemToVisit: startVertex=" + startVertex + ", itemsByRoom=" + itemsByRoom); // Añadido por Nacho Palacio 2025-05-17
+		if (startVertexLocation == null) {
+			System.out.println("ERROR: No se encontró ubicación para startVertex=" + startVertex);
+			return 0; // Devuelve 0 o maneja el caso de otra manera
+		}
+
 		String[] arrayStartVertex = startVertexLocation.split(", ");
 		double x1 = Double.valueOf(arrayStartVertex[0]).doubleValue();
 		double y1 = Double.valueOf(arrayStartVertex[1]).doubleValue();
@@ -781,11 +813,13 @@ public abstract class Path {
 	 * @return The connection of the current door.
 	 */
 	public long getConnectedDoor(long currentDoor) {
-
+		// System.out.println("getConnectedDoor: ID puerta actual " + currentDoor); // Añadido por Nacho Palacio 2025-05-18
+		System.out.println("DEBUG-getConnectedDoor: currentDoor=" + currentDoor); // Añadido por Nacho Palacio 2025-05-19
 		// Añadido por Nacho Palacio 2025-04-25
 		long externalDoor = currentDoor;
 		if (ElementIdMapper.isInCorrectRange(currentDoor, ElementIdMapper.CATEGORY_DOOR)) {
 			externalDoor = ElementIdMapper.getBaseId(currentDoor);
+			System.out.println("DEBUG-getConnectedDoor: externalDoor=" + externalDoor); // Añadido por Nacho Palacio 2025-05-19
 			// System.out.println("getConnectedDoor: Convirtiendo ID interno " + currentDoor + 
 			// 				" a externo " + externalDoor + " para buscar conexión");
 		}
@@ -793,16 +827,16 @@ public abstract class Path {
 		// Intentar obtener la puerta conectada directamente del mapa
 		Long connectedDoorFromMap = mapDoorConnected.get(currentDoor);
 		if (connectedDoorFromMap != null && connectedDoorFromMap > 0) {
-			// System.out.println("getConnectedDoor: Encontrada conexión para ID original " + 
-			// 				currentDoor + " -> " + connectedDoorFromMap);
+			System.out.println("getConnectedDoor: Encontrada conexión para ID original " + 
+							currentDoor + " -> " + connectedDoorFromMap);
 			return connectedDoorFromMap;
 		}
 		
 		// Si no se encontró con el ID original, intentar con el ID externo
 		connectedDoorFromMap = mapDoorConnected.get(externalDoor);
 		if (connectedDoorFromMap != null && connectedDoorFromMap > 0) {
-			// System.out.println("getConnectedDoor: Encontrada conexión para ID externo " + 
-			// 				externalDoor + " -> " + connectedDoorFromMap);
+			System.out.println("getConnectedDoor: Encontrada conexión para ID externo " + 
+							externalDoor + " -> " + connectedDoorFromMap);
 			return connectedDoorFromMap;
 		}
 
@@ -815,6 +849,9 @@ public abstract class Path {
 			String[] array = doorsConnected.split(", ");
 			String door1 = array[0];
 			String door2 = array[1];
+
+			// Añadido por Nacho Palacio 2025-05-19
+			System.out.println("DEBUG-getConnectedDoor: Buscando conexiones en el grafo para currentDoor=" + currentDoor + ", externalDoor=" + externalDoor);
 			
 			// System.out.println("Door: " + currentDoor + "; door of room: " + door1 + "; taken from: " + doorsConnected);
 			
@@ -831,9 +868,11 @@ public abstract class Path {
 			if (accessGraphFile.getDoorOfRoom(door1) == currentDoor || 
 				accessGraphFile.getDoorOfRoom(door1) == externalDoor) {
 				doors.add(accessGraphFile.getDoorOfRoom(door2));
+				System.out.println("DEBUG-getConnectedDoor: Añadiendo conexión (door2): " + accessGraphFile.getDoorOfRoom(door2)); // Añadido por Nacho Palacio 2025-05-19
 			} else if (accessGraphFile.getDoorOfRoom(door2) == currentDoor || 
 					accessGraphFile.getDoorOfRoom(door2) == externalDoor) {
 				doors.add(accessGraphFile.getDoorOfRoom(door1));
+				System.out.println("DEBUG-getConnectedDoor: Añadiendo conexión (door1): " + accessGraphFile.getDoorOfRoom(door1)); // Añadido por Nacho Palacio 2025-05-19
 			}
 		}
 		
@@ -849,14 +888,20 @@ public abstract class Path {
 			
 			if (accessGraphFile.getDoorOfRoom(door1) == currentDoor) {
 				doors.add(accessGraphFile.getDoorOfRoom(door2));
+				System.out.println("DEBUG-getConnectedDoor: Añadiendo conexión invisible (door2): " + accessGraphFile.getDoorOfRoom(door2)); // Añadido por Nacho Palacio 2025-05-19
+
 			} else {
 				if (accessGraphFile.getDoorOfRoom(door2) == currentDoor) {
 					doors.add(accessGraphFile.getDoorOfRoom(door1));
+				System.out.println("DEBUG-getConnectedDoor: Añadiendo conexión invisible (door1): " + accessGraphFile.getDoorOfRoom(door1)); // Añadido por Nacho Palacio 2025-05-19
+
 				}
 			}
 		}
 		
 		if (doors.size() <= 0) {
+			// Added by Nacho Palacio 2025-05-19
+			System.out.println("WARNING-getConnectedDoor: No se encontró ninguna puerta conectada para currentDoor=" + currentDoor + ", externalDoor=" + externalDoor);
 			// connectedDoor = getConnectedStairs(currentDoor);
 		}
 		else if (doors.size() == 1) {
@@ -878,6 +923,10 @@ public abstract class Path {
 			mapDoorConnected.put(currentDoor, internalConnectedDoor);
 			mapDoorConnected.put(externalDoor, internalConnectedDoor);
 		}
+
+		// Añadido por Nacho Palacio 2025-05-19
+		System.out.println("DEBUG-getConnectedDoor: Lista de puertas conectadas encontradas: " + doors);
+		System.out.println("DEBUG-getConnectedDoor: connectedDoor que se va a devolver: " + connectedDoor);
 
 		return connectedDoor;
 	}
@@ -925,10 +974,13 @@ public abstract class Path {
 	 */
 
 	public String getToConnectedDoor(long start, long itemToVisit, List<Long> itemVisited, long connectedDoor) {
+		System.out.println("DEBUG-getToConnectedDoor: start=" + start + ", itemToVisit=" + itemToVisit + ", connectedDoor=" + connectedDoor); // Añadido por Nacho Palacio 2025-05-19
 		String subpath = "";
 
 		long startVertex = start;
 		long endVertex = itemToVisit;
+
+		System.out.println("DEBUG-getToConnectedDoor: Añadiendo borde (" + startVertex + " : " + itemToVisit + ")"); // Añadido por Nacho Palacio 2025-05-19
 		
 		if (endVertex < numberOfItems)
 			itemVisited.add(endVertex);
@@ -938,11 +990,15 @@ public abstract class Path {
 
 		endVertex = connectedDoor;
 		
+		System.out.println("DEBUG-getToConnectedDoor: Añadiendo borde (" + startVertex + " : " + connectedDoor + ")"); // Añadido por Nacho Palacio 2025-05-19
+
 		if (endVertex < numberOfItems)
 			itemVisited.add(endVertex);
 		
 		subpath += getCurrentVertex(startVertex, endVertex);
 		startVertex = endVertex;
+
+		System.out.println("DEBUG-getToConnectedDoor: subpath generado = " + subpath); // Añadido por Nacho Palacio 2025-05-19
 
 		return subpath;
 	}
@@ -1019,8 +1075,30 @@ public abstract class Path {
 	 * @return The end vertex from sub-path.
 	 */
 	public long getEndVertex(String subpath) {
+		// Añadido por Nacho Palacio 2025-05-17
+		if (subpath == null || subpath.isEmpty()) {
+			System.out.println("ERROR: subpath es nulo o vacío en getEndVertex.");
+		}
+		else {
+			System.out.println("subpath: " + subpath);
+		}
+
 		String edges[] = subpath.split(", ");
+
+		if (edges.length == 0) { // Añadido por Nacho Palacio 2025-05-17
+			System.out.println("ERROR: subpath no contiene bordes válidos en getEndVertex.");
+			return 0;
+		}
+
 		String edge = edges[edges.length - 1];
+
+		// Añadido por Nacho Palacio 2025-05-17
+		String[] cleanedEdge = Configuration.simulation.cleanEdge(edge);
+		if (cleanedEdge.length < 2) {
+			System.out.println("ERROR: El borde no tiene el formato esperado: " + edge);
+			return 0;
+		}
+
 		long endVertex = Long.valueOf(Configuration.simulation.cleanEdge(edge)[1]).longValue();
 		return endVertex;
 	}

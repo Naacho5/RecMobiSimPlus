@@ -220,7 +220,7 @@ public class Literals {
 	 * Other parameter settings:
 	 */
 	public static final long ITEM_FICTITIOUS = 400;
-	public static final int TOTAL_USERS = 200;
+	public static final int TOTAL_USERS = 176;
 	
 	/**
 	 * Loggers:
