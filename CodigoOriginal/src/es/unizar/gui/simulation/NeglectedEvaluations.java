@@ -206,8 +206,6 @@ public class NeglectedEvaluations extends javax.swing.JDialog{
 	 * - Select and enable gui again
 	 */
 	private void runNeglectedEvaluations() {
-		System.out.println("runNeglectedEvaluations started"); // Añadido por Nacho Palacio 2025-04-13.
-
 		// Unselect and disable gui
 		MainSimulator.gui.setSelected(false);
 		MainSimulator.gui.setEnabled(false);
@@ -260,9 +258,6 @@ public class NeglectedEvaluations extends javax.swing.JDialog{
 				e.printStackTrace();
 			}
 		} // END if (simulation.exists())
-		else { // Añadido por Nacho Palacio 2025-04-13.
-			System.out.println("Simulations file or neglected evaluations folder does not exist");
-		}
 		
 		// Select and enable gui again
 		MainSimulator.gui.setSelected(true);
@@ -277,7 +272,6 @@ public class NeglectedEvaluations extends javax.swing.JDialog{
 	 * @param numSimulation			number of simulation to read
 	 */
 	private void createConfiguration(DataAccessSimulations simulationsAccess, int numSimulation) {
-		System.out.println("createConfiguration called for simulation: " + numSimulation); // Añadido por Nacho Palacio 2025-04-13.
 
 		// Parameters for the simulation:
 		// Time available for the user [hour].
@@ -322,7 +316,6 @@ public class NeglectedEvaluations extends javax.swing.JDialog{
 		int numberOfNonSpecialUser = Integer.valueOf(simulationsAccess.getPropertyValue(Literals.NUMBER_OF_NON_SPECIAL_USERS + numSimulation)).intValue();
 		// File name of non-RS users.
 		String nonSpecialUserPaths = Literals.PATH_MAPS + simulationsAccess.getPropertyValue(Literals.NON_SPECIAL_USER_PATHS + numSimulation);
-		System.out.println("Non-special user paths: " + nonSpecialUserPaths); // Añadido por Nacho Palacio 2025-04-12.
 		// Path strategy of non-RS users.
 		String pathStrategy = (String) simulationsAccess.getPropertyValue(Literals.PATH_STRATEGY + numSimulation);
 		// Recommendation algorithm.

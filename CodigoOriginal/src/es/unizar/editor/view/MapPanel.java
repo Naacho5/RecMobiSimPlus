@@ -209,7 +209,6 @@ public class MapPanel extends JPanel implements MouseInputListener {
 			
 			// Draw room label in first room corner
 			Point roomPoint = r.getCorners().get(0).getVertex_xy();
-			//g.drawString(Integer.toString(r.getLabel()), (int) (roomPoint.getX() * model.getZOOM()), (int) ((roomPoint.getY() -1) * model.getZOOM()));
 			
 			/* Añadido por Nacho Palacio 2025-04-17. */
 			g.drawString(Long.toString(r.getLabel()), (int) (roomPoint.getX() * model.getZOOM()), (int) ((roomPoint.getY() -1) * model.getZOOM()));

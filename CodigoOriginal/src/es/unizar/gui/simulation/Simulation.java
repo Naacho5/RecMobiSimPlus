@@ -411,16 +411,13 @@ public class Simulation {
 	 * 
 	 */
 	public void initializeUsers() {
-		System.out.println("***DEBUG-Simulation: Iniciando initializeUsers()"); // Añadido por Nacho Palacio 2025-04-24
 
 		MainSimulator.printConsole("Initializing users: ", Level.WARNING);
 		System.out.println("Total users: " + userList.size()); // Depuración: Verificar el número total de usuarios
 		// Get the non-special and RS user paths. The non-RS user path is obtained from generated path file (e.g., nearest_non_special_user_paths.txt), by using the strategy (Nearest,
 		// Random or Exhaustive) specified in the Configuration form. While the RS user path (initially null) is generated with the recommender specified in the Configuration form.
 		
-		System.out.println("***DEBUG: Comprobando llamada a getPathsFromFile()"); // Añadido por Nacho Palacio 2025-04-24
 		graphSpecialUser.getPathsFromFile();
-		System.out.println("***DEBUG: Después de getPathsFromFile(), tamaño de paths: " + graphSpecialUser.paths.size()); // Añadido por Nacho Palacio 2025-04-24
 
 		String edge = null;
 		for (int i = 0; i < userList.size(); i++) {
@@ -431,23 +428,17 @@ public class Simulation {
 				System.out.println("User " + (i + 1) + " is a special user."); // Depuración: Usuario especial
 				// Gets the randomly door where RS users will enter.
 				long startVertex = dataAccessGraphFile.getRandomDoor();
-				System.out.println("***DEBUG: Puerta inicial aleatoria: " + startVertex); // Añadido por Nacho Palacio 2025-04-24
 				// The RS user path is updated with the hybrid recommendation algorithm.
 				//System.out.println(currentUser.userID);
 				updateSpecialUserPath(startVertex, startVertex, false, 0, false, currentUser);
-				System.out.println("***DEBUG: Después de updateSpecialUserPath para usuario " + currentUser.userID); // Añadido por Nacho Palacio 2025-04-24
 			}
-			System.out.println("***DEBUG: Intentando obtener ruta para usuario " + (i + 1)); // Añadido por Nacho Palacio 2025-04-24
-			// Get the current non-RS user path.
 			path = graphSpecialUser.paths.get(i);
-			System.out.println("***DEBUG: Ruta obtenida para usuario " + (i + 1) + ", tamaño: " + (path != null ? path.size() : "null")); // Añadido por Nacho Palacio 2025-04-24
 
 			// Añadido por Nacho Palacio 2025-04-24
 			if (path == null || path.isEmpty() || (path.size() == 1 && path.get(0).isEmpty())) {
-				// System.out.println("ADVERTENCIA: Ruta vacía o inválida para usuario " + (i + 1) + ". Generando ruta sencilla por defecto.");
 				// Crear una ruta simple por defecto
 				path = new ArrayList<>();
-				path.add("(1 : 2)");  // Arista ficticia mínima
+				path.add("(1 : 2)");
 				graphSpecialUser.paths.set(i, path);
 			}
 
@@ -475,15 +466,9 @@ public class Simulation {
 	 * @param strategy The path generation strategy.
 	 */
 	public void generate_non_special_user_path(Path strategy) {
-		/* Añadido por Nacho Palacio 2025-4-13. */
-		System.out.println("Generating non-special user paths...");
-		System.out.println("Path strategy: " + strategy.getClass().getSimpleName());
-		System.out.println("Output file: " + nonSpecialUserPaths);
-
 		// Añadido por Nacho Palacio 2025-04-22
 		// Si la estrategia es RandomPath, inicializar itemsByRoom con IDs internos
 		if (strategy instanceof RandomPath) {
-			System.out.println("Inicializando RandomPath con información de habitaciones e ítems...");
 			RandomPath randomPath = (RandomPath) strategy;
 			
 			try {
@@ -509,7 +494,6 @@ public class Simulation {
 					// Obtener también puertas y escaleras para esta habitación si es necesario
 					for (int j = 1; j <= dataAccessGraphFile.getNumberOfDoorsByRoom(i); j++) {
 						long doorId = dataAccessGraphFile.getDoorOfRoom(j, i);
-						System.out.println("Generate_non_special_user_path: ID puerta " + doorId); // Añadido por Nacho Palacio 2025-05-02
 						if (doorId > 0) {
 							items.add(doorId);
 							System.out.println("Añadiendo puerta " + doorId + " a habitación " + i);
@@ -568,8 +552,6 @@ public class Simulation {
 				// Añadido por Nacho Palacio 2025-04-23
 				// Convertir a ID interno para coherencia
 				long internalStartItem = ElementIdMapper.convertToRangeId(start_item, ElementIdMapper.CATEGORY_ITEM);
-				System.out.println("Generando ruta para: ID externo " + start_item + " -> ID interno " + internalStartItem);
-
 
 				// Verificar que el ID interno esté en el rango correcto
 				int tryCount = 0;
@@ -586,7 +568,6 @@ public class Simulation {
 				MainSimulator.printConsole("User generated path: " + (i + 1) + "; " + "Starting point interno: " + internalStartItem + " (externo: " + start_item + ")", Level.INFO);
 				// pw.writeBytes(strategy.generatePath(internalStartItem) + "\n");
 
-				System.out.println("Intentando generar ruta con start_item=" + start_item); // Añadido por Nacho Palacio 2025-04-25
 				// Modificado por Nacho Palacio 2025-04-24
 				String generatedPath = strategy.generatePath(internalStartItem);
 
@@ -617,12 +598,8 @@ public class Simulation {
 	 * @param specialUserID:    The RS user ID.
 	 */
 	public void updateSpecialUserPathOld(long startVertex, long endVertex, boolean disobedience, long nextItemSelected, boolean finishPath, User currentUser) {
-		
-		System.out.println("DEBUG-START: Iniciando updateSpecialUserPath para usuario " + currentUser.userID); // Añadido por Nacho Palacio 2025-05-02
-
 		long initialTimeTotal = 0, finalTimeTotal = 0, initialTimeNetwork = 0, finalTimeNetwork = 0;
 		initialTimeTotal = System.currentTimeMillis();
-		System.out.println("DEBUG-1: Variables inicializadas"); // Añadido por Nacho Palacio 2025-05-02
 		
 		List<String> finalPath = null;
 		List<RecommendedItem> recommendedItems = null;
@@ -635,24 +612,19 @@ public class Simulation {
 		String special_user_dbURL = null;
 		Database db_special_user = null;
 
-		System.out.println("DEBUG-2: Antes de obtener el tipo de red"); // Añadido por Nacho Palacio 2025-05-02
 
 		if (getNetworkType().equalsIgnoreCase("Centralized (Centralized)")) {
 			special_user_dbURL = Literals.SQL_DRIVER + Literals.DB_CENTRALIZED_USER_PATH;
 			db_special_user = dataInstanceUserDB_Centralized;
-			System.out.println("DEBUG-2.1: Tipo de red Centralizada"); // Añadido por Nacho Palacio 2025-05-02
 		}
 		else if (getNetworkType().equalsIgnoreCase("Peer To Peer (P2P)")) {
 			special_user_dbURL = Literals.SQL_DRIVER + Literals.DB_P2P_USER_PATH + currentUser.userID + ".db";
 			db_special_user = dataInstanceUserDBList_P2P.get(currentUser.userID - 1);
-			System.out.println("DEBUG-2.2: Tipo de red P2P, usando DB " + special_user_dbURL); // Añadido por Nacho Palacio 2025-05-02
 		}
 
 		finalTimeTotal = System.currentTimeMillis();
 		log.log(Level.FINE, "[updateSpecialUserPath]: PRE - " + (finalTimeTotal - initialTimeTotal));
 		log.log(Level.FINER, "[updateSpecialUserPath]: PRE NETWORK - " + (finalTimeNetwork - initialTimeNetwork));
-		
-		System.out.println("DEBUG-3: Antes de crear DBDataModel y DataAccessLayer"); // Añadido por Nacho Palacio 2025-05-02
 
 		// DBDataModel and DataAccessLayer that are going to open DB connections
 		// Declared before try block so that they can be disconnected from db in finally method
@@ -668,18 +640,14 @@ public class Simulation {
 			initialTimeTry = System.currentTimeMillis();
 			// For the database connection of the current RS user.
 			initialTimeDBDataModel = System.currentTimeMillis();
-			System.out.println("DEBUG-5: Antes de crear DBDataModel"); // Añadido por Nacho Palacio 2025-05-02
 			dataModelSpecialUser = new DBDataModel(special_user_dbURL, db_special_user, this.numberOfUser - 1); // Modificado por Nacho Palacio 2025-05-08 antes this.numberOfUser-1
 
 			verifyThresholdSimilarity(dataModelSpecialUser); // Añadido por Nacho Palacio 2025-05-08
 
-			System.out.println("DEBUG-6: DBDataModel creado"); // Añadido por Nacho Palacio 2025-05-02
 			finalTimeDBDataModel = System.currentTimeMillis();
 			
 			initialTimeDataAccessLayer = System.currentTimeMillis();
-			System.out.println("DEBUG-7: Antes de crear DataAccessLayer"); // Añadido por Nacho Palacio 2025-05-02
 			dataAccesLayerDBMuseum = new DataAccessLayer(Literals.SQL_DRIVER + Literals.DB_ALL_USERS_PATH, dataInstanceMuseumDB);
-			System.out.println("DEBUG-8: DataAccessLayer creado"); // Añadido por Nacho Palacio 2025-05-02
 			finalTimeDataAccessLayer = System.currentTimeMillis();
 			
 			finalTimeTry = System.currentTimeMillis();
@@ -689,13 +657,9 @@ public class Simulation {
 			
 			
 			initialTimeTry = System.currentTimeMillis();
-			System.out.println("DEBUG-9: Antes de construir grafo"); // Añadido por Nacho Palacio 2025-05-02
 			// Build a graph for the RS user.
 			graphSpecialUser.graphRecommender = graphSpecialUser.buildGraphForSpecialUser();
-			System.out.println("DEBUG-10: Grafo construido"); // Añadido por Nacho Palacio 2025-05-02
-			System.out.println("DEBUG-11: Antes de crear ShortestTrajectoryStrategy"); // Añadido por Nacho Palacio 2025-05-02
 			ShortestTrajectoryStrategy trajectoryStrategy = new ShortestTrajectoryStrategy(graphSpecialUser.graphRecommender, MainSimulator.floor.diccionaryItemLocation);
-			System.out.println("DEBUG-12: Después de crear ShortestTrajectoryStrategy"); // Añadido por Nacho Palacio 2025-05-02
 
 			finalTimeTry = System.currentTimeMillis();
 			log.log(Level.WARNING, "[updateSpecialUserPath]: TRY - Build graph: " + (finalTimeTry - initialTimeTry));
@@ -703,29 +667,22 @@ public class Simulation {
 			
 			initialTimeTry = System.currentTimeMillis();
 			// The recommendation threshold.
-			System.out.println("DEBUG-13: Antes de inicializar TrajectoryPostfilteringBasedRecommendation"); // Añadido por Nacho Palacio 2025-05-02
 			float threshold = getThresholdRecommendation();
-			System.out.println("DEBUG-13.0: Threshold: " + threshold); // Añadido por Nacho Palacio 2025-05-03
 			if (finishPath) {
 				// When the path is finished.
 				postfiltering = new TrajectoryPostfilteringBasedRecommendation(dataModelSpecialUser, special_user_dbURL, trajectoryStrategy, endVertex, threshold);
-				System.out.println("DEBUG-13.1: Inicializado con finishPath=true"); // Añadido por Nacho Palacio 2025-05-02
 			} else {
 				// When the path is not finished.
 				postfiltering = new TrajectoryPostfilteringBasedRecommendation(dataModelSpecialUser, special_user_dbURL, trajectoryStrategy, startVertex, threshold);
-				System.out.println("DEBUG-13.2: Inicializado con finishPath=false"); // Añadido por Nacho Palacio 2025-05-02
 			}
-			System.out.println("DEBUG-14: TrajectoryPostfilteringBasedRecommendation inicializado"); // Añadido por Nacho Palacio 2025-05-02
 			
 			finalTimeTry = System.currentTimeMillis();
 			log.log(Level.WARNING, "[updateSpecialUserPath]: TRY - Threshold: " + (finalTimeTry - initialTimeTry));
 			
 			
 			initialTimeTry = System.currentTimeMillis();
-			System.out.println("DEBUG-15: Antes de obtener algoritmo de recomendación: " + getRecommendationAlgorithm()); // Añadido por Nacho Palacio 2025-05-02
 			// Recommendation type
 			recommendationType = getRecommendationAlgorithm();
-			System.out.println("DEBUG-16: Procesando algoritmo: " + recommendationType); // Añadido por Nacho Palacio 2025-05-02
 			if (recommendationType.equalsIgnoreCase("Completely-random (FULLY-RAND)")) {
 				RandomRecommendation recommender = new RandomRecommendation(dataModelSpecialUser, dataAccesLayerDBMuseum);
 				recommendedItems = recommender.recommend(currentUser.userID, getHowMany());
@@ -795,16 +752,13 @@ public class Simulation {
                 // Generar una ruta mínima con al menos un ítem válido
                 List<String> defaultPath = new LinkedList<>();
                 defaultPath.add("(" + startVertex + " : " + startVertex + ")");
-                
-                // Asignar la ruta por defecto
+
                 finalPath = defaultPath;
-                
-                // Y asegurarse de que finalPath no sea nulo cuando se asigne al final del método
                 graphSpecialUser.paths.set(((int) currentUser.userID) - 1, finalPath);
                 
-                System.out.println("DEBUG-END: Finalizado updateSpecialUserPath con ruta por defecto para usuario " + 
+                System.out.println("Finalizado updateSpecialUserPath con ruta por defecto para usuario " + 
                                 currentUser.userID);
-                return; // Terminar el método sin seguir procesando
+                return;
             }
 
 			/* Añadido por Nacho Palacio 2025-04-16. */
@@ -825,20 +779,13 @@ public class Simulation {
 				if (currentPath == null) {
 					log.log(Level.SEVERE, "Failed to generate default path. Using empty path.");
 					currentPath = "";
-					System.out.println("DEBUG-17: currentPath es nulo, generando ruta alternativa"); // Añadido por Nacho Palacio 2025-05-02
-				}
-				else { // Añadido por Nacho Palacio 2025-05-02
-					System.out.println("DEBUG-18: currentPath generado correctamente");
 				}
 			}
-			System.out.println("DEBUG-19: Antes de combinar rutas"); // Añadido por Nacho Palacio 2025-05-02
 			List<String> pathSpecialUser = Arrays.asList(currentPath.split(", "));
 			if (disobedience) {
 				finalPath = combinePathsDisobedience(nextItemSelected, startVertex, endVertex, pathSpecialUser, currentUser.userID);
-				System.out.println("DEBUG-19.1: Ruta combinada con disobedience=true"); // Añadido por Nacho Palacio 2025-05-02
 			} else {
 				finalPath = combinePaths(startVertex, endVertex, pathSpecialUser, finishPath);
-				System.out.println("DEBUG-19.2: Ruta combinada con disobedience=false"); // Añadido por Nacho Palacio 2025-05-02
 			}
 			
 			// Almacenar valoraciones predichas y tiempos para cada id_item
@@ -962,9 +909,7 @@ public class Simulation {
 		/*
 		 * THE PURPOSE OF THIS FUNCTION: SET RS user'S PATH
 		 */
-		System.out.println("DEBUG-FINAL: Asignando ruta a usuario " + currentUser.userID); // Añadido por Nacho Palacio 2025-05-02
 		graphSpecialUser.paths.set(((int) currentUser.userID) - 1, finalPath);
-		System.out.println("DEBUG-END: Finalizado updateSpecialUserPath para usuario " + currentUser.userID); // Añadido por Nacho Palacio 2025-05-02
 		
 		// System.out.println(graphSpecialUser.paths.get(((int) currentUser.userID) - 1));
 
@@ -1142,13 +1087,9 @@ public class Simulation {
 			if (currentPath == null) {
 				try {
 					if (finishPath) {
-						System.out.println("IF DEBUG-FALLBACK: Ruta generada desde endVertex=" + endVertex + " para usuario " + currentUser.userID);
 						currentPath = pathStrategy.generatePath(endVertex);
-						System.out.println("DEBUG-FALLBACK: Ruta generada: " + currentPath); // Añadido por Nacho Palacio 2025-05-13
 					} else {
-						System.out.println("ELSE DEBUG-FALLBACK: Ruta generada desde endVertex=" + endVertex + " para usuario " + currentUser.userID);
 						currentPath = pathStrategy.generatePath(startVertex);
-						System.out.println("DEBUG-FALLBACK: Ruta generada: " + currentPath);
 					}
 
 				} catch (Exception e) {
@@ -1159,7 +1100,6 @@ public class Simulation {
 			
 			List<String> pathSpecialUser = new LinkedList<>();
 			if (currentPath != null) {
-				System.out.println("DEBUG-FALLBACK: Ruta generada correctamente para usuario " + currentUser.userID + " con tamaño " + currentPath.length()); // Añadido por Nacho Palacio 2025-05-13
 				pathSpecialUser = Arrays.asList(currentPath.split(", "));
 				if (disobedience) {
 					finalPath = combinePathsDisobedience(nextItemSelected, startVertex, endVertex, pathSpecialUser, currentUser.userID);
@@ -1170,20 +1110,12 @@ public class Simulation {
 			else { // Añadido por Nacho Palacio 2025-05-12
 				try {
 					if (finishPath) {
-						System.out.println("IF DEBUG-FALLBACK: Ruta generada desde endVertex=" + endVertex + " para usuario " + currentUser.userID);
 						currentPath = pathStrategy.generatePath(endVertex);
-					} else {
-						// System.out.println("ELSE DEBUG-FALLBACK: Ruta generada desde endVertex=" + endVertex + " para usuario " + currentUser.userID);
-						// currentPath = pathStrategy.generatePath(startVertex);
-						// System.out.println("DEBUG-FALLBACK: Ruta generada: " + currentPath); // Añadido por Nacho Palacio 2025-05-17
-					
+					} else {	
 						// Modificado por Nacho Palacio 2025-05-17
 						try {
-							System.out.println("ELSE DEBUG-FALLBACK: Ruta generada desde endVertex=" + endVertex + " para usuario " + currentUser.userID);
 							currentPath = pathStrategy.generatePath(startVertex);
-							System.out.println("DEBUG-FALLBACK: Ruta generada: " + currentPath); // Añadido por Nacho Palacio 2025-05-17
 						} catch (Exception e) {
-							System.out.println("ERROR: Ocurrió una excepción en generatePath: " + e.getMessage());
 							e.printStackTrace();
 						}
 					}
@@ -1196,7 +1128,6 @@ public class Simulation {
 
 			// Añadido por Nacho Palacio 2025-05-17
 			if (currentPath != null) {
-				System.out.println("DEBUG-FALLBACK: Ruta generada correctamente para usuario " + currentUser.userID + " con tamaño " + currentPath.length());
 				List<String> pathSpecialUser1 = Arrays.asList(currentPath.split(", "));
 				
 				// Combinar rutas si es necesario
@@ -1206,13 +1137,11 @@ public class Simulation {
 					finalPath = combinePaths(startVertex, endVertex, pathSpecialUser1, finishPath);
 				}
 			} else {
-				System.out.println("DEBUG-FALLBACK: La ruta generada está vacía o nula para usuario " + currentUser.userID);
 				finalPath = new LinkedList<>(); // Ruta vacía como fallback final
 			}
 			
 			// Asignar la ruta generada al usuario especial
 			graphSpecialUser.paths.set(((int) currentUser.userID) - 1, finalPath);
-			System.out.println("DEBUG-FINAL: Ruta asignada a usuario " + currentUser.userID);
 
 
 			// List<String> pathSpecialUser = Arrays.asList(currentPath.split(", "));
@@ -1237,7 +1166,6 @@ public class Simulation {
 			
 		} // end try
 		catch (Exception ex) {
-			System.out.println("DEBUG-FALLBACK: Se entra al catch"); // Añadido por Nacho Palacio 2025-05-13
 			ex.printStackTrace();
 			if (recommendationType.equalsIgnoreCase("Near POI (NPOI)")) {
 				log.log(Level.SEVERE, "NPOI");
@@ -1272,23 +1200,13 @@ public class Simulation {
 			
 			long catchCurrentPath = 0, catchCurrentPathFinal = 0, catchPathSpecialUser = 0, catchPathSpecialUserFinal = 0, catchFinalPath = 0, catchFinalPathFinal = 0;
 			catchCurrentPath = System.currentTimeMillis();
-			
-			System.out.println("DEBUG-FALLBACK: Antes de generar ruta alternativa"); // Añadido por Nacho Palacio 2025-05-12
+	
 			// If there is not information to apply the specified recommender, then the path is generated by using the NPOI strategy.
 			try {
 				if (finishPath) {
 					currentPath = pathStrategy.generatePath(endVertex);
-					System.out.println("DEBUG-FALLBACK: Ruta generada desde endVertex=" + endVertex + " para usuario " + currentUser.userID); // Añadido por Nacho Palacio 2025-05-12
 				} else {
 					currentPath = pathStrategy.generatePath(startVertex);
-					System.out.println("DEBUG-FALLBACK: Ruta generada desde startVertex=" + startVertex + " para usuario " + currentUser.userID); // Añadido por Nacho Palacio 2025-05-12
-				}
-
-				// Añadido por Nacho Palacio 2025-05-12
-				if (currentPath != null && !currentPath.isEmpty()) {
-					System.out.println("DEBUG-FALLBACK: Ruta generada correctamente para usuario " + currentUser.userID + " con tamaño " + currentPath.length());
-				} else {
-					System.out.println("DEBUG-FALLBACK: La ruta generada está vacía o nula para usuario " + currentUser.userID);
 				}
 			}
 			catch (Exception e) {
@@ -1370,21 +1288,6 @@ public class Simulation {
 		stopTime = System.currentTimeMillis();
 		// Divide by 1000 to print the result in seconds.
 		elapsedTime = (stopTime - startTime) / 1000;
-
-		// if (!UserRunnable.firstTime) {
-		// 	// Check if the user changed from the item he was evaluating to a new item.
-		// 	path = graphSpecialUser.paths.get((int) ((int) currentUser.userID - 1));
-		// 	String edge = path.get(userPositionInPath[(int) ((int) currentUser.userID - 1)]);
-		// 	long currentEndVertex = -1;
-		// 	if (edge.length() > 1) {
-		// 		currentEndVertex = Long.valueOf(cleanEdge(edge)[1]).longValue();
-		// 	}
-		// 	isChangedItemByRecommender = false;
-		// 	if (endVertex != currentEndVertex && endVertex <= this.numberOfITems && currentEndVertex <= this.numberOfITems && voting[(int) ((int) currentUser.userID - 1)] == true) {
-		// 		isChangedItemByRecommender = true;
-		// 		log.log(Level.SEVERE, "ITEM CHANGED BY RECOMMENDER");
-		// 	}
-		// }
 
 		// Modificado por Nacho Palacio 2025-05-11
 		if (!UserRunnable.firstTime) {
@@ -1504,7 +1407,6 @@ public class Simulation {
 				
 				// Añadido por Nacho Palacio 2025-05-11
 				if (path == null) {
-					// Si el path es nulo, simplemente saltamos este usuario en esta iteración
 					log.log(Level.WARNING, "Path nulo encontrado para usuario " + currentUser.userID + ", saltando iteración.");
 					continue;
 				}
@@ -1584,9 +1486,6 @@ public class Simulation {
 					String location_v1 = MainSimulator.floor.diccionaryItemLocation.get(v1);
 					// Final point.
 
-					System.out.println("Usuario: " + u.userID); // Añadido por Nacho Palacio 2025-05-17
-					System.out.println("v2: " + v2); // Añadido por Nacho Palacio 2025-05-17
-					
 					String location_v2 = MainSimulator.floor.diccionaryItemLocation.get(v2);
 
 					// If it is an item (not a door).
@@ -1845,19 +1744,13 @@ public class Simulation {
 					 * |  NOT POSSIBLE -> CONCURRENT EXCEPTION: Cannot be removed while the 
 					 * 		list is being used in iterations because then the loop gets in trouble
 					*/
-					
-					// UserInfo.UserState ui = stateOfUsers.get(currentUser.userID);
-					// ui.action = "Finished";
-					// ui.item = null;
 
 					// Modificado por Nacho Palacio 2025-05-10
 					UserInfo.UserState ui = stateOfUsers.get(currentUser.userID);
 					if (ui != null) {
-						System.out.println("DEBUG-20: Se ha encontrado el estado del usuario " + currentUser.userID);
 						ui.action = "Finished";
 						ui.item = null;
 					} else {
-						System.out.println("DEBUG-21: No se ha encontrado el estado del usuario " + currentUser.userID);
 						// Crear un nuevo objeto UserState pasando una habitación válida
 						ui = new UserInfo.UserState(MainSimulator.floor.roomLabels.get(currentUser.room));
 						ui.action = "Finished";
@@ -3398,25 +3291,20 @@ public class Simulation {
 
 	// Añadido por Nacho Palacio 2025-05-08
 	private void verifyThresholdSimilarity(DBDataModel dataModel) {
-		System.out.println("DEBUG-THRESHOLD: Umbral de similitud actual: " + getThresholdSimilarity());
 		// Probar con diferentes umbrales para ver cuándo comienza a encontrar vecinos
 		double[] thresholds = {0.5, 0.4, 0.3, 0.2, 0.1, 0.05, 0.01};
 		for (double threshold : thresholds) {
-			System.out.println("DEBUG-THRESHOLD: Probando con umbral " + threshold);
 			try {
 				UserSimilarity similarity = new PearsonCorrelationSimilarity(dataModel);
 				UserNeighborhood neighborhood = 
 					new ThresholdUserNeighborhood(threshold, similarity, dataModel);
 				
 				long[] neighbors = neighborhood.getUserNeighborhood(176);
-				System.out.println("DEBUG-THRESHOLD: Usuario 176 tiene " + 
-								 (neighbors != null ? neighbors.length : 0) + 
-								 " vecinos con umbral " + threshold);
 				if (neighbors != null && neighbors.length > 0) {
-					break;  // Ya encontramos un umbral que funciona
+					break;
 				}
 			} catch (Exception e) {
-				System.out.println("DEBUG-THRESHOLD: Error: " + e.getMessage());
+				System.out.println("THRESHOLD: Error: " + e.getMessage());
 			}
 		}
 	}

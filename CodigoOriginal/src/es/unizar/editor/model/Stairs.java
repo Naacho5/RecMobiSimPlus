@@ -13,8 +13,6 @@ public class Stairs extends Drawable implements Connectable {
 	private Connectable connectedTo;
 
 	public Stairs(Room room, long vertex_label, Point vertex_xy) {
-		// super(room, vertex_label, vertex_xy);
-
 		/* Añadido por Nacho Palacio 2025-04-17. */
     	super(room, ElementIdMapper.convertToRangeId(vertex_label, ElementIdMapper.CATEGORY_STAIRS), vertex_xy);
 		this.setUrlIcon(Literals.IMAGES_PATH + "stairs.png");

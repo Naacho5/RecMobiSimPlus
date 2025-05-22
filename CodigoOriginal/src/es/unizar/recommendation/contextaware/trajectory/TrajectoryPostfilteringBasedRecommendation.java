@@ -54,14 +54,6 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 	// Para P2P
 	@Override
 	public List<RecommendedItem> recommend(long userID, int howMany) throws TasteException {
-		/* Añadido por Nacho Palacio 2025-04-17. */
-		// if (userID >= es.unizar.util.Literals.TOTAL_USERS) {
-		// 	System.out.println("Warning: Attempted to recommend for non-existent user " + userID);
-		// 	return new LinkedList<>();
-		// }
-
-		// Añadido por Nacho Palacio 2025-05-07
-		System.out.println("DEBUG-ID-TRACKING: [TPF] Solicitando recomendaciones para usuario " + userID); // Añadido por Nacho Palacio 2025-05-07
 		try {
 			LongPrimitiveIterator userIdsIterator = dataModel.getUserIDs();
 			List<Long> userIdsList = new ArrayList<>();
@@ -91,10 +83,6 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 		} catch (Exception e) {
 			System.out.println("DEBUG-ID-TRACKING: [TPF] Error al obtener usuarios: " + e.getMessage());
 		}
-
-
-		// Añadido por Nacho Palacio 2025-05-08
-		System.out.println("DEBUG-UBCF: Llamando al recomendador tradicional para usuario " + userID);
 
 		// Verificar vecinos y similitud con otros usuarios
 		try {
@@ -161,36 +149,8 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 		// Traditional recommendation
 		List<RecommendedItem> candidateItemsFromRecommender = getRecommender().recommend(userID, howMany);
 
-		// Añadido por Nacho Palacio 2025-05-08
-		// if (candidateItemsFromRecommender == null || candidateItemsFromRecommender.isEmpty()) {
-		// 	System.out.println("DEBUG-TPF: No hay recomendaciones UBCF para usuario " + userID + 
-		// 					", usando recomendación aleatoria como respaldo");
-		// 	RandomRecommendation randomRec = new RandomRecommendation(dataModel, dataModel.getDataAccessLayer());
-		// 	candidateItemsFromRecommender = randomRec.recommend(userID, howMany);
-		// }
-
-		System.out.println("DEBUG-ID-TRACKING: [TPF] Recomendador tradicional devolvió " + 
-                     (candidateItemsFromRecommender != null ? candidateItemsFromRecommender.size() : "null") + 
-                     " ítems para usuario " + userID); // Añadido por Nacho Palacio 2025-05-07
-
-		// Añadido por Nacho Palacio 2025-05-07
-		if (candidateItemsFromRecommender != null && !candidateItemsFromRecommender.isEmpty()) {
-			System.out.print("DEBUG-ID-TRACKING: [TPF] Primeros 3 ítems recomendados: ");
-			for (int i = 0; i < Math.min(3, candidateItemsFromRecommender.size()); i++) {
-				RecommendedItem item = candidateItemsFromRecommender.get(i);
-				System.out.print("[ID=" + item.getItemID() + ", rating=" + item.getValue() + "] ");
-			}
-			System.out.println();
-		}
-
-
 		// Filtra los items teniendo en cuenta un umbral de rating
 		List<RecommendedItem> candidateItemsFiltered = listRecommendedItemThreshold(candidateItemsFromRecommender);
-		
-		System.out.println("DEBUG-ID-TRACKING: [TPF] Después de filtrar por umbral " + threshold + 
-                     ", quedan " + (candidateItemsFiltered != null ? candidateItemsFiltered.size() : "null") + 
-                     " ítems"); // Añadido por Nacho Palacio 2025-05-07
-
 
 		/* Añadido por Nacho Palacio 2025-04-14. */
 		if (candidateItemsFiltered == null || candidateItemsFiltered.isEmpty()) {
@@ -204,43 +164,15 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 		System.out.println("DEBUG-ID-TRACKING: [TPF] Convertidos a Long: " + 
 		(candidateItemsToLong != null ? candidateItemsToLong.size() : "null") + 
 		" ítems"); // Añadido por Nacho Palacio 2025-05-07
-
-		// Añadido por Nacho Palacio 2025-05-08
-		System.out.println("DEBUG-TPF-ITEMS: Lista de ítems filtrados convertida a Long:");
-		for (int i = 0; i < Math.min(5, candidateItemsToLong.size()); i++) {
-			long itemId = candidateItemsToLong.get(i);
-			System.out.println("DEBUG-TPF-ITEMS: Ítem #" + i + ": ID=" + itemId + 
-							", es interno: " + es.unizar.util.ElementIdMapper.isInCorrectRange(itemId, es.unizar.util.ElementIdMapper.CATEGORY_ITEM) + 
-							", ID externo: " + es.unizar.util.ElementIdMapper.getBaseId(itemId));
-							
-			// Verificar si este ítem existe en el diccionario para ubicaciones
-			String location = trajectoryStrategy.diccionaryItemLocation.get(itemId);
-			System.out.println("DEBUG-TPF-ITEMS: Ítem #" + i + " existe en diccionario: " + 
-							(location != null ? "SÍ (" + location + ")" : "NO"));
-							
-			// Si no existe con ID interno, probar con ID externo
-			if (location == null) {
-				long externalId = es.unizar.util.ElementIdMapper.getBaseId(itemId);
-				location = trajectoryStrategy.diccionaryItemLocation.get(externalId);
-				System.out.println("DEBUG-TPF-ITEMS: Ítem #" + i + " (ID externo " + externalId + 
-								") existe en diccionario: " + (location != null ? "SÍ" : "NO"));
-			}
-		}			 
 					 
-
 		/* Añadido por Nacho Palacio 2025-04-14. */
 		if (candidateItemsToLong.isEmpty()) {
             System.out.println("Warning: Empty candidate items list for user " + userID);
             return candidateItemsFiltered;
         }
 
-		// Añadido por Nacho Palacio 2025-05-07
-		System.out.println("DEBUG-ID-TRACKING: [TPF] Buscando ítem más cercano a puerta " + door);
-
 		// Candidate items from graph
 		long initialVertex = getItemClosestToTheFrontDoor(door, candidateItemsToLong);
-
-		System.out.println("DEBUG-ID-TRACKING: [TPF] Ítem más cercano encontrado: " + initialVertex); // Añadido por Nacho Palacio 2025-05-07
 
 		List<Long> pathHamiltonianCycle = getTrajectoryStrategy().getOptimalTrajectory(candidateItemsToLong, initialVertex);
 		// Los items son ordenados teniendo en cuenta una trayectoria
@@ -252,7 +184,6 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 
 		/* Añadido por Nacho Palacio 2015-04-14. */
 		try {
-            // Obtiene un path
             finalPath = ShortestTrajectoryStrategy.preprocessingPath(door, 
                       DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, door, initialVertex).toString());
             
@@ -285,9 +216,6 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 				}
 			}
 		}
-		// Añadido por Nacho Palacio 2025-05-07
-		System.out.println("DEBUG-ID-TRACKING: [TPF] Recomendación final para usuario " + userID + 
-		": " + finalRecommendedItems.size() + " ítems");
 
 		return finalRecommendedItems;
 	}

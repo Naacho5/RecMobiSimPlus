@@ -45,15 +45,10 @@ public class DataAccessItemFile extends DataAccess {
         return Integer.valueOf(getPropertyValue(Literals.VERTEX_DIMENSION_WIDTH)).intValue();
     }
 
-    // public int getItemID(int position) {
-    //     return Integer.valueOf(getPropertyValue(Literals.ITEM_ID + position)).intValue();
-    // }
-
     // Modificado por Nacho Palacio 2025-04-22.
     public long getItemID(int position) {
         int rawId = Integer.valueOf(getPropertyValue(Literals.ITEM_ID + position)).intValue();
         long internalId = ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_ITEM);
-        System.out.println("ItemFile: Convirtiendo ID externo " + rawId + " a interno " + internalId);
         return internalId;
     }
 
@@ -185,10 +180,6 @@ public class DataAccessItemFile extends DataAccess {
     	setPropertyValue(Literals.VERTEX_DIMENSION_WIDTH, Integer.toString(width));
     }
 
-    // public void setItemID(int position, int id) {
-    //     setPropertyValue(Literals.ITEM_ID + position, Integer.toString(id));
-    // }
-
     // Modificado por Nacho Palacio 2025-04-22.
     public void setItemID(int position, long id) {
         long baseId = (id % ElementIdMapper.ITEM_ID_START);
@@ -295,10 +286,6 @@ public class DataAccessItemFile extends DataAccess {
     public void setItemWidth(int position, double width) {
         setPropertyValue(Literals.ITEM_WIDTH + position, Double.toString(width));
     }
-
-    // public void setItemRoom(int position, int roomLabel) {
-    //     setPropertyValue(Literals.ITEM_ROOM + position, Integer.toString(roomLabel));
-    // }
 
     /* Añadido por Nacho Palacio 2025-04-17. */
     public void setItemRoom(int position, long roomLabel) {
@@ -564,30 +551,4 @@ public class DataAccessItemFile extends DataAccess {
         return baseId;
     }
 
-    /**
-     * Método para verificar la conversión de IDs
-     */
-    public void verifyIdConversion() {
-        System.out.println("\n=== VERIFICACIÓN DE CONVERSIÓN DE IDs EN DataAccessItemFile ===");
-        
-        // Crear algunos IDs de prueba
-        int externalItemId = 42;  // ID externo de ejemplo
-        long internalItemId = externalToInternalId(externalItemId, ElementIdMapper.CATEGORY_ITEM);
-        
-        System.out.println("Item: externo " + externalItemId + " -> interno " + internalItemId + 
-                        " -> convertido de nuevo " + internalToExternalId(internalItemId, ElementIdMapper.CATEGORY_ITEM));
-        
-        // Verificar conversión de IDs existentes
-        if (getNumberOfItems() > 0) {
-            System.out.println("\nVerificando IDs de ítems existentes:");
-            for (int i = 1; i <= Math.min(5, getNumberOfItems()); i++) {
-                long itemId = getItemID(i);
-                int convertedBack = internalToExternalId(itemId, ElementIdMapper.CATEGORY_ITEM);
-                System.out.println("Item #" + i + ": ID interno " + itemId + 
-                                ", ID externo " + convertedBack);
-            }
-        }
-        
-        System.out.println("====================================================\n");
-    }
 }

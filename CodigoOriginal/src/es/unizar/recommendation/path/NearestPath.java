@@ -30,7 +30,6 @@ public class NearestPath extends Path {
 	 */
 	@Override
 	public String generatePath(long startVertex) {
-		System.out.println("DEBUG-NearestPath: Inicio de generatePath, startVertex=" + startVertex); // Añadido por Nacho Palacio 2025-05-13
 		// System.out.println("Start vertex: " + startVertex);
 		String finalPath = "";
 		long endVertex = 0;
@@ -56,11 +55,8 @@ public class NearestPath extends Path {
 		double currentTime = 0;
 		boolean ifItemToVisitWasCero = false;
 
-		System.out.println("DEBUG-NearestPath: Calculando room para startVertex=" + startVertex); // Añadido por Nacho Palacio 2025-05-13
 		// Get the room of the initial item (or non-RS user).
 		int room = getRoomFromItem(startVertex);
-
-		System.out.println("DEBUG-NearestPath: Room obtenido=" + room); // Añadido por Nacho Palacio 2025-05-13
 		
 		// Store the visited room.
 		roomVisited = addRoomVisited(room, roomVisited);
@@ -71,11 +67,8 @@ public class NearestPath extends Path {
 			System.out.println(integer + ", ");
 		*/
 		
-		System.out.println("DEBUG-NearestPath: Obteniendo itemsByRoom para room=" + room); // Añadido por Nacho Palacio 2025-05-13
 		// Get the items (sculptures, paintings and doors) of a specified room.
 		List<Long> itemsByRoom = getItemsByRoom(room);
-
-		System.out.println("DEBUG-NearestPath: Items en room=" + room + ": " + itemsByRoom); // Añadido por Nacho Palacio 2025-05-13
 		
 		/*
 		System.out.println("Items by room: ");
@@ -88,7 +81,6 @@ public class NearestPath extends Path {
 		if (UserRunnable.firstTime) {
 			// Get a new vertex to visit by the non-RS user, specifying the start and
 			// end vertices.
-			System.out.println("DEBUG: startVertex=" + startVertex); // Añadido por Nacho Palacio 2025-05-13
 			finalPath += getCurrentVertex(startVertex, startVertex);
 			if (startVertex <= this.numberOfItems)
 				itemVisited.add(startVertex); // ADD THE START VERTEX AS VISITED!!!
@@ -102,11 +94,7 @@ public class NearestPath extends Path {
 		//Monitor monitor = null;
 		
 		// While the visit time does not finish.
-		while (currentTime < inputTime && itemVisited.size() < numberOfItems) {
-			// System.out.println("DEBUG-NearestPath: startVertex inicio del while=" + startVertex); // Añadido por Nacho Palacio 2025-05-13
-
-			// System.out.println("DEBUG-NearestPath: Inicio del bucle while, currentTime=" + currentTime + ", inputTime=" + inputTime + ", items visitados=" + itemVisited.size()); // Añadido por Nacho Palacio 2025-05-13
-			
+		while (currentTime < inputTime && itemVisited.size() < numberOfItems) {			
 			//monitor = MonitorFactory.start("nearestPathWhileTimeAvailable");
 			
 			// System.out.println("\nCurrent time: " + currentTime);
@@ -114,10 +102,7 @@ public class NearestPath extends Path {
 			// Get the item (most likely of nearest) to visit by non-RS user (without
 			// repeating).
 			if (!ifItemToVisitWasCero) {
-				// System.out.println("Parametros item to visit: " + startVertex + ", " + itemsByRoom + ", " + roomVisited + ", " + itemVisited + ", " + repeated);
-				System.out.println("DEBUG-NearestPath: Calculando itemToVisit, startVertex=" + startVertex + ", itemsByRoom=" + itemsByRoom + ", roomVisited=" + roomVisited + ", itemVisited=" + itemVisited + ", repeated=" + repeated); // Añadido por Nacho Palacio 2025-05-13
 				itemToVisit = getItemToVisit(startVertex, itemsByRoom, roomVisited, itemVisited, repeated);
-				System.out.println("DEBUG-NearestPath: itemToVisit calculado=" + itemToVisit); // Añadido por Nacho Palacio 2025-05-13
 				if (itemToVisit == 0) {
 					ifItemToVisitWasCero = true;
 				}
@@ -142,20 +127,13 @@ public class NearestPath extends Path {
 
 				// Añadido por Nacho Palacio 2025-05-17
 				long convertedItemToVisit = ElementIdMapper.convertToRangeId(itemToVisit, ElementIdMapper.CATEGORY_ITEM);
-				// System.out.println("Converted item to visit: " + convertedItemToVisit);
-				// System.out.println("DEBUG-NearestPath: itemToVisit=" + itemToVisit); // Añadido por Nacho Palacio 2025-05-17
-				// System.out.println("DEBUG-NearestPath: numberOfItemsInMap=" + numberOfItemsInMap); // Añadido por Nacho Palacio 2025-05-17
 				
 				// If the next item to visit is a painting or sculpture (range: 1-240):
-				if (itemToVisit <= numberOfItemsInMap) {
-				// if (convertedItemToVisit <= numberOfItemsInMap) {
+				//if (itemToVisit <= numberOfItemsInMap) {
+				if (ElementIdMapper.isInCorrectRange(itemToVisit, ElementIdMapper.CATEGORY_ITEM)) { // Modificado por Nacho Palacio 2025-05-20
 					endVertex = itemToVisit;
 					// Get a new vertex.
-
-					// System.out.println("DEBUG-NearestPath: Añadiendo vértice al finalPath, startVertex=" + startVertex + ", endVertex=" + endVertex); // Añadido por Nacho Palacio 2025-05-13
-					
 					vertex = getCurrentVertex(startVertex, endVertex);
-					// System.out.println("DEBUG-NearestPath: vertex=" + vertex); // Añadido por Nacho Palacio 2025-05-18
 					// Add the new vertex to the final path.
 					//System.out.println(finalPath);
 					finalPath += vertex;
@@ -168,8 +146,6 @@ public class NearestPath extends Path {
 					currentTime += getCurrentTime(startVertex, endVertex)
 							+ Configuration.simulation.getDelayObservingPaintingInSecond();
 					startVertex = endVertex;
-					System.out.println("DEBUG (startVertex = endVertex): startVertex actualizado a " + startVertex + " (desde endVertex)"); // Añadido por Nacho Palacio 2025-05-18
-					
 				} else {
 					
 					//System.out.println("Door or stairs");
@@ -192,7 +168,6 @@ public class NearestPath extends Path {
 					
 					// Get the sub-path necessary to go from one item (sculpture or painting) to
 					// another through doors.
-					System.out.println("DEBUG-NearestPath: StartVertex antes de getConnectedDoor=" + startVertex); // Añadido por Nacho Palacio 2025-05-18
 					String subpath = getToConnectedDoor(startVertex, itemToVisit, itemVisited, connectedDoor);
 					
 					//System.out.println("Subpath: " + subpath);
@@ -213,10 +188,7 @@ public class NearestPath extends Path {
 					// Update the available items to visit by non-RS user in the current room.
 					itemsByRoom = updateItemsByRoom(room, itemVisited, roomVisited);
 					// Get the end vertex from sub-path.
-					// System.out.println("DEBUG-NearestPath: Subpath pasado a getEndVertex= " + subpath); // Añadido por Nacho Palacio 2025-05-18
 					startVertex = getEndVertex(subpath);
-					System.out.println("DEBUG (startVertex = getEndVertex(subpath).1): startVertex actualizado a " + startVertex + " (desde getEndVertex con subpath=" + subpath + ")"); // Añadido por Nacho Palacio 2025-05-18
-					// System.out.println("DEBUG-NearestPath: startVertex actualizado=" + startVertex); // Añadido por Nacho Palacio 2025-05-17
 					ifItemToVisitWasCero = false;//ifItemToVisitWasCero = (startVertex > 0);
 					
 					/*
@@ -226,9 +198,7 @@ public class NearestPath extends Path {
 						ifItemToVisitWasCero = false;
 					*/
 				}
-			} else {
-				// System.out.println("DEBUG-NearestPath: else, startVertex= " + startVertex); // Añadido por Nacho Palacio 2025-05-18
-				
+			} else {				
 				// System.out.println("Room empty or itemToVisit <= 0");
 				
 				// Treat the case where there are no items to visit (itemToVisit = 0) or
@@ -239,7 +209,6 @@ public class NearestPath extends Path {
 					
 					// All the items have been visited by the non-RS user and there is no other
 					// option that to go to that visited room because there is time.
-					// System.out.println("DEBUG-NearestPath: Calculando room en else->if para startVertex=" + startVertex); // Añadido por Nacho Palacio 2025-05-18
 					room = getRoomFromItem(startVertex);
 					
 					// System.out.println(" - " + startVertex + " vertex in room " + room);
@@ -272,8 +241,6 @@ public class NearestPath extends Path {
 				} else {
 					
 					// System.out.println("Items by room is empty");
-					// System.out.println("DEBUG-NearestPath: Calculando room en else->else para startVertex=" + startVertex); // Añadido por Nacho Palacio 2025-05-18
-
 					
 					room = getRoomFromItem(startVertex);
 					
@@ -300,7 +267,6 @@ public class NearestPath extends Path {
 					//System.out.println(finalPath + "\n");
 					itemsByRoom = updateItemsByRoom(room, itemVisited, roomVisited);
 					startVertex = getEndVertex(subpath);
-					System.out.println("DEBUG (startVertex = getEndVertex(subpath).2): startVertex actualizado a " + startVertex + " (desde else con subpath=" + subpath + ")"); // Añadido por Nacho Palacio 2025-05-18
 					ifItemToVisitWasCero = false;
 					allRoomVisited = false;
 				}
@@ -309,8 +275,6 @@ public class NearestPath extends Path {
 			
 			//System.out.println(finalPath);
 			//monitor.stop();
-
-			System.out.println("DEBUG-NearestPath: Finalizando iteración del bucle while, currentTime=" + currentTime + ", items visitados=" + itemVisited.size()); // Añadido por Nacho Palacio 2025-05-13
 		}
 		
 		finalPath = eraseRepeatedObjects(finalPath);
@@ -326,8 +290,6 @@ public class NearestPath extends Path {
 				lastChar = finalPath.charAt(finalPath.length() - 1);
 			}
 		}
-		
-		System.out.println("DEBUG-NearestPath: finalPath generado=" + finalPath); // Añadido por Nacho Palacio 2025-05-13
 
 		return finalPath;
 		/*

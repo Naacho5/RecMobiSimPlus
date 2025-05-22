@@ -222,15 +222,9 @@ public class GraphForSpecialUser {
 	 * @throws IOException
 	 */
 	public void getPathsFromFile() {
-		// Añadido por Nacho Palacio 2025-04-24
-		System.out.println("***DEBUG: Entrando en getPathsFromFile()");
-		System.out.println("***DEBUG: Intentando cargar rutas desde: " + Configuration.simulation.getNonSpecialUserPaths());
-		File pathFile = new File(Configuration.simulation.getNonSpecialUserPaths());
-		System.out.println("***DEBUG: El archivo existe: " + pathFile.exists() + ", tamaño: " + (pathFile.exists() ? pathFile.length() : "N/A"));
 		try {
 			// Load non-RS user paths:
 			String path = Configuration.simulation.getNonSpecialUserPaths();
-			System.out.println("Attempting to load non-special user paths from: " + path); // Añadido por Nacho Palacio 2025-04-13
 			BufferedReader br = new BufferedReader(new FileReader(new File(path)));
 			String line = null;
 			while ((line = br.readLine()) != null) {
@@ -241,7 +235,6 @@ public class GraphForSpecialUser {
 					List<String> defaultPath = new ArrayList<>();
 					defaultPath.add("(1 : 2)");  // Arista ficticia mínima
 					paths.add(defaultPath);
-					System.out.println("***DEBUG: Línea vacía reemplazada con ruta por defecto");
 				}
 				else {
 					String[] array = line.split(", ");
@@ -255,17 +248,14 @@ public class GraphForSpecialUser {
 					paths.add(internalPathEdges);
 				}
 
-				// System.out.println("***DEBUG: Leyendo línea: '" + line + "', longitud: " + line.length()); // Añadido por Nacho Palacio 2025-04-24
 				// String[] array = line.split(", ");
 				// paths.add(Arrays.asList(array));
 			}
 			// Add RS user paths with null information:
 			for (int i = 0; i < Configuration.simulation.getNumberOfSpecialUser(); i++) {
 				paths.add(null);
-				System.out.println("***DEBUG: Añadida ruta nula para usuario RS #" + i); // Añadido por Nacho Palacio 2025-04-24
 			}
 			br.close();
-			System.out.println("***DEBUG: Total de rutas añadidas: " + paths.size()); // Añadido por Nacho Palacio 2025-04-24
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

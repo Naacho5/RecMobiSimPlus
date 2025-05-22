@@ -455,25 +455,6 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 	 * @return A HashMap with the number of items by user.
 	 */
 	public Map<Long, Integer> getHashWithNumberItemsByUser() {
-		// Map<Long, Integer> hashWithNumberItemsByUser = new TreeMap<Long, Integer>();
-		// try {
-			
-		// 	// Query
-		// 	PreparedStatement select = getConnection()
-		// 			.prepareStatement("SELECT id_user, count(id_item) AS ItemCount FROM user_item_context GROUP BY id_user");
-		// 	ResultSet resultSet = select.executeQuery();
-			
-		// 	while (resultSet.next()) {
-		// 		hashWithNumberItemsByUser.put(resultSet.getLong("id_user"), resultSet.getInt("ItemCount"));
-		// 	}
-			
-		// } catch (SQLException e) {
-		// 	log.log(Level.SEVERE, e.getClass().getName() + ": " + e.getMessage());
-		// 	e.printStackTrace();
-		// }
-		
-		// return hashWithNumberItemsByUser;
-
 		/* Añadido por Nacho Palacio 2025-04-15. */
 		Map<Long, Integer> hashWithNumberItemsByUser = new TreeMap<>();
 		Connection conn = getConnection();
@@ -735,7 +716,6 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 			// Query
 			PreparedStatement select = getConnection()
 					.prepareStatement("SELECT latitude_gps FROM item WHERE id_item= ?");
-			// select.setInt(1, (int) itemID);
 			select.setInt(1, (int) externalItemId); // Modificado por Nacho Palacio 2025-04-22
 			resultSet = select.executeQuery();
 			
@@ -766,7 +746,6 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 			// Query
 			PreparedStatement select = getConnection()
 					.prepareStatement("SELECT longitude_gps FROM item WHERE id_item= ?");
-			// select.setInt(1, (int) itemID);
 			select.setInt(1, (int) externalItemId); // Modificado por Nacho Palacio 2025-04-22
 			resultSet = select.executeQuery();
 			
@@ -1020,14 +999,13 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 					insertStmt.setNull(3, java.sql.Types.VARCHAR); // sex
 					insertStmt.setInt(4, 0);       // city_numeric
 					insertStmt.setNull(5, java.sql.Types.VARCHAR); // country
-					insertStmt.setInt(6, profileToUse); // id_ca_profile - alternar entre 1 y 3 como en los ejemplos
+					insertStmt.setInt(6, profileToUse); // id_ca_profile 
 					
 					insertStmt.executeUpdate();
 					System.out.println("Added user with ID: " + id + " and profile: " + profileToUse);
 				}
 			}
-			
-			// Si todo va bien, hacer commit
+
 			conn.commit();
 			System.out.println("Successfully added " + (totalRequiredUsers - currentUserCount) + " new users to the database.");
 		} catch (SQLException e) {
@@ -1150,20 +1128,20 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 
 	// Añadido por Nacho Palacio 2025-04-22.
 	/**
-	 * Convierte un ID externo (de base de datos) a ID interno (usado en el modelo)
-	 * @param externalId ID almacenado en la base de datos
-	 * @param category Categoría del elemento (CATEGORY_ITEM, CATEGORY_DOOR, etc.)
-	 * @return ID interno en el rango correcto
+	 * Converts an external ID (stored in the database) to an internal ID (used in the model).
+	 * @param externalId ID stored in the database.
+	 * @param category Element category (CATEGORY_ITEM, CATEGORY_DOOR, etc.).
+	 * @return Internal ID in the correct range.
 	 */
 	public long convertToInternalId(long externalId, int category) {
 		return ElementIdMapper.convertToRangeId(externalId, category);
 	}
 
 	/**
-	 * Convierte un ID interno (usado en el modelo) a ID externo (para almacenar en base de datos)
-	 * @param internalId ID utilizado en el modelo
-	 * @param category Categoría del elemento
-	 * @return ID externo para usar en la base de datos
+	 * Converts an internal ID (used in the model) to an external ID (to store in the database).
+	 * @param internalId ID used in the model.
+	 * @param category Element category.
+	 * @return External ID to be used in the database.
 	 */
 	public long convertToExternalId(long internalId, int category) {
 		// Si el ID ya está en el rango correcto, extraer el ID base
@@ -1200,10 +1178,10 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 	}
 
 	/**
-	 * Convierte una lista de IDs externos a sus equivalentes internos
-	 * @param externalIds Lista de IDs externos
-	 * @param category Categoría de los elementos
-	 * @return Lista de IDs internos en los rangos correctos
+	 * Converts a list of external IDs (stored in the database) to their equivalent internal IDs (used in the model).
+	 * @param externalIds List of external IDs.
+	 * @param category Element category (CATEGORY_ITEM, CATEGORY_DOOR, etc.).
+	 * @return List of internal IDs in the correct ranges.
 	 */
 	public List<Long> convertToInternalIds(List<Long> externalIds, int category) {
 		List<Long> internalIds = new ArrayList<>(externalIds.size());
@@ -1214,10 +1192,10 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 	}
 
 	/**
-	 * Convierte una lista de IDs internos a sus equivalentes externos
-	 * @param internalIds Lista de IDs internos
-	 * @param category Categoría de los elementos
-	 * @return Lista de IDs externos para usar en la base de datos
+	 * Converts a list of internal IDs (used in the model) to their equivalent external IDs (to store in the database).
+	 * @param internalIds List of internal IDs.
+	 * @param category Element category.
+	 * @return List of external IDs to be used in the database.
 	 */
 	public List<Long> convertToExternalIds(List<Long> internalIds, int category) {
 		List<Long> externalIds = new ArrayList<>(internalIds.size());
@@ -1227,42 +1205,4 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 		return externalIds;
 	}
 
-
-	/**
-	 * Método para verificar la conversión de IDs en la capa de acceso a datos
-	 */
-	public void verifyIdConversion() {
-		System.out.println("\n=== VERIFICACIÓN DE CONVERSIÓN DE IDs EN DataAccessLayer ===");
-		
-		// Crear algunos IDs de prueba
-		long externalItemId = 25;  // ID externo de ejemplo
-		long internalItemId = convertToInternalId(externalItemId, ElementIdMapper.CATEGORY_ITEM);
-		
-		System.out.println("Item: externo " + externalItemId + " -> interno " + internalItemId + 
-						" -> convertido de nuevo " + convertToExternalId(internalItemId, ElementIdMapper.CATEGORY_ITEM));
-		
-		// Verificar conversión en getItemsOrderByRoom
-		List<Long> items = getItemsOrderByRoom();
-		if (!items.isEmpty()) {
-			System.out.println("\nVerificando IDs de ítems obtenidos por getItemsOrderByRoom:");
-			for (int i = 0; i < Math.min(5, items.size()); i++) {
-				long itemId = items.get(i);
-				long externalId = convertToExternalId(itemId, ElementIdMapper.CATEGORY_ITEM);
-				System.out.println("Item #" + i + ": ID interno " + itemId + 
-								", ID externo " + externalId + 
-								", rango correcto: " + ElementIdMapper.isInCorrectRange(itemId, ElementIdMapper.CATEGORY_ITEM));
-			}
-		}
-		
-		// Verificar conversión en otras funciones
-		System.out.println("\nPrueba de getItemLatitude con conversión de ID:");
-		if (!items.isEmpty()) {
-			long itemId = items.get(0);
-			long latitude = getItemLatitude(itemId);
-			System.out.println("Item ID " + itemId + " (externo: " + convertToExternalId(itemId, ElementIdMapper.CATEGORY_ITEM) + 
-							") tiene latitud: " + latitude);
-		}
-		
-		System.out.println("====================================================\n");
-	}
 }

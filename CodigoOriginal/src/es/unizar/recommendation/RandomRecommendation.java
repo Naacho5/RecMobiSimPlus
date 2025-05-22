@@ -27,10 +27,6 @@ public class RandomRecommendation {
 	}
 
 	public List<RecommendedItem> recommend(long userID, int howMany) throws TasteException {
-		System.out.println("DEBUG-ID-TRACKING: Solicitando recomendaciones para usuario " + userID); // Añadido por Nacho Palacio 2025-05-07
-		System.out.println("DEBUG-ID-TRACKING: Verificando si el ID de usuario " + userID + 
-                      " está en el rango correcto: " + 
-                      ElementIdMapper.isInCorrectRange(userID, ElementIdMapper.CATEGORY_USER));
 		// Obtiene la preferencia de todos items del userID
 		List<String> allPreferences = dataAccessLayer.getUserItemContextRatingRandomFor(userID);
 		
@@ -57,9 +53,6 @@ public class RandomRecommendation {
 			posAll++;
 		}
 
-		// Añadido por Nacho Palacio 2025-05-07
-		System.out.println("DEBUG-ID-TRACKING: Recomendación finalizada para usuario " + userID + 
-                  ", devolviendo " + topList.size() + " elementos");
 		if (!topList.isEmpty()) {
 			StringBuilder sb = new StringBuilder("Primeros elementos: ");
 			for (int i = 0; i < Math.min(3, topList.size()); i++) {
@@ -70,7 +63,6 @@ public class RandomRecommendation {
 				.append(ElementIdMapper.isInCorrectRange(item.getItemID(), ElementIdMapper.CATEGORY_ITEM))
 				.append("] ");
 			}
-			System.out.println("DEBUG-ID-TRACKING: " + sb.toString());
 		}
 
 		

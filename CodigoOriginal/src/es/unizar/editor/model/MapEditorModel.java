@@ -1805,7 +1805,6 @@ public class MapEditorModel {
 				//addCorner(c);
 			}
 			// Create room with its corners and add it to rooms
-			// Room r = new Room(roomLabel, cornerList);
 			// Añadido por Nacho Palacio 2025-04-18.
 			Room r = new Room(ElementIdMapper.convertToRangeId(roomLabel, ElementIdMapper.CATEGORY_ROOM), cornerList); 
 			addRoom(r);
@@ -2007,7 +2006,7 @@ public class MapEditorModel {
 			roomLabel += numExistingRooms;
 			Room r = getRoom(roomLabel);
 			// Get item label
-			int vertexLabel = accessItemFile.getItemID(item+1); // ItemID will be the common vertex_label for all objects
+			int vertexLabel = (int) accessItemFile.getItemID(item+1); // ItemID will be the common vertex_label for all objects
 			vertexLabel += numExistingItems;
 
 			// Añadido por Nacho Palacio 2025-04-18.
@@ -2020,7 +2019,6 @@ public class MapEditorModel {
 			double itemY = Double.parseDouble(array[1]);
 			
 			// CREATE ITEM AND ADD IT TO MODEL
-			// Item i = new Item(r, vertexLabel, new Point(itemX + xDisplacement, itemY + yDisplacement));
 			
 			// Añadido por Nacho Palacio 2025-04-18.
 			Item i = new Item(r, rangedVertexLabel, new Point(itemX + xDisplacement, itemY + yDisplacement));

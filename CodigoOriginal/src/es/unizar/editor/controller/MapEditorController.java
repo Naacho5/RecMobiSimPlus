@@ -192,13 +192,7 @@ public class MapEditorController implements ActionListener, FocusListener, MapPa
 			switch (model.getSelected()) {
 				case corner:
 					// Create corner and add it to model
-//					Corner corner = new Corner(null, model.getNumCorners() + model.getNumCurrentRoomCorners(), p);
-					// Corner corner = new Corner(null, model.getNumCurrentRoomCorners()+1, p);
 					Corner corner = new Corner(null, model.getNextCornerId(), p); // Modificado por Nacho Palacio 2025-04-18
-					/* Añadido por Nacho Palacio 2025-04-18. */
-					System.out.println("Nuevo Corner creado con ID: " + corner.getVertex_label() + 
-                    " - ¿Rango correcto? " + 
-                    ElementIdMapper.isInCorrectRange(corner.getVertex_label(), ElementIdMapper.CATEGORY_CORNER));
 					
 					if (!model.addCornerToCurrentRoomCorners(corner)) {
 						view.showMessage(JOptionPane.WARNING_MESSAGE, "COULDN'T ADD CORNER TO MAP");
@@ -208,13 +202,8 @@ public class MapEditorController implements ActionListener, FocusListener, MapPa
 				    
 				case door:
 					// Create door and add it to model
-					// Door door = new Door(null, model.getNumDoors()+1, p);
 					Door door = new Door(null, model.getNextDoorId(), p); // Modificado por Nacho Palacio 2025-04-18
-					/* Añadido por Nacho Palacio 2025-04-18. */
-					System.out.println("Nueva Door creada con ID: " + door.getVertex_label() + 
-                    " - ¿Rango correcto? " + 
-                    ElementIdMapper.isInCorrectRange(door.getVertex_label(), ElementIdMapper.CATEGORY_DOOR));
-
+					
 					// Add room to door if it is inside a room
 					Room doorRoom = model.isInsideRoom(p, -1);
 					if (doorRoom != null)
@@ -228,13 +217,8 @@ public class MapEditorController implements ActionListener, FocusListener, MapPa
 					
 				case stairs:
 					// Create corner and add it to model
-					// Stairs stairs = new Stairs(null, model.getNumStairs()+1, p);
 					Stairs stairs = new Stairs(null, model.getNextStairsId(), p); // Modificado por Nacho Palacio 2025-04-18
-					/* Añadido por Nacho Palacio 2025-04-18. */
-					System.out.println("Nueva Stairs creada con ID: " + stairs.getVertex_label() + 
-					" - ¿Rango correcto? " + 
-					ElementIdMapper.isInCorrectRange(stairs.getVertex_label(), ElementIdMapper.CATEGORY_STAIRS));
-
+					
 					if (!model.addStairs(stairs)) {
 						view.showMessage(JOptionPane.WARNING_MESSAGE, "COULDN'T ADD STAIRS TO MAP");
 					}
@@ -310,12 +294,7 @@ public class MapEditorController implements ActionListener, FocusListener, MapPa
 					
 				case visitable:
 					// Create item and add it to model
-					// Item itemVisitable = new Item(null, model.getNumItems()+1, p);
 					Item itemVisitable = new Item(null, model.getNextItemId(), p); // Modificado por Nacho Palacio 2025-04-18
-					/* Añadido por Nacho Palacio 2025-04-18. */
-					System.out.println("Nuevo Item creado con ID: " + itemVisitable.getVertex_label() + 
-					" - ¿Rango correcto? " + 
-					ElementIdMapper.isInCorrectRange(itemVisitable.getVertex_label(), ElementIdMapper.CATEGORY_ITEM));
 					
 					Room r = model.isInsideRoom(p, -1);
 					if (r != null) {
@@ -562,13 +541,7 @@ public class MapEditorController implements ActionListener, FocusListener, MapPa
 					model.eraseDrawableList(new ArrayList<>(model.getCurrentRoomCorners()));
 					
 					// Create a new room with the current room corners
-					// Room room = new Room(model.getNumRooms() + 1, model.getCurrentRoomCorners());
 					Room room = new Room(model.getNumRooms(), model.getCurrentRoomCorners()); // Modificado por Nacho Palacio 2025-04-18
-
-					/* Añadido por Nacho Palacio 2025-04-18. */
-					System.out.println("Nueva Room creada con ID: " + room.getLabel() + 
-					" - ¿Rango correcto? " + 
-					ElementIdMapper.isInCorrectRange(room.getLabel(), ElementIdMapper.CATEGORY_ROOM));
 
 					if(model.addRoom(room)) {// (this adds the corners to persist to drawable elements)
 						model.emptyCurrentRoomCorners();

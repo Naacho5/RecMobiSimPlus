@@ -11,7 +11,7 @@ public class HamiltonianPath {
 		/* Añadido por Nacho Palacio 2025-04-14. */
 		if (g == null || g.vertexSet().isEmpty()) {
 			System.out.println("Warning: Empty graph received, unable to calculate Hamiltonian path");
-			return new LinkedList<>(); // Retornar lista vacía
+			return new LinkedList<>();
 		}
 
 		List<Long> vertices = new LinkedList<Long>(g.vertexSet());

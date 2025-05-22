@@ -123,10 +123,6 @@ public class DataAccessRoomFile extends DataAccess {
         setPropertyValue(Literals.NUMBER_ROOM, Integer.toString(numberOfRooms));
     }
 
-    // public void setRoomLabel(int roomPosition, int roomLabel) {
-    //     setPropertyValue(Literals.LABEL + roomPosition, Integer.toString(roomLabel));
-    // }
-
     /* Añadido por Nacho Palacio 2025-04-17. */
     public void setRoomLabel(int roomPosition, long roomLabel) {
         setPropertyValue(Literals.LABEL + roomPosition, Long.toString(roomLabel));

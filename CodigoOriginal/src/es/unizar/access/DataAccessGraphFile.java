@@ -32,10 +32,6 @@ public class DataAccessGraphFile extends DataAccess {
 		return Integer.valueOf(getPropertyValue(Literals.NUMBER_ROOM)).intValue();
 	}
 
-	// public int getRoom(int posRoom) {
-	// 	return Integer.valueOf(getPropertyValue(Literals.ROOM + posRoom)).intValue();
-	// }
-
 	// Modificado por Nacho Palacio 2025-04-22.
 	public long getRoom(int posRoom) {
 		int rawId = Integer.valueOf(getPropertyValue(Literals.ROOM + posRoom)).intValue();
@@ -45,10 +41,6 @@ public class DataAccessGraphFile extends DataAccess {
 	public int getNumberOfItemsByRoom(int posRoom) {
 		return Integer.valueOf(getPropertyValue(Literals.NUMBER_ITEMS_BY_ROOM + posRoom)).intValue();
 	}
-
-	// public long getItemOfRoom(int posItem, int posRoom) {
-	// 	return Long.valueOf(getPropertyValue(Literals.ITEM_OF_ROOM + posItem + "_" + posRoom)).longValue();
-	// }
 
 	// Modificado por Nacho Palacio 2025-04-22.
 	public long getItemOfRoom(int posItem, int posRoom) {
@@ -65,15 +57,10 @@ public class DataAccessGraphFile extends DataAccess {
 		return Integer.valueOf(getPropertyValue(Literals.NUMBER_DOORS_BY_ROOM + posRoom)).intValue();
 	}
 
-	// public long getDoorOfRoom(int posDoor, int posRoom) {
-	// 	return Long.valueOf(getPropertyValue(Literals.DOOR_OF_ROOM + posDoor + "_" + posRoom)).longValue();
-	// }
-
 	// Modificado por Nacho Palacio 2025-04-22.
 	public long getDoorOfRoom(int door, int room) {
 		// String doorId = getPropertyValue(Literals.DOOR + door + "_" + room);
 		String doorId = getPropertyValue(Literals.DOOR_OF_ROOM + door + "_" + room); // Modificado por Nacho Palacio 2025-05-02
-		// System.out.println("GraphFile: Obteniendo Door ID " + doorId); // Añadido por Nacho Palacio 2025-05-02
 		if (doorId == null || doorId.isEmpty()) {
 			return -1;
 		}
@@ -83,10 +70,6 @@ public class DataAccessGraphFile extends DataAccess {
 		// System.out.println("GraphFile: Convirtiendo Door ID externo " + rawId + " a interno " + internalId);
 		return internalId;
 	}
-
-	// public long getDoorOfRoom(String door) {
-	// 	return Long.valueOf(getPropertyValue(door)).longValue();
-	// }
 
 	// Modificado por Nacho Palacio 2025-04-22.
 	public long getDoorOfRoom(String door) {
@@ -111,10 +94,6 @@ public class DataAccessGraphFile extends DataAccess {
 		return Integer.valueOf(getPropertyValue(Literals.NUMBER_STAIRS_BY_MAP)).intValue();
 	}
 
-	// public long getStairsOfRoom(int pos) {
-	// 	return Long.valueOf(getPropertyValue(Literals.STAIRS_OF_ROOM + pos)).longValue();
-	// }
-
 	// Modificado por Nacho Palacio 2025-04-22.
 	public long getStairsOfRoom(int pos) {
 		String stairsId = getPropertyValue(Literals.STAIRS_OF_ROOM + pos);
@@ -125,10 +104,6 @@ public class DataAccessGraphFile extends DataAccess {
 		long rawId = Long.valueOf(stairsId).longValue();
 		return ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_STAIRS);
 	}
-
-	// public long getStairsOfRoom(String stairs) {
-	// 	return Long.valueOf(getPropertyValue(stairs)).longValue();
-	// }
 
 	// Modificado por Nacho Palacio 2025-04-22.
 	public long getStairsOfRoom(String stairs) {
@@ -223,10 +198,6 @@ public class DataAccessGraphFile extends DataAccess {
 		return Integer.valueOf(getPropertyValue(Literals.NUMBER_DOORS_BY_SUBROOM + posSubroom + "_" + posRoom)).intValue();
 	}
 
-	// public long getDoorOfSubroom(int posDoor, int posSubroom, int posRoom) {
-	// 	return Long.valueOf(getPropertyValue(Literals.DOOR_OF_SUBROOM + posDoor + "_" + posSubroom + "_" + posRoom)).longValue();
-	// }
-
 	// Modificado por Nacho Palacio 2025-04-22.
 	public long getDoorOfSubroom(int posDoor, int posSubroom, int posRoom) {
 		String doorId = getPropertyValue(Literals.DOOR_OF_SUBROOM + posDoor + "_" + posSubroom + "_" + posRoom);
@@ -237,10 +208,6 @@ public class DataAccessGraphFile extends DataAccess {
 		long rawId = Long.valueOf(doorId).longValue();
 		return ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_DOOR);
 	}
-
-	// public long getDoorOfSubroom(String doorOfSubroom) {
-	// 	return Long.valueOf(getPropertyValue(doorOfSubroom)).longValue();
-	// }
 
 	// Modificado por Nacho Palacio 2025-04-22.
 	public long getDoorOfSubroom(String doorOfSubroom) {
@@ -258,10 +225,6 @@ public class DataAccessGraphFile extends DataAccess {
 		return Integer.valueOf(getPropertyValue(Literals.NUMBER_INVISIBLE_DOORS_BY_SUBROOM + posSubroom + "_" + posRoom)).intValue();
 	}
 
-	// public long getInvisibleDoorOfSubroom(int posInvisibleDoor, int posSubroom, int posRoom) {
-	// 	return Long.valueOf(getPropertyValue(Literals.INVISIBLE_DOOR_OF_SUBROOM + posInvisibleDoor + "_" + posSubroom + "_" + posRoom)).longValue();
-	// }
-
 	// Modificado por Nacho Palacio 2025-04-22.
 	public long getInvisibleDoorOfSubroom(int posInvisibleDoor, int posSubroom, int posRoom) {
 		String doorId = getPropertyValue(Literals.INVISIBLE_DOOR_OF_SUBROOM + posInvisibleDoor + "_" + posSubroom + "_" + posRoom);
@@ -272,10 +235,6 @@ public class DataAccessGraphFile extends DataAccess {
 		long rawId = Long.valueOf(doorId).longValue();
 		return ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_DOOR);
 	}
-	
-	// public long getInvisibleDoorOfSubroom(String invisibleDoorOfSubroom) {
-	// 	return Long.valueOf(getPropertyValue(invisibleDoorOfSubroom)).longValue();
-	// }
 
 	// Modificado por Nacho Palacio 2025-04-22.
 	public long getInvisibleDoorOfSubroom(String invisibleDoorOfSubroom) {
@@ -308,11 +267,6 @@ public class DataAccessGraphFile extends DataAccess {
 	public void setNumberOfRoom(int numberOfRoom) {
 		setPropertyValue(Literals.NUMBER_ROOM, Integer.toString(numberOfRoom));
 	}
-	
-	// public void setRoom(int posRoom, int roomLabel) {
-	// 	setPropertyValue(Literals.ROOM + posRoom, Integer.toString(roomLabel));
-	// }
-
 
 	/* Añadido por Nacho Palacio 2025-04-17. */
 	public void setRoom(int posRoom, long roomLabel) {
@@ -322,10 +276,6 @@ public class DataAccessGraphFile extends DataAccess {
 	public void setNumberOfItemsByRoom(int posRoom, int numberOfItems) {
 		setPropertyValue(Literals.NUMBER_ITEMS_BY_ROOM + posRoom, Integer.toString(numberOfItems));
 	}
-
-	// public void setItemOfRoom(int posItem, int posRoom, String itemLabel) {
-	// 	setPropertyValue(Literals.ITEM_OF_ROOM + posItem + "_" + posRoom, itemLabel);
-	// }
 
 	// Modificado por Nacho Palacio 2025-04-22.
 	public void setItemOfRoom(int posItem, int posRoom, String itemLabel) {
@@ -345,10 +295,6 @@ public class DataAccessGraphFile extends DataAccess {
 	public void setNumberOfDoorsByRoom(int posRoom, int numberOfDoors) {
 		setPropertyValue(Literals.NUMBER_DOORS_BY_ROOM + posRoom, Integer.toString(numberOfDoors));
 	}
-
-	// public void setDoorOfRoom(int posDoor, int posRoom, String doorLabel) {
-	// 	setPropertyValue(Literals.DOOR_OF_ROOM + posDoor + "_" + posRoom, doorLabel);
-	// }
 
 	// Modificado por Nacho Palacio 2025-04-22.
 	public void setDoorOfRoom(int door, int room, String doorId) {
@@ -376,10 +322,6 @@ public class DataAccessGraphFile extends DataAccess {
 	public void setNumberOfStairs(int numberOfStairs) {
 		setPropertyValue(Literals.NUMBER_STAIRS_BY_MAP, Integer.toString(numberOfStairs));
 	}
-
-	// public void setStairsOfRoom(int pos, String stairsLabel) {
-	// 	setPropertyValue(Literals.STAIRS_OF_ROOM + pos, stairsLabel);
-	// }
 
 	// Modificado por Nacho Palacio 2025-04-22.
 	public void setStairsOfRoom(int pos, String stairsLabel) {
@@ -446,10 +388,6 @@ public class DataAccessGraphFile extends DataAccess {
 		setPropertyValue(Literals.NUMBER_DOORS_BY_SUBROOM + posSubroom + "_" + posRoom, Integer.toString(numberDoorsSubroom));
 	}
 
-	// public void setDoorOfSubroom(int posDoor, int posSubroom, int posRoom, String doorLabel) {
-	// 	setPropertyValue(Literals.DOOR_OF_SUBROOM + posDoor + "_" + posSubroom + "_" + posRoom, doorLabel);
-	// }
-
 	// Modificado por Nacho Palacio 2025-04-22.
 	public void setDoorOfSubroom(int posDoor, int posSubroom, int posRoom, String doorLabel) {
 		try {
@@ -469,10 +407,6 @@ public class DataAccessGraphFile extends DataAccess {
 	public void setNumberOfInvisibleDoorsBySubroom(int posSubroom, int posRoom, int numberInvisibleDoorsSubroom) {
 		setPropertyValue(Literals.NUMBER_INVISIBLE_DOORS_BY_SUBROOM + posSubroom + "_" + posRoom, Integer.toString(numberInvisibleDoorsSubroom));
 	}
-
-	// public void setInvisibleDoorOfSubroom(int posDoor, int posSubroom, int posRoom, String invisibleDoorLabel) {
-	// 	setPropertyValue(Literals.INVISIBLE_DOOR_OF_SUBROOM + posDoor + "_" + posSubroom + "_" + posRoom, invisibleDoorLabel);
-	// }
 
 	// Modificado por Nacho Palacio 2025-04-22.
 	public void setInvisibleDoorOfSubroom(int posDoor, int posSubroom, int posRoom, String invisibleDoorLabel) {
@@ -573,45 +507,5 @@ public class DataAccessGraphFile extends DataAccess {
 		}
 	}
 
-
-	/**
-	 * Método para verificar la conversión de IDs
-	 */
-	public void verifyIdConversion() {
-		System.out.println("\n=== VERIFICACIÓN DE CONVERSIÓN DE IDs EN DataAccessGraphFile ===");
-		
-		// Verificar conversión de IDs de habitaciones
-		if (getNumberOfRoom() > 0) {
-			System.out.println("Verificando IDs de habitaciones:");
-			for (int i = 1; i <= Math.min(3, getNumberOfRoom()); i++) {
-				long roomId = getRoom(i);
-				System.out.println("Room #" + i + ": ID interno " + roomId + 
-								", rango correcto: " + ElementIdMapper.isInCorrectRange(roomId, ElementIdMapper.CATEGORY_ROOM));
-				
-				// Verificar puertas en esta habitación
-				int numDoors = getNumberOfDoorsByRoom(i);
-				if (numDoors > 0) {
-					System.out.println("  Puertas en Room #" + i + ":");
-					for (int j = 1; j <= Math.min(2, numDoors); j++) {
-						long doorId = getDoorOfRoom(j, i);
-						System.out.println("    Door #" + j + ": ID interno " + doorId + 
-										", rango correcto: " + ElementIdMapper.isInCorrectRange(doorId, ElementIdMapper.CATEGORY_DOOR));
-					}
-				}
-			}
-		}
-		
-		// Verificar conversión de IDs de escaleras
-		if (getNumberOfStairs() > 0) {
-			System.out.println("\nVerificando IDs de escaleras:");
-			for (int i = 1; i <= Math.min(2, getNumberOfStairs()); i++) {
-				long stairsId = getStairsOfRoom(i);
-				System.out.println("Stairs #" + i + ": ID interno " + stairsId + 
-								", rango correcto: " + ElementIdMapper.isInCorrectRange(stairsId, ElementIdMapper.CATEGORY_STAIRS));
-			}
-		}
-		
-		System.out.println("====================================================\n");
-	}
 	
 }

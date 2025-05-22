@@ -12,33 +12,32 @@ import es.unizar.editor.model.RoomSeparator;
 import es.unizar.editor.model.Stairs;
 
 /**
- * Sistema centralizado para manejar los rangos de IDs de diferentes tipos de elementos.
- * Proporciona coherencia entre IDs internos y externos en todo el sistema.
+ * Centralized system to manage ID ranges for different types of elements.
+ * Provides consistency between internal and external IDs throughout the system.
  * 
  * @author Nacho Palacio
- * @version 1.0
  */
 public class ElementIdMapper {
     
-    // Rangos de IDs por tipo de elemento
+    // ID ranges for each type of element
     public static final long ROOM_ID_START = 0;          // 1-999
     public static final long ITEM_ID_START = 1000;       // 1000-1999
     public static final long DOOR_ID_START = 2000;       // 2000-2999
     public static final long STAIRS_ID_START = 3000;     // 3000-3999
     public static final long CORNER_ID_START = 4000;     // 4000-4999
     public static final long SEPARATOR_ID_START = 5000;  // 5000-5999
-    public static final long USER_ID_START = 6000;       // 6000-6999 Añadido por Nacho Palacio 2025-05-07
+    public static final long USER_ID_START = 6000;       // 6000-6999
     
-    // Constantes para categorías de elementos
+    // Constants for element categories
     public static final int CATEGORY_ROOM = 1;
     public static final int CATEGORY_ITEM = 2;
     public static final int CATEGORY_DOOR = 3;
     public static final int CATEGORY_STAIRS = 4;
     public static final int CATEGORY_CORNER = 5;
     public static final int CATEGORY_SEPARATOR = 6;
-    public static final int CATEGORY_USER = 7;           // Añadido por Nacho Palacio 2025-05-07
+    public static final int CATEGORY_USER = 7;
     
-    // Contadores actuales para cada tipo de elemento
+    // Current counters for each type of element
     private long nextRoomId = ROOM_ID_START;
     private long nextItemId = ITEM_ID_START;
     private long nextDoorId = DOOR_ID_START;
@@ -46,12 +45,12 @@ public class ElementIdMapper {
     private long nextCornerId = CORNER_ID_START;
     private long nextSeparatorId = SEPARATOR_ID_START;
     
-    // Mapas para conversión entre IDs internos y externos
+    // Maps for conversion between internal and external IDs
     private Map<Long, ElementIdPair> internalToExternal;
     private Map<ElementIdPair, Long> externalToInternal;
     
     /**
-     * Clase para almacenar pares de categoría y ID externo
+     * Class to store pairs of category and external ID
      */
     public static class ElementIdPair {
         private int category;
@@ -89,77 +88,72 @@ public class ElementIdMapper {
         }
     }
     
-    /**
-     * Constructor por defecto
-     */
     public ElementIdMapper() {
         internalToExternal = new HashMap<>();
         externalToInternal = new HashMap<>();
     }
     
     /**
-     * Obtiene el siguiente ID disponible para habitaciones
-     * @return ID único para una nueva habitación
+     * Gets the next available ID for rooms.
+     * @return Unique ID for a new room.
      */
     public synchronized long getNextRoomId() {
         return nextRoomId++;
     }
     
     /**
-     * Obtiene el siguiente ID disponible para ítems
-     * @return ID único para un nuevo ítem
+     * Gets the next available ID for items.
+     * @return Unique ID for a new item.
      */
     public synchronized long getNextItemId() {
         return nextItemId++;
     }
     
     /**
-     * Obtiene el siguiente ID disponible para puertas
-     * @return ID único para una nueva puerta
+     * Gets the next available ID for doors.
+     * @return Unique ID for a new door.
      */
     public synchronized long getNextDoorId() {
         return nextDoorId++;
     }
     
     /**
-     * Obtiene el siguiente ID disponible para escaleras
-     * @return ID único para unas nuevas escaleras
+     * Gets the next available ID for stairs.
+     * @return Unique ID for new stairs.
      */
     public synchronized long getNextStairsId() {
         return nextStairsId++;
     }
     
     /**
-     * Obtiene el siguiente ID disponible para esquinas
-     * @return ID único para una nueva esquina
+     * Gets the next available ID for corners.
+     * @return Unique ID for a new corner.
      */
     public synchronized long getNextCornerId() {
         return nextCornerId++;
     }
     
     /**
-     * Obtiene el siguiente ID disponible para separadores
-     * @return ID único para un nuevo separador
+     * Gets the next available ID for separators.
+     * @return Unique ID for a new separator.
      */
     public synchronized long getNextSeparatorId() {
         return nextSeparatorId++;
     }
     
     /**
-     * Registra un elemento con un ID externo y categoría, asignándole un ID interno único
-     * @param category Categoría del elemento
-     * @param externalId ID externo del elemento
-     * @return ID interno asignado
+     * Registers an element with an external ID and category, assigning it a unique internal ID.
+     * @param category Element category.
+     * @param externalId External ID of the element.
+     * @return Assigned internal ID.
      */
     public synchronized long registerElement(int category, long externalId) {
         ElementIdPair externalKey = new ElementIdPair(category, externalId);
         
-        // Si ya existe, devolver el ID interno existente
         if (externalToInternal.containsKey(externalKey)) {
             return externalToInternal.get(externalKey);
         }
-        
-        // Asignar nuevo ID interno según la categoría
+
         long internalId;
         switch (category) {
             case CATEGORY_ROOM:
@@ -192,10 +186,10 @@ public class ElementIdMapper {
     }
     
     /**
-     * Obtiene el ID interno de un elemento dada su categoría y ID externo
-     * @param category Categoría del elemento
-     * @param externalId ID externo del elemento
-     * @return ID interno del elemento
+     * Gets the internal ID of an element given its category and external ID.
+     * @param category Element category.
+     * @param externalId External ID of the element.
+     * @return Internal ID of the element.
      */
     public long getInternalId(int category, long externalId) {
         ElementIdPair externalKey = new ElementIdPair(category, externalId);
@@ -206,18 +200,18 @@ public class ElementIdMapper {
     }
     
     /**
-     * Obtiene la información externa de un elemento dado su ID interno
-     * @param internalId ID interno del elemento
-     * @return Par con categoría e ID externo, o null si no existe
+     * Gets the external information of an element given its internal ID.
+     * @param internalId Internal ID of the element.
+     * @return Pair with category and external ID, or null if it does not exist.
      */
     public ElementIdPair getExternalId(long internalId) {
         return internalToExternal.get(internalId);
     }
     
     /**
-     * Obtiene la categoría de un elemento dado su ID interno
-     * @param internalId ID interno del elemento
-     * @return Categoría del elemento, o -1 si no existe
+     * Gets the category of an element given its internal ID.
+     * @param internalId Internal ID of the element.
+     * @return Category of the element, or -1 if it does not exist.
      */
     public int getCategory(long internalId) {
         ElementIdPair external = internalToExternal.get(internalId);
@@ -225,19 +219,19 @@ public class ElementIdMapper {
     }
     
     /**
-     * Verifica si un ID interno corresponde a un elemento de determinada categoría
-     * @param internalId ID interno del elemento
-     * @param category Categoría a verificar
-     * @return true si el elemento es de la categoría especificada, false en caso contrario
+     * Checks if an internal ID corresponds to an element of a specific category.
+     * @param internalId Internal ID of the element.
+     * @param category Category to check.
+     * @return true if the element belongs to the specified category, false otherwise.
      */
     public boolean isCategory(long internalId, int category) {
         return getCategory(internalId) == category;
     }
     
     /**
-     * Determina la categoría de un elemento basándose en su ID interno
-     * @param internalId ID interno del elemento
-     * @return Categoría del elemento basada en su rango de ID
+     * Determines the category of an element based on its internal ID.
+     * @param internalId Internal ID of the element.
+     * @return Category of the element based on its ID range.
      */
     public static int determineCategoryFromInternalId(long internalId) {
         if (internalId >= ROOM_ID_START && internalId < ITEM_ID_START)
@@ -256,7 +250,7 @@ public class ElementIdMapper {
     }
     
     /**
-     * Reinicia los contadores basándose en las listas de elementos existentes
+     * Resets the counters based on the lists of existing elements.
      */
     public void resetCounters(List<Room> rooms, List<Item> items, List<Door> doors, 
                             List<Stairs> stairs, List<Corner> corners, List<RoomSeparator> separators) {
@@ -267,7 +261,6 @@ public class ElementIdMapper {
         nextCornerId = CORNER_ID_START;
         nextSeparatorId = SEPARATOR_ID_START;
         
-        // Actualizar contadores basados en IDs existentes
         if (rooms != null) {
             for (Room r : rooms) {
                 if (r.getLabel() >= nextRoomId) nextRoomId = r.getLabel() + 1;
@@ -311,10 +304,10 @@ public class ElementIdMapper {
     }
     
     /**
-     * Convierte un ID existente al rango correcto según su categoría
-     * @param currentId ID actual
-     * @param category Categoría del elemento
-     * @return ID convertido al rango correcto
+     * Converts an existing ID to the correct range according to its category.
+     * @param currentId Current ID.
+     * @param category Element category.
+     * @return ID converted to the correct range.
      */
     public static long convertToRangeId(long currentId, int category) {
         switch (category) {
@@ -342,10 +335,10 @@ public class ElementIdMapper {
     }
     
     /**
-     * Verifica si un ID está en el rango correcto para su categoría
-     * @param id ID a verificar
-     * @param category Categoría del elemento
-     * @return true si el ID está en el rango correcto, false en caso contrario
+     * Checks if an ID is in the correct range for its category.
+     * @param id ID to check.
+     * @param category Element category.
+     * @return true if the ID is in the correct range, false otherwise.
      */
     public static boolean isInCorrectRange(long id, int category) {
         switch (category) {
@@ -367,12 +360,11 @@ public class ElementIdMapper {
     }
 
     /**
-     * Obtiene el ID base (externo) a partir de un ID interno
-     * @param internalId ID interno del elemento
-     * @return ID base (externo) del elemento
+     * Gets the base (external) ID from an internal ID.
+     * @param internalId Internal ID of the element.
+     * @return Base (external) ID of the element.
      */
     public static long getBaseId(long internalId) {
-        // Para cada categoría, obtener el ID base restando el offset correspondiente
         if (internalId >= ITEM_ID_START && internalId < DOOR_ID_START) {
             return internalId - ITEM_ID_START;
         } else if (internalId >= DOOR_ID_START && internalId < STAIRS_ID_START) {
@@ -384,7 +376,6 @@ public class ElementIdMapper {
         } else if (internalId >= SEPARATOR_ID_START) {
             return internalId - SEPARATOR_ID_START;
         } else {
-            // Para habitaciones o IDs desconocidos, devolver tal cual
             return internalId;
         }
     }

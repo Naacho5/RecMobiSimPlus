@@ -309,8 +309,6 @@ public class Configuration extends javax.swing.JDialog {
 				// Generate a path for each non-RS user.
 
 				/* Añadido por Nacho Palacio 2025-04-13. */
-				System.out.println("ifGenerateuserPathCheckBox is selected: " + ifGenerateuserPathCheckBox.isSelected());
-				System.out.println("Path strategy: " + pathStrategy);
 				if (ifGenerateuserPathCheckBox.isSelected()) {
 					Path strategy = null;
 					// Apply the specified path strategy in the Configuration form.
@@ -999,12 +997,6 @@ public class Configuration extends javax.swing.JDialog {
 					fileName = "";
 					nonSpecialUserPathsJTextField.setText("");
 				}
-				
-				/* Añadido por Nacho Palacio 2025-04-12. */
-				System.out.println("Path strategy selected: " + selectedStrategy);
-				System.out.println("Number of non-special users: " + numberOfNonSpecialUsers);
-				System.out.println("Generated file name: " + fileName);
-				// Final añadido
 			}
 		});
 		pathStrategyComboBox.setFont(new Font("SansSerif", Font.PLAIN, 14));
