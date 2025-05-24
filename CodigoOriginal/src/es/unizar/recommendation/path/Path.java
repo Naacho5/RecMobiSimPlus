@@ -714,16 +714,12 @@ public abstract class Path {
 		// Se intenta obtener la puerta directamente del mapa
 		Long connectedDoorFromMap = mapDoorConnected.get(currentDoor);
 		if (connectedDoorFromMap != null && connectedDoorFromMap > 0) {
-			System.out.println("getConnectedDoor: Encontrada conexión para ID original " + 
-							currentDoor + " -> " + connectedDoorFromMap);
 			return connectedDoorFromMap;
 		}
 		
 		// Si no se encuentra, se intenta con el ID externo
 		connectedDoorFromMap = mapDoorConnected.get(externalDoor);
 		if (connectedDoorFromMap != null && connectedDoorFromMap > 0) {
-			System.out.println("getConnectedDoor: Encontrada conexión para ID externo " + 
-							externalDoor + " -> " + connectedDoorFromMap);
 			return connectedDoorFromMap;
 		}
 
@@ -850,7 +846,6 @@ public abstract class Path {
 	 */
 
 	public String getToConnectedDoor(long start, long itemToVisit, List<Long> itemVisited, long connectedDoor) {
-		System.out.println("DEBUG-getToConnectedDoor: start=" + start + ", itemToVisit=" + itemToVisit + ", connectedDoor=" + connectedDoor); // Añadido por Nacho Palacio 2025-05-19
 		String subpath = "";
 
 		long startVertex = start;

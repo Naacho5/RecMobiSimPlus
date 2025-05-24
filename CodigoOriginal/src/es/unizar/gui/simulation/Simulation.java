@@ -422,7 +422,6 @@ public class Simulation {
 		String edge = null;
 		for (int i = 0; i < userList.size(); i++) {
 			User currentUser = userList.get(i);
-			System.out.println("Initializing user: " + (i + 1)); // Depuración: Verificar el usuario actual
 			// Identify to RS users to generate their paths.
 			if (currentUser.isSpecialUser) {
 				System.out.println("User " + (i + 1) + " is a special user."); // Depuración: Usuario especial
@@ -487,7 +486,6 @@ public class Simulation {
 						// Si el ID es válido, lo añadimos a la lista
 						if (itemId > 0) {
 							items.add(itemId);
-							System.out.println("Añadiendo ítem " + itemId + " a habitación " + i);
 						}
 					}
 					
@@ -496,7 +494,6 @@ public class Simulation {
 						long doorId = dataAccessGraphFile.getDoorOfRoom(j, i);
 						if (doorId > 0) {
 							items.add(doorId);
-							System.out.println("Añadiendo puerta " + doorId + " a habitación " + i);
 						}
 					}
 					
@@ -504,7 +501,6 @@ public class Simulation {
 					long stairsId = dataAccessGraphFile.getStairsOfRoom(i);
 					if (stairsId > 0) {
 						items.add(stairsId);
-						System.out.println("Añadiendo escaleras " + stairsId + " a habitación " + i);
 					}
 					
 					// Guardar la lista de ítems para esta habitación
@@ -517,10 +513,8 @@ public class Simulation {
 				// Usa la función de inicialización que debes añadir a RandomPath
 				randomPath.initializeItemsByRoom(roomItems);
 				
-				System.out.println("RandomPath inicializado con " + roomItems.size() + " habitaciones y sus ítems");
-				
 			} catch (Exception e) {
-				System.out.println("Error al inicializar RandomPath: " + e.getMessage());
+				// System.out.println("Error al inicializar RandomPath: " + e.getMessage());
 				e.printStackTrace();
 			}
 		}

@@ -256,7 +256,8 @@ public class DatabaseAccess {
 					}
 					walls += r.getCorners().get(0).getVertex_xy().getX()+" "+r.getCorners().get(0).getVertex_xy().getY()+")";
 					pst = conn.prepareStatement("INSERT INTO ROOM(LABEL, MAP, GEOM) VALUES (?,?,ST_MakePolygon(ST_GeomFromText(?)));");
-					pst.setInt(1, r.getLabel());
+					// pst.setInt(1, r.getLabel());
+					pst.setLong(1, r.getLabel()); // Modificado por Nacho Palacio 2025-05-24
 					pst.setInt(2, mapID);
 					pst.setString(3, walls);
 					//System.out.println(pst);
@@ -264,7 +265,8 @@ public class DatabaseAccess {
 					for (RoomSeparator sep: r.getRoomSeparators()) {
 						pst = conn.prepareStatement("INSERT INTO SUBROOM_SEPARATOR(LABEL, ROOM_LABEL, MAP, GEOM) VALUES (?,?,?,ST_GeomFromText(?));");
 						pst.setLong(1, sep.getVertex_label());
-						pst.setInt(2, r.getLabel());
+						// pst.setInt(2, r.getLabel());
+						pst.setLong(2, r.getLabel()); // Modificado por Nacho Palacio 2025-05-24
 						pst.setInt(3, mapID);
 						String wall = "LINESTRING("+sep.getC1().getVertex_xy().getX()+" "+sep.getC1().getVertex_xy().getY()+",";
 						wall += sep.getC2().getVertex_xy().getX()+" "+sep.getC2().getVertex_xy().getY()+")";
@@ -282,7 +284,8 @@ public class DatabaseAccess {
 					if(d.getRoom() == null) {
 						pst.setNull(3,Types.INTEGER);
 					}else {
-						pst.setInt(3, d.getRoom().getLabel());
+						// pst.setInt(3, d.getRoom().getLabel());
+						pst.setLong(3, d.getRoom().getLabel()); // Modificado por Nacho Palacio 2025-05-24
 					}
 					//pst.setInt(4, mapID);
 					pst.setString(4, "POINT("+d.getVertex_xy().getX()+" "+d.getVertex_xy().getY()+")");
@@ -305,7 +308,8 @@ public class DatabaseAccess {
 					if(d.getRoom() == null) {
 						pst.setNull(3,Types.INTEGER);
 					}else {
-						pst.setInt(3, d.getRoom().getLabel());
+						// pst.setInt(3, d.getRoom().getLabel());
+						pst.setLong(3, d.getRoom().getLabel()); // Modificado por Nacho Palacio 2025-05-24
 					}
 					//pst.setNull(4, Types.INTEGER);
 					pst.setString(4, "POINT("+d.getVertex_xy().getX()+" "+d.getVertex_xy().getY()+")");
@@ -338,7 +342,8 @@ public class DatabaseAccess {
 					pst = conn.prepareStatement("INSERT INTO ITEM(ID, MAP, ROOM_LABEL, LOCATION, URL_IMAGE, TITLE, WIDTH, HEIGHT, NATIONALITY, BEGIN_DATE, END_DATE, DATE, ITEM_LABEL) VALUES (?,?,?,ST_GeomFromText(?),?,?,?,?,?,to_timestamp(?,'HH24:MI:SS'),to_timestamp(?,'HH24:MI:SS'),?,?);");
 					pst.setLong(1, i.getVertex_label());
 					pst.setInt(2, mapID);
-					pst.setInt(3, i.getRoom().getLabel());
+					// pst.setInt(3, i.getRoom().getLabel());
+					pst.setLong(3, i.getRoom().getLabel()); // Modificado por Nacho Palacio 2025-05-24
 					pst.setString(4, "POINT("+i.getVertex_xy().getX()+" "+i.getVertex_xy().getY()+")");
 					pst.setString(5,i.getUrlIcon());
 					pst.setString(6,i.getTitle());
@@ -406,7 +411,8 @@ public class DatabaseAccess {
 					}
 					walls += r.getCorners().get(0).getVertex_xy().getX()+" "+r.getCorners().get(0).getVertex_xy().getY()+")";
 					pst = conn.prepareStatement("INSERT INTO ROOM(LABEL, MAP, GEOM) VALUES (?,?,ST_MakePolygon(ST_GeomFromText(?)));");
-					pst.setInt(1, r.getLabel());
+					// pst.setInt(1, r.getLabel());
+					pst.setLong(1, r.getLabel()); // Modificado por Nacho Palacio 2025-05-24
 					pst.setInt(2, mapID);
 					pst.setString(3, walls);
 					//System.out.println(pst);
@@ -414,7 +420,8 @@ public class DatabaseAccess {
 					for (RoomSeparator sep: r.getRoomSeparators()) {
 						pst = conn.prepareStatement("INSERT INTO SUBROOM_SEPARATOR(LABEL, ROOM_LABEL, MAP, GEOM) VALUES (?,?,?,ST_GeomFromText(?));");
 						pst.setLong(1, sep.getVertex_label());
-						pst.setInt(2, r.getLabel());
+						// pst.setInt(2, r.getLabel());
+						pst.setLong(2, r.getLabel()); // Modificado por Nacho Palacio 2025-05-24
 						pst.setInt(3, mapID);
 						String wall = "LINESTRING("+sep.getC1().getVertex_xy().getX()+" "+sep.getC1().getVertex_xy().getY()+",";
 						wall += sep.getC2().getVertex_xy().getX()+" "+sep.getC2().getVertex_xy().getY()+")";
@@ -431,7 +438,8 @@ public class DatabaseAccess {
 					if(d.getRoom() == null) {
 						pst.setNull(3,Types.INTEGER);
 					}else {
-						pst.setInt(3, d.getRoom().getLabel());
+						// pst.setInt(3, d.getRoom().getLabel());
+						pst.setLong(3, d.getRoom().getLabel()); // Modificado por Nacho Palacio 2025-05-24
 					}
 					//pst.setInt(4, mapID);
 					pst.setString(4, "POINT("+d.getVertex_xy().getX()+" "+d.getVertex_xy().getY()+")");
@@ -454,7 +462,8 @@ public class DatabaseAccess {
 					if(d.getRoom() == null) {
 						pst.setNull(3,Types.INTEGER);
 					}else {
-						pst.setInt(3, d.getRoom().getLabel());
+						// pst.setInt(3, d.getRoom().getLabel());
+						pst.setLong(3, d.getRoom().getLabel()); // Modificado por Nacho Palacio 2025-05-24
 					}
 					//pst.setNull(4, Types.INTEGER);
 					pst.setString(4, "POINT("+d.getVertex_xy().getX()+" "+d.getVertex_xy().getY()+")");
@@ -487,7 +496,8 @@ public class DatabaseAccess {
 					pst = conn.prepareStatement("INSERT INTO ITEM(ID, MAP, ROOM_LABEL, LOCATION, URL_IMAGE, TITLE, WIDTH, HEIGHT, NATIONALITY, BEGIN_DATE, END_DATE, DATE, ITEM_LABEL) VALUES (?,?,?,ST_GeomFromText(?),?,?,?,?,?,to_timestamp(?,'HH24:MI:SS'),to_timestamp(?,'HH24:MI:SS'),?,?);");
 					pst.setLong(1, i.getVertex_label());
 					pst.setInt(2, mapID);
-					pst.setInt(3, i.getRoom().getLabel());
+					// pst.setInt(3, i.getRoom().getLabel());
+					pst.setLong(3, i.getRoom().getLabel()); // Modificado por Nacho Palacio 2025-05-24
 					pst.setString(4, "POINT("+i.getVertex_xy().getX()+" "+i.getVertex_xy().getY()+")");
 					pst.setString(5,i.getUrlIcon());
 					pst.setString(6,i.getTitle());

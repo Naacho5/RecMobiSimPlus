@@ -400,7 +400,6 @@ public class RandomPath extends Path {
     private long ensureInternalId(long id, int category) {
         if (!ElementIdMapper.isInCorrectRange(id, category)) {
             long internalId = ElementIdMapper.convertToRangeId(id, category);
-            System.out.println("Convirtiendo ID " + id + " a formato interno: " + internalId);
             return internalId;
         }
         return id;
@@ -412,7 +411,6 @@ public class RandomPath extends Path {
 	 * Inicializa las conexiones entre puertas
 	 */
 	private void initializeDoorConnections() {
-		System.out.println("RandomPath: Inicializando conexiones entre puertas");
 		int numberDoorConnected = accessGraphFile.getNumberOfConnectedDoor();
 		int connections = 0;
 		
@@ -490,21 +488,7 @@ public class RandomPath extends Path {
 	 * @return true si es probablemente un ID externo, false si es interno
 	 */
 	private boolean isProbablyExternalId(long itemId) {
-		// Debug detallado para puertas
-		// if (itemId > this.numberOfItems && itemId <= this.numberOfItems + this.numberOfDoors) {
-		// 	System.out.println("DEBUG-ExternalID: ID " + itemId + 
-		// 					" parece ser una puerta externa (por rango numérico)");
-							
-		// 	// Verificar si se considera interno por ElementIdMapper
-		// 	if (ElementIdMapper.isInCorrectRange(itemId, ElementIdMapper.CATEGORY_DOOR)) {
-		// 		System.out.println("DEBUG-ExternalID: INCONSISTENCIA - ID " + itemId + 
-		// 						" se considera puerta interna por ElementIdMapper pero externa por rango numérico");
-		// 	}
-		// }
-		
 		if (ElementIdMapper.isInCorrectRange(itemId, ElementIdMapper.CATEGORY_DOOR)) {
-			System.out.println("DEBUG-ExternalID: ID " + itemId + 
-							" se considera puerta interna por ElementIdMapper (rango 2000-2999)");
 			return false;
 		}
 		

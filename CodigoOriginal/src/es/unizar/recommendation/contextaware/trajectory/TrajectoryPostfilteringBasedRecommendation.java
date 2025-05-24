@@ -65,10 +65,6 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 				userIds[i] = userIdsList.get(i);
 			}
 
-			System.out.println("DEBUG-ID-TRACKING: [TPF] Modelo tiene " + userIds.length + 
-							" usuarios. Primeros 5: " + 
-                 Arrays.toString(Arrays.copyOfRange(userIds, 0, Math.min(5, userIds.length))));
-			
 			// Verificar si el usuario actual existe en el modelo
 			boolean exists = false;
 			for (long id : userIds) {
@@ -77,44 +73,14 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 					break;
 				}
 			}
-			System.out.println("DEBUG-ID-TRACKING: [TPF] Usuario " + userID + 
-							 " existe en el modelo: " + exists);
-			
+
 		} catch (Exception e) {
-			System.out.println("DEBUG-ID-TRACKING: [TPF] Error al obtener usuarios: " + e.getMessage());
+			System.out.println("Error al obtener usuarios: " + e.getMessage());
 		}
 
 		// Verificar vecinos y similitud con otros usuarios
 		try {
 			if (getRecommender() instanceof org.apache.mahout.cf.taste.recommender.UserBasedRecommender) {
-				System.out.println("DEBUG-UBCF: Detectado recomendador basado en usuarios");
-				
-				// Verificar cuántos ítems ha valorado el usuario
-				try {
-					FastIDSet itemsValoraciones = dataModel.getItemIDsFromUser(userID);
-					System.out.println("DEBUG-UBCF: El usuario " + userID + " ha valorado " + 
-									(itemsValoraciones != null ? itemsValoraciones.size() : 0) + 
-									" ítems en total");
-					
-					// Mostrar algunos de los ítems valorados
-					if (itemsValoraciones != null && !itemsValoraciones.isEmpty()) {
-						StringBuilder sb = new StringBuilder("DEBUG-UBCF: Primeros ítems valorados por usuario " + userID + ": ");
-						LongPrimitiveIterator itemsIter = itemsValoraciones.iterator();
-						int count = 0;
-						while (itemsIter.hasNext() && count < 5) {
-							long itemId = itemsIter.next();
-							float value = dataModel.getPreferenceValue(userID, itemId);
-							sb.append("[ID=").append(itemId)
-							.append(", valor=").append(value)
-							.append("] ");
-							count++;
-						}
-						System.out.println(sb.toString());
-					}
-				} catch (Exception e) {
-					System.out.println("DEBUG-UBCF: Error al obtener ítems valorados: " + e.getMessage());
-				}
-				
 				// Probar diferentes umbrales de similitud
 				try {
 					UserSimilarity similarity = new PearsonCorrelationSimilarity(dataModel);
@@ -125,24 +91,17 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 							new ThresholdUserNeighborhood(testThreshold, similarity, dataModel);
 						
 						long[] neighbors = neighborhood.getUserNeighborhood(userID);
-						System.out.println("DEBUG-UBCF: Usuario " + userID + " tiene " + 
-										(neighbors != null ? neighbors.length : 0) + 
-										" vecinos con umbral " + testThreshold);
 						
 						if (neighbors != null && neighbors.length > 0) {
-							System.out.println("DEBUG-UBCF: Primeros vecinos con umbral " + 
-											testThreshold + ": " + 
-											Arrays.toString(Arrays.copyOfRange(neighbors, 0, 
-														Math.min(3, neighbors.length))));
-							break;  // Ya encontramos un umbral que funciona
+							break;
 						}
 					}
 				} catch (Exception e) {
-					System.out.println("DEBUG-UBCF: Error al probar umbrales: " + e.getMessage());
+					System.out.println("Error al probar umbrales: " + e.getMessage());
 				}
 			}
 		} catch (Exception e) {
-			System.out.println("DEBUG-UBCF: Error general: " + e.getMessage());
+			System.out.println("Error general: " + e.getMessage());
 		}
 
 
@@ -154,20 +113,16 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 
 		/* Añadido por Nacho Palacio 2025-04-14. */
 		if (candidateItemsFiltered == null || candidateItemsFiltered.isEmpty()) {
-            System.out.println("Warning: No items passed the threshold filter for user " + userID);
+            // System.out.println("Warning: No items passed the threshold filter for user " + userID);
             return candidateItemsFromRecommender;
         }
 
 		// Las lista previamente filtrada se lleva a una lista de entero con solo los items a recomendar
 		List<Long> candidateItemsToLong = listRecommendedItemToListLong(candidateItemsFiltered);
-
-		System.out.println("DEBUG-ID-TRACKING: [TPF] Convertidos a Long: " + 
-		(candidateItemsToLong != null ? candidateItemsToLong.size() : "null") + 
-		" ítems"); // Añadido por Nacho Palacio 2025-05-07
 					 
 		/* Añadido por Nacho Palacio 2025-04-14. */
 		if (candidateItemsToLong.isEmpty()) {
-            System.out.println("Warning: Empty candidate items list for user " + userID);
+            // System.out.println("Warning: Empty candidate items list for user " + userID);
             return candidateItemsFiltered;
         }
 
@@ -189,13 +144,13 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
             
             // Si finalPath es nulo, devolver los items filtrados sin trayectoria
             if (finalPath == null) {
-                System.out.println("Warning: Could not calculate path for user " + userID);
+                // System.out.println("Warning: Could not calculate path for user " + userID);
                 return candidateItemsFiltered;
             }
             
             convertRecommendItemsToPath(sortedItems);
         } catch (Exception e) {
-            System.out.println("Error calculating path: " + e.getMessage());
+            // System.out.println("Error calculating path: " + e.getMessage());
             return candidateItemsFiltered;
         }
 

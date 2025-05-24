@@ -934,8 +934,6 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 	 * @throws SQLException if a database error occurs
 	 */
 	public boolean ensureRequiredUsers(int totalRequiredUsers) throws SQLException {
-		System.out.println("Ensuring required users in the database...");
-
 		Connection conn = getConnection();
 		if (conn == null) {
 			System.out.println("Error: Database connection is null");
@@ -950,15 +948,11 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 			if (rs.next()) {
 				currentUserCount = rs.getInt(1);
 			}
-			System.out.println("Current user count: " + currentUserCount);
 		}
-		
-		System.out.println("Current users in database: " + currentUserCount);
-		System.out.println("Required users for simulation: " + totalRequiredUsers);
 		
 		// Si ya hay suficientes usuarios, no hacer nada
 		if (currentUserCount >= totalRequiredUsers) {
-			System.out.println("Database already has enough users.");
+			// System.out.println("Database already has enough users.");
 			return false;
 		}
 		

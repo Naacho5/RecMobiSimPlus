@@ -85,7 +85,6 @@ public class DBDataModel extends AbstractDataModel {
 		long[] correctUserIDs = dataAccess.getUserIDs();
 
 		/* Añadido por Nacho Palacio 2025-04-14. */
-		System.out.println("Available user IDs: " + Arrays.toString(correctUserIDs));
 		if (numUsers > correctUserIDs.length) {
 			System.out.println("Warning: Requested " + numUsers + " users but only " + correctUserIDs.length + " are available.");
 			numUsers = correctUserIDs.length; // Limita a los usuarios disponibles
@@ -117,11 +116,6 @@ public class DBDataModel extends AbstractDataModel {
 					// Convertir los IDs externos a internos
 					long internalUserID = userID; // Los IDs de usuario ya están en el formato correcto
 					long internalItemID = ElementIdMapper.convertToRangeId(itemID, ElementIdMapper.CATEGORY_ITEM);
-					
-					if (k == 176) {
-						System.out.println("DEBUG-CONVERSION: Convirtiendo item ID externo " + itemID + 
-									  " a interno " + internalItemID + " para usuario " + userID);
-					}
 					
 					preferenceArray.setUserID(k, internalUserID);
 					preferenceArray.setItemID(k, internalItemID);
