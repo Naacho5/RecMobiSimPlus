@@ -1,0 +1,20 @@
+Recommender_name_1 = User-Based Collaborative Filtering (UBCF)
+Recommender_uses_P2P_1 = true
+
+Recommender_name_2 = Completely-random (FULLY-RAND)
+Recommender_uses_P2P_2 = false
+
+Recommender_name_3 = Exhaustive visit (ALL)
+Recommender_uses_P2P_3 = false
+
+Recommender_name_4 = Near POI (NPOI)
+Recommender_uses_P2P_4 = false
+
+Recommender_name_5 = Know-It-All (Know-It-All)
+Recommender_uses_P2P_5 = false
+
+Recommender_name_6 = K-Ideal (K-Ideal)
+Recommender_uses_P2P_6 = false
+
+Recommender_name_7 = KG-Infection (KGI)
+Recommender_uses_P2P_7 = false
