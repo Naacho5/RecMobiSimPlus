@@ -7,6 +7,7 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.MediaTracker;
 import java.awt.Image;
 import java.awt.Polygon;
 import java.awt.Toolkit;
@@ -1298,10 +1299,19 @@ public class MapEditorView {
 	 * Refresh/update visitable buttons when buttons are modified.
 	 */
 	public void refreshVisitableButtons() {
+
+		System.out.println("=== DEBUG refreshVisitableButtons() ==="); // Añadido por Nacho Palacio 2025-07-04
+		System.out.println("📁 RUTAS CONFIGURADAS:");
+		System.out.println("  - Literals.IMAGES_PATH: " + Literals.IMAGES_PATH);
+		System.out.println("  - Literals.LOGO_PATH: " + Literals.LOGO_PATH);
+		System.out.println("  - Literals.VERTEX_URL: " + Literals.VERTEX_URL);
+		System.out.println("  - ICON_SIZE: " + ICON_SIZE);
 		
 		visitableIcons.removeAll();
 		
 		Map<String, Properties> buttons = model.getVisitableObjects();
+
+		System.out.println("📊 Total objetos visitables cargados: " + buttons.size()); // Añadido por Nacho Palacio 2025-07-04
 		
 		for (Map.Entry<String, Properties> entry : buttons.entrySet()) {
 		    JButton visitableButton = new JButton();
@@ -1309,11 +1319,60 @@ public class MapEditorView {
 		    visitableButton.setToolTipText(entry.getKey());
 		    
 		    String iconURL = entry.getValue().getProperty(Literals.VERTEX_URL + entry.getKey());
+
 		    if (iconURL == null || iconURL.equals("")) {
 		    	iconURL = Literals.LOGO_PATH;
 		    }
+
+			// Añadido por Nacho Palacio 2025-07-04
+        	String finalIconURL = iconURL;
+
+			// Añadido por Nacho Palacio 2025-07-04
+			File iconFile = new File(iconURL);
+			System.out.println("  - Archivo original existe: " + iconFile.exists());
+        	System.out.println("  - Ruta absoluta original: " + iconFile.getAbsolutePath());
+
+			if (!iconFile.exists()) {
+				String fileName = iconURL;
+				if (fileName.contains("\\")) {
+					// Es ruta de Windows
+					String[] parts = fileName.split("\\\\");
+					fileName = parts[parts.length - 1];
+				} else if (fileName.contains("/")) {
+					// Es ruta Unix
+					String[] parts = fileName.split("/");
+					fileName = parts[parts.length - 1];
+				}
+				
+				finalIconURL = Literals.IMAGES_PATH + fileName;
+				File correctedFile = new File(finalIconURL);
+				
+				if (!correctedFile.exists()) {
+					finalIconURL = Literals.LOGO_PATH;
+				}
+			}
+
 		    try {
-		    	visitableButton.setIcon(new ImageIcon(new ImageIcon(iconURL).getImage().getScaledInstance(ICON_SIZE, ICON_SIZE, Image.SCALE_DEFAULT)));
+				// Añadido por Nacho Palacio 2025-07-04
+				File finalFile = new File(finalIconURL);
+				if (finalFile.exists()) {
+					ImageIcon originalIcon = new ImageIcon(finalIconURL);
+					
+					if (originalIcon.getImageLoadStatus() == MediaTracker.COMPLETE) {
+						Image scaledImage = originalIcon.getImage().getScaledInstance(ICON_SIZE, ICON_SIZE, Image.SCALE_DEFAULT);
+						visitableButton.setIcon(new ImageIcon(scaledImage));
+					} else {
+						ImageIcon defaultIcon = new ImageIcon(Literals.LOGO_PATH);
+						if (defaultIcon.getImageLoadStatus() == MediaTracker.COMPLETE) {
+							Image scaledImage = defaultIcon.getImage().getScaledInstance(ICON_SIZE, ICON_SIZE, Image.SCALE_DEFAULT);
+							visitableButton.setIcon(new ImageIcon(scaledImage));
+						}
+					}
+				} else {
+					visitableButton.setText(entry.getKey().substring(0, Math.min(entry.getKey().length(), 3)));
+				}
+
+		    	// visitableButton.setIcon(new ImageIcon(new ImageIcon(iconURL).getImage().getScaledInstance(ICON_SIZE, ICON_SIZE, Image.SCALE_DEFAULT)));
 		    }
 		    catch (Exception e) {
 		    	System.out.println(e);

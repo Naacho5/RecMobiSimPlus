@@ -459,7 +459,6 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 		Map<Long, Integer> hashWithNumberItemsByUser = new TreeMap<>();
 		Connection conn = getConnection();
 		try {
-			// Primero, obtener todos los IDs de usuario
 			Set<Long> allUserIds = new HashSet<>();
 			try (PreparedStatement stmt = conn.prepareStatement("SELECT id_user FROM user")) {
 				ResultSet rs = stmt.executeQuery();
@@ -468,7 +467,6 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 				}
 			}
 			
-			// Luego, obtener el número de items por usuario
 			try (PreparedStatement stmt = conn.prepareStatement(
 					"SELECT id_user, count(id_item) AS ItemCount FROM user_item_context GROUP BY id_user")) {
 				ResultSet rs = stmt.executeQuery();
@@ -477,7 +475,6 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 				}
 			}
 			
-			// Finalmente, añadir usuarios sin preferencias con un contador de 0
 			for (Long userId : allUserIds) {
 				if (!hashWithNumberItemsByUser.containsKey(userId)) {
 					hashWithNumberItemsByUser.put(userId, 0);
@@ -913,7 +910,6 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 				// Modificado por Nacho Palacio 2025-04-22
 				long externalItemId = resultSet.getLong(1);
 				long internalItemId = convertToInternalId(externalItemId, ElementIdMapper.CATEGORY_ITEM);
-				System.out.println("DB: Convirtiendo Item ID externo " + externalItemId + " a interno " + internalItemId);
 				list.add(internalItemId);;
 			}
 			
@@ -996,12 +992,12 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 					insertStmt.setInt(6, profileToUse); // id_ca_profile 
 					
 					insertStmt.executeUpdate();
-					System.out.println("Added user with ID: " + id + " and profile: " + profileToUse);
+					// System.out.println("Added user with ID: " + id + " and profile: " + profileToUse);
 				}
 			}
 
 			conn.commit();
-			System.out.println("Successfully added " + (totalRequiredUsers - currentUserCount) + " new users to the database.");
+			// System.out.println("Successfully added " + (totalRequiredUsers - currentUserCount) + " new users to the database.");
 		} catch (SQLException e) {
 			// Si hay un error, hacer rollback
 			conn.rollback();
@@ -1033,11 +1029,8 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 			return;
 		}
 		
-		// Nombre correcto de la tabla en la base de datos
 		String tableName = "user_item_context";
 		
-		// Verificar si el usuario ya tiene preferencias
-		System.out.println("Checking if user " + userId + " already has preferences...");
 		int preferenceCount = 0;
 		
 		try (PreparedStatement stmt = conn.prepareStatement(
@@ -1049,12 +1042,8 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 				}
 			}
 		}
-		
-		System.out.println("User " + userId + " has " + preferenceCount + " preferences");
-		
-		// Si no tiene preferencias, añadir algunas básicas
+	
 		if (preferenceCount == 0) {
-			// Obtener algunos items aleatorios
 			List<Long> items = new ArrayList<>();
 			try (PreparedStatement stmt = conn.prepareStatement(
 					"SELECT id_item FROM item ORDER BY RANDOM() LIMIT 5");
@@ -1064,9 +1053,6 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 				}
 			}
 			
-			System.out.println("Selected " + items.size() + " items for user " + userId);
-			
-			// Obtener contextos disponibles
 			List<Integer> contexts = new ArrayList<>();
 			try (PreparedStatement stmt = conn.prepareStatement(
 					"SELECT id_context FROM context LIMIT 3");
@@ -1081,7 +1067,6 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 				contexts.add(1);
 			}
 			
-			// Añadir preferencias para estos items
 			if (!items.isEmpty()) {
 				conn.setAutoCommit(false);
 				try {
@@ -1096,17 +1081,14 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 							insertStmt.setLong(2, itemId);
 							insertStmt.setInt(3, contextId);
 							
-							// Rating aleatorio entre 2.5 y 5.0
+							// Rating aleatorio
 							float rating = 2.5f + (float)(Math.random() * 2.5);
 							insertStmt.setFloat(4, rating);
 							
 							insertStmt.executeUpdate();
-							System.out.println("Added preference: User " + userId + ", Item " + itemId + 
-											  ", Context " + contextId + ", Rating " + rating);
 						}
 					}
 					conn.commit();
-					System.out.println("Added basic preferences for user " + userId);
 				} catch (SQLException e) {
 					conn.rollback();
 					System.out.println("Error adding preferences for user " + userId + ": " + e.getMessage());

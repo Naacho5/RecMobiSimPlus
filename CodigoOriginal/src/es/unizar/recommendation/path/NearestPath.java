@@ -2,6 +2,8 @@ package es.unizar.recommendation.path;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.jamonapi.Monitor;
 import com.jamonapi.MonitorFactory;
@@ -30,7 +32,11 @@ public class NearestPath extends Path {
 	 */
 	@Override
 	public String generatePath(long startVertex) {
-		// System.out.println("Start vertex: " + startVertex);
+		System.out.println("NearestPath.generatePath: Start vertex: " + startVertex); // Añadido por Nacho Palacio 2025-06-28
+
+		startVertex = ensureInternalId(startVertex, ElementIdMapper.CATEGORY_ITEM);
+    	System.out.println("NearestPath.generatePath: Start vertex DESPUÉS: " + startVertex);
+
 		String finalPath = "";
 		long endVertex = 0;
 		List<Integer> roomVisited = new LinkedList<>();
@@ -68,7 +74,24 @@ public class NearestPath extends Path {
 		*/
 		
 		// Get the items (sculptures, paintings and doors) of a specified room.
-		List<Long> itemsByRoom = getItemsByRoom(room);
+		// LinkedList<Long> itemsByRoom = (LinkedList<Long>) getItemsByRoom(room);
+		// Modificado por Nacho Palacio 2025-06-29
+		Map<Object, Object> itemsDoorVisited_cloned = itemsDoorVisited.entrySet().stream()
+        .collect(Collectors.toMap(e -> e.getKey(), e -> new LinkedList<Object>(e.getValue())));
+
+		LinkedList<Long> itemsByRoom = (LinkedList<Long>) itemsDoorVisited_cloned.get(room);
+		if (itemsByRoom == null) {
+			System.out.println("ADVERTENCIA: itemsByRoom es null para room=" + room + ". Inicializando lista vacía.");
+			itemsByRoom = new LinkedList<>();
+			itemsDoorVisited_cloned.put(room, itemsByRoom);
+		}
+
+		// Añadido por Nacho Palacio 2025-05-28
+		itemsByRoom = convertAndValidateItems(itemsByRoom, "itemsByRoom", numberOfItemsInMap);
+    
+		System.out.println("🔍 DEBUG HABITACIÓN " + room + " EN NearestPath:");
+		System.out.println("  itemsByRoom después de conversión: " + itemsByRoom);
+		System.out.println("  tamaño de itemsByRoom: " + (itemsByRoom != null ? itemsByRoom.size() : "NULL"));
 		
 		/*
 		System.out.println("Items by room: ");
@@ -102,7 +125,20 @@ public class NearestPath extends Path {
 			// Get the item (most likely of nearest) to visit by non-RS user (without
 			// repeating).
 			if (!ifItemToVisitWasCero) {
+				// Añadido por Nacho Palacio 2025-07-05
+				// System.out.println("🔄 ANTES de getItemToVisit:");
+				// System.out.println("  - startVertex actual: " + startVertex);
+				// System.out.println("  - itemsByRoom.size(): " + itemsByRoom.size());
+				// System.out.println("  - itemsByRoom: " + itemsByRoom.subList(0, Math.min(5, itemsByRoom.size())) + (itemsByRoom.size() > 5 ? "..." : ""));
+
 				itemToVisit = getItemToVisit(startVertex, itemsByRoom, roomVisited, itemVisited, repeated);
+
+				// Añadido por Nacho Palacio 2025-07-05
+				// System.out.println("🔄 DESPUÉS de getItemToVisit:");
+				// System.out.println("  - itemToVisit seleccionado: " + itemToVisit);
+				// System.out.println("  - ¿Es ítem? " + ElementIdMapper.isInCorrectRange(itemToVisit, ElementIdMapper.CATEGORY_ITEM));
+				// System.out.println("  - ¿Es puerta? " + ElementIdMapper.isInCorrectRange(itemToVisit, ElementIdMapper.CATEGORY_DOOR));
+
 				if (itemToVisit == 0) {
 					ifItemToVisitWasCero = true;
 				}
@@ -126,10 +162,10 @@ public class NearestPath extends Path {
 				*/
 
 				// Añadido por Nacho Palacio 2025-05-17
-				long convertedItemToVisit = ElementIdMapper.convertToRangeId(itemToVisit, ElementIdMapper.CATEGORY_ITEM);
+				// long convertedItemToVisit = ElementIdMapper.convertToRangeId(itemToVisit, ElementIdMapper.CATEGORY_ITEM);
 				
 				// If the next item to visit is a painting or sculpture (range: 1-240):
-				//if (itemToVisit <= numberOfItemsInMap) {
+				// if (itemToVisit <= numberOfItemsInMap) {
 				if (ElementIdMapper.isInCorrectRange(itemToVisit, ElementIdMapper.CATEGORY_ITEM)) { // Modificado por Nacho Palacio 2025-05-20
 					endVertex = itemToVisit;
 					// Get a new vertex.
@@ -146,7 +182,10 @@ public class NearestPath extends Path {
 					currentTime += getCurrentTime(startVertex, endVertex)
 							+ Configuration.simulation.getDelayObservingPaintingInSecond();
 					startVertex = endVertex;
-				} else {
+				} //else {
+
+				else if (ElementIdMapper.isInCorrectRange(itemToVisit, ElementIdMapper.CATEGORY_DOOR) ||
+           					ElementIdMapper.isInCorrectRange(itemToVisit, ElementIdMapper.CATEGORY_STAIRS)) {
 					
 					//System.out.println("Door or stairs");
 					
@@ -154,15 +193,10 @@ public class NearestPath extends Path {
 					// Get the connection of the current door.
 					// long connectedDoor = getConnectedDoor(itemToVisit);
 
-					// Modificado por Nacho Palacio 2025-05-19
-					// Check if the item to visit is a door.
-					if (!ElementIdMapper.isInCorrectRange(itemToVisit, ElementIdMapper.CATEGORY_DOOR)) {
-						System.out.println("ERROR: Se intentó buscar puerta conectada para un ID que no es puerta: " + itemToVisit);
-						continue;
-					}
 					long connectedDoor = getConnectedDoor(itemToVisit);
+					// long connectedDoor = getValidConnectedDoor(itemToVisit); // Modificado por Nacho Palacio 2025-05-29
 					// ... resto del código ...
-				
+					
 					
 					//System.out.println("Connected door: " + connectedDoor);
 					
@@ -186,7 +220,15 @@ public class NearestPath extends Path {
 					finalPath += subpath;
 					//System.out.println(finalPath + "\n");
 					// Update the available items to visit by non-RS user in the current room.
-					itemsByRoom = updateItemsByRoom(room, itemVisited, roomVisited);
+					// itemsByRoom = (LinkedList<Long>) updateItemsByRoom(room, itemVisited, roomVisited);
+
+					// Modificado por Nacho Palacio 2025-05-29
+					itemsByRoom = (LinkedList<Long>) itemsDoorVisited_cloned.get(room);
+					if (itemsByRoom == null) {
+						itemsByRoom = new LinkedList<>();
+						itemsDoorVisited_cloned.put(room, itemsByRoom);
+					}
+					itemsByRoom = convertAndValidateItems(itemsByRoom, "updated_room_" + room, numberOfItemsInMap);
 					// Get the end vertex from sub-path.
 					startVertex = getEndVertex(subpath);
 					ifItemToVisitWasCero = false;//ifItemToVisitWasCero = (startVertex > 0);
@@ -197,6 +239,9 @@ public class NearestPath extends Path {
 					else
 						ifItemToVisitWasCero = false;
 					*/
+				}
+				else {
+					itemsByRoom.remove(itemToVisit);
 				}
 			} else {				
 				// System.out.println("Room empty or itemToVisit <= 0");
@@ -222,8 +267,49 @@ public class NearestPath extends Path {
 						// completo (todos sus items vistos)
 						for (int indexDoor = 1; indexDoor <= numberOfDoors; indexDoor++) {
 							long itemCandidateToVisit = accessGraphFile.getDoorOfRoomWithIndex(indexDoor, room);
+
+							// Añadido por Nacho Palacio 2025-06-01
+							if (itemCandidateToVisit > numberOfItems + numberOfDoors) {
+								// System.out.println("*** PUERTA CANDIDATA FUERA DE RANGO EN NearestPath ***");
+								// System.out.println("room: " + room);
+								// System.out.println("indexDoor: " + indexDoor);
+								// System.out.println("itemCandidateToVisit: " + itemCandidateToVisit);
+								// System.out.println("numberOfDoors en habitación: " + numberOfDoors);
+								// System.out.println("Rango válido: " + (numberOfItems + 1) + " a " + (numberOfItems + numberOfDoors));
+								// System.out.println("*** FIN DEBUG ***");
+
+								// Añadido por Nacho Palacio 2025-07-04
+								count++;
+								continue;
+							}
+
 							long connectedDoor = getConnectedDoor(itemCandidateToVisit);
-							itemsByRoom = getItemsByRoom(getRoomFromItem(connectedDoor));
+							// long connectedDoor = getValidConnectedDoor(itemCandidateToVisit); // Modificado por Nacho Palacio 2025-05-29
+
+							// if (connectedDoor <= 0 || !isValidDoor(connectedDoor)) {
+							// 	System.err.println("WARNING: Connected door " + connectedDoor + " is not valid, skipping candidate " + itemCandidateToVisit);
+							// 	count++;
+							// 	continue;
+							// }
+
+							// Modificado por Nacho Palacio 2025-05-31
+							if (connectedDoor <= 0) {
+								System.out.println("ADVERTENCIA: Connected door es <= 0 para itemCandidateToVisit=" + itemCandidateToVisit + ". Saltando candidato."); // Añadido por Nacho Palacio 2025-07-04
+								count++;
+								continue;
+							}
+
+							// itemsByRoom = (LinkedList<Long>) getItemsByRoom(getRoomFromItem(connectedDoor));
+							
+							// Modificado por Nacho Palacio 2025-06-29
+							room = getRoomFromItem(connectedDoor);
+							itemsByRoom = (LinkedList<Long>) itemsDoorVisited_cloned.get(room);
+							if (itemsByRoom == null) {
+								itemsByRoom = new LinkedList<>();
+								itemsDoorVisited_cloned.put(room, itemsByRoom);
+							}
+							itemsByRoom = convertAndValidateItems(itemsByRoom, "updated_room_" + room, numberOfItemsInMap);
+							
 							if (!itemVisited.containsAll(itemsByRoom)) {
 								itemToVisit = itemCandidateToVisit;
 								allRoomVisited = false;
@@ -252,9 +338,32 @@ public class NearestPath extends Path {
 					}*/
 					
 					int numberOfDoors = accessGraphFile.getNumDoorsByRoom(room);
+
+					// Modificado por Nacho Palacio 2025-05-31
 					int indexDoor = random.nextInt(numberOfDoors - 1 + 1) + 1;
 					itemToVisit = accessGraphFile.getDoorOfRoomWithIndex(indexDoor, room);
+
+					// Añadido por Nacho Palacio 2025-06-03
+					if (!ElementIdMapper.isInCorrectRange(itemToVisit, ElementIdMapper.CATEGORY_ITEM) && 
+						!ElementIdMapper.isInCorrectRange(itemToVisit, ElementIdMapper.CATEGORY_DOOR)) {
+						System.out.println("*** ELEMENTO FUERA DE RANGO EN NearestPath ***");
+						System.out.println("itemToVisit: " + itemToVisit);
+						System.out.println("startVertex: " + startVertex);
+						System.out.println("itemsByRoom.size(): " + itemsByRoom.size());
+						System.out.println("Validación ElementIdMapper:");
+						System.out.println("  - ¿Es ítem válido? " + ElementIdMapper.isInCorrectRange(itemToVisit, ElementIdMapper.CATEGORY_ITEM));
+						System.out.println("  - ¿Es puerta válida? " + ElementIdMapper.isInCorrectRange(itemToVisit, ElementIdMapper.CATEGORY_DOOR));
+						System.out.println("itemsByRoom contenido: " + itemsByRoom);
+						System.out.println("*** FIN DEBUG ***");
+					}
+
 					long connectedDoor = getConnectedDoor(itemToVisit);
+
+					// Añadido por Nacho Palacio 2025-05-31
+					if (connectedDoor <= 0) {
+						break;
+					}
+
 					String subpath = getToConnectedDoor(startVertex, itemToVisit, itemVisited, connectedDoor);
 					// Get the room to which the door belongs.
 					room = getRoomFromItem(connectedDoor);
@@ -265,7 +374,15 @@ public class NearestPath extends Path {
 					//System.out.println(finalPath);
 					finalPath += subpath;
 					//System.out.println(finalPath + "\n");
-					itemsByRoom = updateItemsByRoom(room, itemVisited, roomVisited);
+					// itemsByRoom = (LinkedList<Long>) updateItemsByRoom(room, itemVisited, roomVisited);
+
+					// Modificado por Nacho Palacio 2025-05-29
+					itemsByRoom = (LinkedList<Long>) itemsDoorVisited_cloned.get(room);
+					if (itemsByRoom == null) {
+						itemsByRoom = new LinkedList<>();
+						itemsDoorVisited_cloned.put(room, itemsByRoom);
+					}
+					itemsByRoom = convertAndValidateItems(itemsByRoom, "updated_room_" + room, numberOfItemsInMap);
 					startVertex = getEndVertex(subpath);
 					ifItemToVisitWasCero = false;
 					allRoomVisited = false;
@@ -319,15 +436,12 @@ public class NearestPath extends Path {
 			for (int i = 0; i < Configuration.simulation.oldPathUserSpecial.size(); i++) {
 				
 				String[] array = Configuration.simulation.cleanEdge(Configuration.simulation.oldPathUserSpecial.get(i));
-				// Get the vertices.
 				long v1 = Long.valueOf(array[0]).longValue();
 				long v2 = Long.valueOf(array[1]).longValue();
-				
-				// If first one, add initial vertex.
+			
 				if (i == 0)
 					alreadyVisited.add(v1);
 				
-				// Add final vertex if not already contained.
 				if (!alreadyVisited.contains(v2))
 					alreadyVisited.add(v2);
 				
@@ -335,6 +449,37 @@ public class NearestPath extends Path {
 		}
 		
 		return alreadyVisited;
+	}
+
+	/**
+	 * Validación del método getConnectedDoor con puertas reales.
+	 * Añadido por Nacho Palacio 2025-05-29.
+	 */
+	protected long getValidConnectedDoor(long doorId) {
+		try {
+			long connectedDoor = getConnectedDoor(doorId);
+			
+			if (connectedDoor > 0 && isValidDoor(connectedDoor)) {
+				return connectedDoor;
+			}
+
+			
+			int currentRoom = getRoomFromItem(doorId);
+			for (int adjacentRoom = currentRoom - 1; adjacentRoom <= currentRoom + 1; adjacentRoom++) {
+				if (adjacentRoom > 0 && adjacentRoom != currentRoom) {
+					List<Long> adjacentDoors = getValidDoorsForRoom(adjacentRoom);
+					if (!adjacentDoors.isEmpty()) {
+						return adjacentDoors.get(0);
+					}
+				}
+			}
+			
+			return getValidRandomDoor();
+			
+		} catch (Exception e) {
+			System.err.println("ERROR getting valid connected door for " + doorId + ": " + e.getMessage());
+			return getValidRandomDoor();
+		}
 	}
 
 }

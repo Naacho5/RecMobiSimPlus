@@ -46,6 +46,8 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import es.unizar.access.DataAccessGraphFile;
+import es.unizar.access.DataAccessItemFile;
 import es.unizar.controller.AppListener;
 import es.unizar.controller.Controller;
 import es.unizar.editor.MapEditor;
@@ -57,9 +59,13 @@ import es.unizar.gui.simulation.UserRunnable;
 import es.unizar.spatialDB.DBQueryMaker;
 import es.unizar.spatialDB.DBViewer;
 import es.unizar.spatialDB.DatabaseAccess;
+import es.unizar.util.ElementIdMapper;
 import es.unizar.util.Literals;
 import es.unizar.util.Pair;
 import es.unizar.util.TextAreaHandler;
+import es.unizar.access.DataAccessGraphFile;
+import es.unizar.access.DataAccessItemFile;
+import es.unizar.util.ElementIdMapper;
 import java.awt.FlowLayout;
 
 /**
@@ -174,6 +180,9 @@ public class MainSimulator {
 		} catch (javax.swing.UnsupportedLookAndFeelException ex) {
 			java.util.logging.Logger.getLogger(MainSimulator.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
 		}
+
+		 // Añadido por Nacho Palacio 2025-06-30
+		configureElementIdMapperStatically();
 
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
@@ -1081,5 +1090,118 @@ public class MainSimulator {
 		stateOfUsers.clear();
 		timeUsersInRooms.clear();
 		userInfo.reloadTables();
+	}
+
+	/**
+	 * Configura ElementIdMapper usando acceso directo a los archivos.
+	 * Añadido por Nacho Palacio 2025-06-25.
+	 */
+	private static void configureElementIdMapperStatically() {	
+		try {
+			DataAccessGraphFile tempGraphFile = new DataAccessGraphFile(new File(Literals.GRAPH_FLOOR_COMBINED));
+			DataAccessItemFile tempItemFile = new DataAccessItemFile(new File(Literals.ITEM_FLOOR_COMBINED));
+
+			SystemRangeData rangeData = analyzeSystemRangesDirectly(tempGraphFile, tempItemFile);
+
+			ElementIdMapper.configureDynamicRanges(rangeData);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * Analiza los rangos del sistema accediendo directamente a los archivos.
+	 * Añadido por Nacho Palacio 2025-06-25.
+	 */
+	private static SystemRangeData analyzeSystemRangesDirectly(DataAccessGraphFile graphFile, DataAccessItemFile itemFile) {
+		SystemRangeData data = new SystemRangeData();
+		
+		int totalItems = itemFile.getNumberOfItems();
+		data.totalItems = totalItems;
+		
+		for (int i = 1; i <= totalItems; i++) {
+			try {
+				long itemId = itemFile.getItemID(i);
+				if (itemId > 0) {
+					data.minItemId = Math.min(data.minItemId, itemId);
+					data.maxItemId = Math.max(data.maxItemId, itemId);
+				}
+			} catch (Exception e) {
+				// Continuar
+			}
+		}
+		
+		int totalRooms = graphFile.getNumberOfRoom();
+		int totalDoors = 0;
+		
+		for (int roomId = 1; roomId <= totalRooms; roomId++) {
+			int doorsInRoom = graphFile.getNumberOfDoorsByRoom(roomId);
+			totalDoors += doorsInRoom;
+			
+			for (int j = 1; j <= doorsInRoom; j++) {
+				try {
+					long doorId = graphFile.getDoorOfRoom(j, roomId);
+					if (doorId > 0) {
+						data.minDoorId = Math.min(data.minDoorId, doorId);
+						data.maxDoorId = Math.max(data.maxDoorId, doorId);
+					}
+				} catch (Exception e) {
+					// Continuar
+				}
+			}
+		}
+		data.totalDoors = totalDoors;
+		
+		int totalStairs = graphFile.getNumberOfStairs();
+		data.totalStairs = totalStairs;
+		
+		for (int i = 1; i <= totalStairs; i++) {
+			try {
+				long externalStairsId = graphFile.getStairsOfRoom(i);
+				if (externalStairsId > 0) {
+					data.minExternalStairsId = Math.min(data.minExternalStairsId, externalStairsId);
+					data.maxExternalStairsId = Math.max(data.maxExternalStairsId, externalStairsId);
+					
+					long internalStairsId = ElementIdMapper.convertToRangeId(externalStairsId, ElementIdMapper.CATEGORY_STAIRS);
+					data.minStairsId = Math.min(data.minStairsId, internalStairsId);
+					data.maxStairsId = Math.max(data.maxStairsId, internalStairsId);
+				}
+			} catch (Exception e) {
+				// Continuar
+			}
+		}
+		
+		data.totalRooms = totalRooms;
+		data.minRoomId = 1;
+		data.maxRoomId = totalRooms;
+	
+		return data;
+	}
+
+	/**
+	 * Clase para almacenar datos de rangos del sistema.
+	 * Añadido por Nacho Palacio 2025-06-25.
+	 */
+	public static class SystemRangeData {
+		public int totalItems = 0;
+		public int totalDoors = 0;
+		public int totalStairs = 0;
+		public int totalRooms = 0;
+		public int totalInvisibleDoors = 0;
+		
+		public long minItemId = Long.MAX_VALUE;
+		public long maxItemId = Long.MIN_VALUE;
+		
+		public long minDoorId = Long.MAX_VALUE;
+		public long maxDoorId = Long.MIN_VALUE;
+
+		public long minStairsId = Long.MAX_VALUE;
+		public long maxStairsId = Long.MIN_VALUE;
+
+		public long minExternalStairsId = Long.MAX_VALUE;
+		public long maxExternalStairsId = Long.MIN_VALUE;
+
+		public long minRoomId = 1;
+		public long maxRoomId = 1;
 	}
 }

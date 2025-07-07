@@ -113,7 +113,6 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 
 		/* Añadido por Nacho Palacio 2025-04-14. */
 		if (candidateItemsFiltered == null || candidateItemsFiltered.isEmpty()) {
-            // System.out.println("Warning: No items passed the threshold filter for user " + userID);
             return candidateItemsFromRecommender;
         }
 
@@ -122,7 +121,6 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 					 
 		/* Añadido por Nacho Palacio 2025-04-14. */
 		if (candidateItemsToLong.isEmpty()) {
-            // System.out.println("Warning: Empty candidate items list for user " + userID);
             return candidateItemsFiltered;
         }
 
@@ -142,9 +140,8 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
             finalPath = ShortestTrajectoryStrategy.preprocessingPath(door, 
                       DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, door, initialVertex).toString());
             
-            // Si finalPath es nulo, devolver los items filtrados sin trayectoria
-            if (finalPath == null) {
-                // System.out.println("Warning: Could not calculate path for user " + userID);
+            // Si finalPath es nulo, devuelve los items filtrados sin trayectoria
+            if (finalPath == null) {;
                 return candidateItemsFiltered;
             }
             
@@ -154,7 +151,7 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
             return candidateItemsFiltered;
         }
 
-		// Obtiene nuevamente la lista de RecommendedItem pero teniendo en cuenta la trayectoria.
+		// Obtiene la lista de RecommendedItem teniendo en cuenta la trayectoria.
 		List<RecommendedItem> finalRecommendedItems = new LinkedList<>();
 		for (int i = 0; i < sortedItems.size(); i++) {
 			long itemGraph = sortedItems.get(i);

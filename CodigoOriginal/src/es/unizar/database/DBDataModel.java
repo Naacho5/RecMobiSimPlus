@@ -75,7 +75,6 @@ public class DBDataModel extends AbstractDataModel {
 		/* Añadido por Nacho Palacio 2025-04-15. */
 		if (usersAdded) {
 			try {
-				System.out.println("Waiting for database changes to be applied...");
 				Thread.sleep(1000); // Esperar 1 segundo
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
@@ -86,7 +85,6 @@ public class DBDataModel extends AbstractDataModel {
 
 		/* Añadido por Nacho Palacio 2025-04-14. */
 		if (numUsers > correctUserIDs.length) {
-			System.out.println("Warning: Requested " + numUsers + " users but only " + correctUserIDs.length + " are available.");
 			numUsers = correctUserIDs.length; // Limita a los usuarios disponibles
 		}
 
@@ -209,7 +207,6 @@ public class DBDataModel extends AbstractDataModel {
 	 */
 	@Override
 	public PreferenceArray getPreferencesFromUser(long userID) throws TasteException { // THROWS EXCEPTION WHEN NO PREFERENCES
-		// System.out.println("Fetching preferences for user ID: " + userID); // Añadido por Nacho Palacio 2025-04-14.
 		PreferenceArray prefs = preferenceFromUsers.get(userID);
 		if (prefs == null) {
 			throw new NoSuchUserException(userID);

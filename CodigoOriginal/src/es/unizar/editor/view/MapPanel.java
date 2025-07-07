@@ -159,9 +159,36 @@ public class MapPanel extends JPanel implements MouseInputListener {
 		super.paintComponent(g);
 		
 		for (Drawable d: model.getPaintedElements()) {
+			// Añadido por Nacho Palacio 2025-07-04 - Corrección de rutas de iconos
+			String iconURL = d.getUrlIcon();
+			String finalIconURL = iconURL;
+
+			File iconFile = new File(iconURL);
+			if (!iconFile.exists()) {
+				String fileName = iconURL;
+				if (fileName.contains("\\")) {
+					// Es ruta de Windows
+					String[] parts = fileName.split("\\\\");
+					fileName = parts[parts.length - 1];
+				} else if (fileName.contains("/")) {
+					// Es ruta Unix
+					String[] parts = fileName.split("/");
+					fileName = parts[parts.length - 1];
+				}
+				
+				finalIconURL = Literals.IMAGES_PATH + fileName;
+				File correctedFile = new File(finalIconURL);
+				
+				if (!correctedFile.exists()) {
+					finalIconURL = Literals.LOGO_PATH;
+				}
+			}
+			
+			ImageIcon icon = new ImageIcon(finalIconURL);
+
 			
 			// -- ELEMENTS --
-			ImageIcon icon = new ImageIcon(d.getUrlIcon());
+			// ImageIcon icon = new ImageIcon(d.getUrlIcon());
 			if (d instanceof Door && (((Door) d).getRoom() == null || ((Door) d).getConnectedTo().isEmpty())){
 				g.drawImage(icon.getImage(), (int) (d.getVertex_xy().getX() * model.getZOOM()), (int) (d.getVertex_xy().getY() * model.getZOOM()),
 						(int) (model.getDRAWING_ICON_DIMENSION() * model.getZOOM()), (int) (model.getDRAWING_ICON_DIMENSION() * model.getZOOM()), Color.RED, this);

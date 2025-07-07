@@ -541,7 +541,7 @@ public class MapEditorController implements ActionListener, FocusListener, MapPa
 					model.eraseDrawableList(new ArrayList<>(model.getCurrentRoomCorners()));
 					
 					// Create a new room with the current room corners
-					Room room = new Room(model.getNumRooms(), model.getCurrentRoomCorners()); // Modificado por Nacho Palacio 2025-04-18
+					Room room = new Room(model.getNumRooms()+1, model.getCurrentRoomCorners()); // Modificado por Nacho Palacio 2025-04-18
 
 					if(model.addRoom(room)) {// (this adds the corners to persist to drawable elements)
 						model.emptyCurrentRoomCorners();

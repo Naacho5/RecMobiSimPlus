@@ -10,6 +10,7 @@ import es.unizar.editor.model.Item;
 import es.unizar.editor.model.Room;
 import es.unizar.editor.model.RoomSeparator;
 import es.unizar.editor.model.Stairs;
+// import es.unizar.gui.simulation.Simulation.SystemRangeData;
 
 /**
  * Centralized system to manage ID ranges for different types of elements.
@@ -20,13 +21,18 @@ import es.unizar.editor.model.Stairs;
 public class ElementIdMapper {
     
     // ID ranges for each type of element
-    public static final long ROOM_ID_START = 0;          // 1-999
-    public static final long ITEM_ID_START = 1000;       // 1000-1999
-    public static final long DOOR_ID_START = 2000;       // 2000-2999
-    public static final long STAIRS_ID_START = 3000;     // 3000-3999
-    public static final long CORNER_ID_START = 4000;     // 4000-4999
-    public static final long SEPARATOR_ID_START = 5000;  // 5000-5999
-    public static final long USER_ID_START = 6000;       // 6000-6999
+    public static long ROOM_ID_START = 0;          // 1-999
+    public static long ITEM_ID_START = 1000;       // 1000-1999
+    public static long DOOR_ID_START = 2000;       // 2000-2999
+    public static long STAIRS_ID_START = 3000;     // 3000-3999
+    public static long CORNER_ID_START = 4000;     // 4000-4999
+    public static long SEPARATOR_ID_START = 5000;  // 5000-5999
+    public static long USER_ID_START = 6000;       // 6000-6999
+
+    // Añadido por Nacho Palacio 2025-06-03
+    // Flags
+    private static boolean isDynamicallyConfigured = false;
+    private static SystemRangeData systemData = null;
     
     // Constants for element categories
     public static final int CATEGORY_ROOM = 1;
@@ -310,25 +316,119 @@ public class ElementIdMapper {
      * @return ID converted to the correct range.
      */
     public static long convertToRangeId(long currentId, int category) {
+        // Añadido por Nacho Palacio 2025-06-05
+        if (currentId == 0) {
+            new Exception("Stack trace para currentId=0").printStackTrace();
+            return 0;
+        }
+
+        if (isDynamicallyConfigured) {
+            int newCategory = determineActualCategory(currentId); // Añadido por Nacho Palacio 2025-06-22
+
+            if (newCategory != category && category == CATEGORY_ITEM) {
+                category = newCategory;
+            }
+
+            if (isInCorrectRange(currentId, category)) {
+                return currentId;
+            }
+            
+            switch (category) {
+                case CATEGORY_ITEM:
+                    if (currentId >= 1 && currentId <= systemData.totalItems) {
+                        long convertedId = systemData.minItemId + currentId - 1;
+                        return convertedId;
+                    }
+                    
+                    if (currentId >= systemData.minItemId && currentId <= systemData.maxItemId) {
+                        return currentId;
+                    }
+                    break;
+                    
+                case CATEGORY_DOOR:
+                    int startInvisibleDoorId = systemData.totalItems + systemData.totalDoors + systemData.totalStairs; // Añadido por Nacho Palacio 2025-07-02
+                    int endInvisibleDoorId = startInvisibleDoorId + systemData.totalInvisibleDoors; // Añadido por Nacho Palacio 2025-07-02
+                    boolean isInvisibleDoor = currentId > startInvisibleDoorId && currentId <= endInvisibleDoorId; // REVISAR
+                    boolean isDoor = currentId > systemData.totalItems && currentId <= (systemData.totalItems + systemData.totalDoors);
+                    if (isDoor || isInvisibleDoor) {
+                        long externalOffset = currentId - systemData.totalItems;
+                        long convertedId = systemData.minDoorId + externalOffset - 1;
+                        return convertedId;
+                    }
+
+                    if (currentId >= systemData.minDoorId && currentId <= systemData.maxDoorId) {
+                        return currentId;
+                    }
+                    break;
+                    
+                case CATEGORY_STAIRS:
+                    if (currentId >= 1 && currentId <= systemData.totalStairs) {
+                        long convertedId = systemData.minStairsId + currentId - 1;
+                        return convertedId;
+                    }
+                    
+                    if (currentId >= systemData.minStairsId && currentId <= systemData.maxStairsId) {
+                        return currentId;
+                    }
+                    break;
+                    
+                case CATEGORY_ROOM:
+                    if (currentId >= 1 && currentId <= systemData.maxRoomId) {
+                        return currentId;
+                    }
+                    break;
+            }
+        }
+        
+        // Fallback
         switch (category) {
             case CATEGORY_ROOM:
                 if (currentId < ITEM_ID_START) return currentId;
                 return currentId % (ITEM_ID_START - 1) + ROOM_ID_START;
+                
             case CATEGORY_ITEM:
                 if (currentId >= ITEM_ID_START && currentId < DOOR_ID_START) return currentId;
+                
+                if (isDynamicallyConfigured && systemData != null && 
+                    currentId >= 1 && currentId <= systemData.totalItems) {
+                    long convertedId = ITEM_ID_START + currentId - 1;
+                    return convertedId;
+                }
+
                 return currentId % 1000 + ITEM_ID_START;
+                
             case CATEGORY_DOOR:
                 if (currentId >= DOOR_ID_START && currentId < STAIRS_ID_START) return currentId;
-                return currentId % 1000 + DOOR_ID_START;
+
+                if (isDynamicallyConfigured && systemData != null &&
+                    currentId > systemData.totalItems && currentId <= (systemData.totalItems + systemData.totalDoors)) {
+                    long doorIndex = currentId - systemData.totalItems;
+                    long convertedId = DOOR_ID_START + doorIndex - 1;
+                    return convertedId;
+                }
+
+                return currentId % 1000 + 2284; // Modificado por Nacho Palacio 2025-06-24
+
+                
             case CATEGORY_STAIRS:
                 if (currentId >= STAIRS_ID_START && currentId < CORNER_ID_START) return currentId;
+                
+                if (isDynamicallyConfigured && systemData != null &&
+                    currentId >= 1 && currentId <= systemData.totalStairs) {
+                    long convertedId = STAIRS_ID_START + currentId - 1;
+                    return convertedId;
+                }
+                
                 return currentId % 1000 + STAIRS_ID_START;
+                
             case CATEGORY_CORNER:
                 if (currentId >= CORNER_ID_START && currentId < SEPARATOR_ID_START) return currentId;
                 return currentId % 1000 + CORNER_ID_START;
+                
             case CATEGORY_SEPARATOR:
                 if (currentId >= SEPARATOR_ID_START) return currentId;
                 return currentId % 1000 + SEPARATOR_ID_START;
+                
             default:
                 return currentId;
         }
@@ -361,22 +461,267 @@ public class ElementIdMapper {
 
     /**
      * Gets the base (external) ID from an internal ID.
+     * Modificada por Nacho Palacio 2025-06-21
      * @param internalId Internal ID of the element.
      * @return Base (external) ID of the element.
      */
     public static long getBaseId(long internalId) {
+        if (isDynamicallyConfigured && systemData != null) {
+            
+            if (internalId >= ITEM_ID_START && internalId < DOOR_ID_START) {
+                if (internalId >= systemData.minItemId && internalId <= systemData.maxItemId) {
+                    return internalId - systemData.minItemId + 1;
+                }
+
+                return internalId - ITEM_ID_START + 1;
+                
+            } else if (internalId >= DOOR_ID_START && internalId < STAIRS_ID_START) {
+                if (internalId >= systemData.minDoorId && internalId <= systemData.maxDoorId) {
+                    long doorOffset = internalId - systemData.minDoorId + 1;
+                    return systemData.totalItems + doorOffset;
+                }
+
+                long doorIndex = internalId - DOOR_ID_START + 1;
+                return systemData.totalItems + doorIndex;
+                
+            } else if (internalId >= STAIRS_ID_START && internalId < CORNER_ID_START) {
+                if (internalId >= systemData.minStairsId && internalId <= systemData.maxStairsId) {
+                    return internalId - STAIRS_ID_START + systemData.minStairsId;
+                }
+
+                return internalId - STAIRS_ID_START + 1;
+                
+            } else if (internalId >= CORNER_ID_START && internalId < SEPARATOR_ID_START) {
+                return internalId - CORNER_ID_START + 1;
+                
+            } else if (internalId >= SEPARATOR_ID_START) {
+                return internalId - SEPARATOR_ID_START + 1;
+                
+            } else if (internalId >= ROOM_ID_START && internalId < ITEM_ID_START) {
+                return internalId;
+            }
+        }
+        
         if (internalId >= ITEM_ID_START && internalId < DOOR_ID_START) {
-            return internalId - ITEM_ID_START;
+            return internalId - ITEM_ID_START + 1;
         } else if (internalId >= DOOR_ID_START && internalId < STAIRS_ID_START) {
-            return internalId - DOOR_ID_START;
+            return internalId - DOOR_ID_START + 1;
         } else if (internalId >= STAIRS_ID_START && internalId < CORNER_ID_START) {
-            return internalId - STAIRS_ID_START;
+            return internalId - STAIRS_ID_START + 1;
         } else if (internalId >= CORNER_ID_START && internalId < SEPARATOR_ID_START) {
-            return internalId - CORNER_ID_START;
+            return internalId - CORNER_ID_START + 1;
         } else if (internalId >= SEPARATOR_ID_START) {
-            return internalId - SEPARATOR_ID_START;
+            return internalId - SEPARATOR_ID_START + 1;
         } else {
             return internalId;
         }
     }
+
+    /**
+     * Configura los rangos dinámicamente basándose en datos reales del sistema.
+     * Añadido por Nacho Palacio 2025-06-03.
+     * Modificado por Nacho Palacio 2025-06-25.
+     * @param data Datos reales del sistema.
+     */
+    public static void configureDynamicRanges(Object rangeData) {
+        
+        // Verificar si ya está configurado
+        if (isDynamicallyConfigured) {
+            System.out.println("⚠️  ElementIdMapper ya está configurado dinámicamente - omitiendo reconfiguración");
+            return;
+        }
+        
+        try {
+            processRangeDataReflection(rangeData);
+            isDynamicallyConfigured = true;
+        } catch (Exception e) {
+            System.err.println(" ERROR en configuración dinámica: " + e.getMessage());
+        }
+    }
+
+    
+    /**
+     * Determina la categoría real de un ID basándose en los datos del sistema.
+     * @param currentId ID a analizar
+     * @return Categoría real del elemento
+     */
+    private static int determineActualCategory(long currentId) {
+        if (systemData == null) {
+            return CATEGORY_ITEM;
+        }
+
+        if (currentId >= CORNER_ID_START) {
+            if (currentId >= SEPARATOR_ID_START) {
+                return CATEGORY_SEPARATOR;
+            } else {
+                return CATEGORY_CORNER;
+            }
+        }
+
+        // Version simplificada para determinar la categoría real
+        if (currentId >= 1 && currentId <= systemData.totalItems) {
+                return CATEGORY_ITEM;
+        }  
+        else {
+            return CATEGORY_DOOR;
+        }
+    }
+
+    /**
+     * Procesa los datos de rango usando reflexión para evitar dependencias circulares.
+     * AÑADIDO por Nacho Palacio 2025-06-25.
+     */
+    private static void processRangeDataReflection(Object rangeData) throws Exception {
+        Class<?> dataClass = rangeData.getClass();
+
+        systemData = new SystemRangeData();
+        
+        // Obtener campos usando reflexión
+        int totalItems = getIntField(dataClass, rangeData, "totalItems");
+        int totalDoors = getIntField(dataClass, rangeData, "totalDoors");
+        int totalStairs = getIntField(dataClass, rangeData, "totalStairs");
+        int totalRooms = getIntField(dataClass, rangeData, "totalRooms");
+        int totalInvisibleDoors = countInvisibleDoors(); // Añadido por Nacho Palacio 2025-07-02 
+        
+        long minItemId = getLongField(dataClass, rangeData, "minItemId");
+        long maxItemId = getLongField(dataClass, rangeData, "maxItemId");
+        long minDoorId = getLongField(dataClass, rangeData, "minDoorId");
+        long maxDoorId = getLongField(dataClass, rangeData, "maxDoorId");
+        long minStairsId = getLongField(dataClass, rangeData, "minStairsId");
+        long maxStairsId = getLongField(dataClass, rangeData, "maxStairsId");
+        long minExternalStairsId = getLongField(dataClass, rangeData, "minExternalStairsId");
+        long maxExternalStairsId = getLongField(dataClass, rangeData, "maxExternalStairsId");
+        long minRoomId = getLongField(dataClass, rangeData, "minRoomId");
+        long maxRoomId = getLongField(dataClass, rangeData, "maxRoomId");
+
+        systemData.totalItems = totalItems;
+        systemData.totalDoors = totalDoors;
+        systemData.totalStairs = totalStairs;
+        systemData.totalRooms = totalRooms;
+        systemData.totalInvisibleDoors = totalInvisibleDoors;
+        
+        systemData.minItemId = minItemId;
+        systemData.maxItemId = maxItemId;
+        systemData.minDoorId = minDoorId;
+        systemData.maxDoorId = maxDoorId;
+        systemData.minStairsId = minStairsId;
+        systemData.maxStairsId = maxStairsId;
+        systemData.minExternalStairsId = minExternalStairsId;
+        systemData.maxExternalStairsId = maxExternalStairsId;
+        systemData.minRoomId = minRoomId;
+        systemData.maxRoomId = maxRoomId;
+
+        ROOM_ID_START = 1;
+        
+        if (totalItems > 0 && minItemId < Long.MAX_VALUE) {
+            ITEM_ID_START = minItemId;
+        }
+        
+        if (totalDoors > 0 && minDoorId < Long.MAX_VALUE) {
+            DOOR_ID_START = minDoorId;
+        }
+        
+        if (totalStairs > 0 && minStairsId < Long.MAX_VALUE) {
+            STAIRS_ID_START = minStairsId;
+        }
+        
+        long maxSystemId = Math.max(Math.max(maxItemId, maxDoorId), maxStairsId);
+        if (maxSystemId > 0 && maxSystemId != Long.MIN_VALUE) {
+            long safetyMargin = 1000;
+            CORNER_ID_START = maxSystemId + safetyMargin;
+            SEPARATOR_ID_START = CORNER_ID_START + 1000;
+            USER_ID_START = SEPARATOR_ID_START + 1000;
+        }
+    }
+
+    /**
+     * Clase interna para evitar dependencias circulares.
+     * AÑADIDA por Nacho Palacio 2025-06-25.
+     */
+    private static class SystemRangeData {
+        public int totalItems = 0;
+        public int totalDoors = 0;
+        public int totalStairs = 0;
+        public int totalRooms = 0;
+        public int totalInvisibleDoors = 0;
+        
+        
+        public long minItemId = Long.MAX_VALUE;
+        public long maxItemId = Long.MIN_VALUE;
+        
+        public long minDoorId = Long.MAX_VALUE;
+        public long maxDoorId = Long.MIN_VALUE;
+
+        public long minStairsId = Long.MAX_VALUE;
+        public long maxStairsId = Long.MIN_VALUE;
+
+        public long minExternalStairsId = Long.MAX_VALUE;
+        public long maxExternalStairsId = Long.MIN_VALUE;
+
+        public long minRoomId = 1;
+        public long maxRoomId = 1;
+    }
+
+    /**
+     * Métodos auxiliares para reflexión.
+     * Añadido por Nacho Palacio 2025-06-25.
+     */
+    private static int getIntField(Class<?> clazz, Object obj, String fieldName) throws Exception {
+        return (Integer) clazz.getField(fieldName).get(obj);
+    }
+
+    private static long getLongField(Class<?> clazz, Object obj, String fieldName) throws Exception {
+        return (Long) clazz.getField(fieldName).get(obj);
+    }
+
+    /**
+     * Verifica si ElementIdMapper ya está configurado dinámicamente.
+     * Añadido por Nacho Palacio 2025-06-25.
+     */
+    public static boolean isDynamicallyConfigured() {
+        return isDynamicallyConfigured;
+    }
+
+    /**
+     * Cuenta el número total de puertas invisibles en el sistema.
+     * Añadido por Nacho Palacio 2025-07-02.
+     * 
+     * @return Número total de puertas invisibles
+     */
+    private static int countInvisibleDoors() {
+        int totalInvisibleDoors = 0;
+        
+        try {
+            es.unizar.access.DataAccessGraphFile dataAccessGraphFile = new es.unizar.access.DataAccessGraphFile(new java.io.File(es.unizar.util.Literals.GRAPH_FLOOR_COMBINED));
+            
+            int totalRooms = dataAccessGraphFile.getNumberOfRoom();
+            
+            for (int roomId = 1; roomId <= totalRooms; roomId++) {
+                try {
+                    int numSubrooms = dataAccessGraphFile.getRoomNumberSubrooms(roomId);
+                    
+                    for (int subRoomPos = 1; subRoomPos <= numSubrooms; subRoomPos++) {
+                        try {
+                            int numInvisibleDoors = dataAccessGraphFile.getNumberOfInvisibleDoorsBySubroom(subRoomPos, roomId);
+                            totalInvisibleDoors += numInvisibleDoors;
+                        } catch (Exception e) {
+                            // Continuar con la siguiente subhabitación
+                        }
+                    }
+                } catch (Exception e) {
+                    // Continuar con la siguiente habitación
+                }
+            }
+            
+            System.out.println("Total puertas invisibles contadas: " + totalInvisibleDoors);
+            
+        } catch (Exception e) {
+            System.err.println("Error contando puertas invisibles: " + e.getMessage());
+            System.out.println("Usando valor estimado: 74 puertas invisibles");
+            return 74; // Valor por defecto para gran casa
+        }
+        
+        return totalInvisibleDoors;
+    }
+
 }

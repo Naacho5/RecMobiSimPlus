@@ -245,8 +245,6 @@ public class MemoryDataManagementUserDB implements DataManagementUserDB {
 
 		results.close();
 		selectStatement.close();
-		
-		System.out.println("FIN LOAD");
 
 		return info;
 		

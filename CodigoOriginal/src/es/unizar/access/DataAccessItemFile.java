@@ -141,7 +141,9 @@ public class DataAccessItemFile extends DataAccess {
     }
 
     public String getItemRoom(int position) {
-        return getPropertyValue(Literals.ITEM_ROOM + position);
+        String result = getPropertyValue(Literals.ITEM_ROOM + position);
+        return result;
+        // return getPropertyValue(Literals.ITEM_ROOM + position);
     }
 
     public String getVertexLabel(int position) {

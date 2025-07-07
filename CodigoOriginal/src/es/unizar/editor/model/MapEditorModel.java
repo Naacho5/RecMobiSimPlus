@@ -1806,6 +1806,7 @@ public class MapEditorModel {
 			}
 			// Create room with its corners and add it to rooms
 			// Añadido por Nacho Palacio 2025-04-18.
+			System.out.println("Creating room with label: " + roomLabel); //  Añadido por Nacho Palacio 2025-06-29
 			Room r = new Room(ElementIdMapper.convertToRangeId(roomLabel, ElementIdMapper.CATEGORY_ROOM), cornerList); 
 			addRoom(r);
 			
@@ -1901,6 +1902,8 @@ public class MapEditorModel {
 			int numRoom = Integer.valueOf(arrayDoor[2]) + numPrevRooms;
 			
 			Door firstDoor = getRooms().get(numRoom-1).getDoors().get(numDoorInRoom-1);
+
+			System.out.println("Connecting door: " + firstDoor.getVertex_label() + " in room: " + numRoom); // Añadido por Nacho Palacio 2025-06-29
 			// Añadido por Nacho Palacio 2025-04-18.
 			firstDoor.setVertex_label(ElementIdMapper.convertToRangeId(firstDoor.getVertex_label(), ElementIdMapper.CATEGORY_DOOR)); 
 			
@@ -1911,6 +1914,8 @@ public class MapEditorModel {
 			numRoom = Integer.valueOf(arrayDoor[2]) + numPrevRooms;
 			
 			Door secondDoor = getRooms().get(numRoom-1).getDoors().get(numDoorInRoom-1);
+
+			System.out.println("Connecting second door: " + secondDoor.getVertex_label() + " in room: " + numRoom); // Añadido por Nacho Palacio 2025-06-29
 			// Añadido por Nacho Palacio 2025-04-18.
 			secondDoor.setVertex_label(ElementIdMapper.convertToRangeId(secondDoor.getVertex_label(), ElementIdMapper.CATEGORY_DOOR));
 			
@@ -1936,6 +1941,8 @@ public class MapEditorModel {
 			int numStairs = Integer.valueOf(arrayDoorStairs[1]) + numPrevStairs;
 			
 			Stairs stairsConn = getStairs().get(numStairs-1);
+
+			System.out.println("Connecting stairs: " + stairsConn.getVertex_label()); // Añadido por Nacho Palacio 2025-06-29
 			// Añadido por Nacho Palacio 2025-04-18.
 			stairsConn.setVertex_label(ElementIdMapper.convertToRangeId(stairsConn.getVertex_label(), ElementIdMapper.CATEGORY_STAIRS));
 			
@@ -2009,6 +2016,7 @@ public class MapEditorModel {
 			int vertexLabel = (int) accessItemFile.getItemID(item+1); // ItemID will be the common vertex_label for all objects
 			vertexLabel += numExistingItems;
 
+			System.out.println("Creating item with label: " + vertexLabel + " in room: " + roomLabel); // Añadido por Nacho Palacio 2025-06-29
 			// Añadido por Nacho Palacio 2025-04-18.
 			long rangedVertexLabel = ElementIdMapper.convertToRangeId(vertexLabel, ElementIdMapper.CATEGORY_ITEM);
 
