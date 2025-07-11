@@ -125,20 +125,7 @@ public class NearestPath extends Path {
 			// Get the item (most likely of nearest) to visit by non-RS user (without
 			// repeating).
 			if (!ifItemToVisitWasCero) {
-				// Añadido por Nacho Palacio 2025-07-05
-				// System.out.println("🔄 ANTES de getItemToVisit:");
-				// System.out.println("  - startVertex actual: " + startVertex);
-				// System.out.println("  - itemsByRoom.size(): " + itemsByRoom.size());
-				// System.out.println("  - itemsByRoom: " + itemsByRoom.subList(0, Math.min(5, itemsByRoom.size())) + (itemsByRoom.size() > 5 ? "..." : ""));
-
 				itemToVisit = getItemToVisit(startVertex, itemsByRoom, roomVisited, itemVisited, repeated);
-
-				// Añadido por Nacho Palacio 2025-07-05
-				// System.out.println("🔄 DESPUÉS de getItemToVisit:");
-				// System.out.println("  - itemToVisit seleccionado: " + itemToVisit);
-				// System.out.println("  - ¿Es ítem? " + ElementIdMapper.isInCorrectRange(itemToVisit, ElementIdMapper.CATEGORY_ITEM));
-				// System.out.println("  - ¿Es puerta? " + ElementIdMapper.isInCorrectRange(itemToVisit, ElementIdMapper.CATEGORY_DOOR));
-
 				if (itemToVisit == 0) {
 					ifItemToVisitWasCero = true;
 				}

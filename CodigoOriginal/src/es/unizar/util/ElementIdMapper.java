@@ -408,6 +408,8 @@ public class ElementIdMapper {
                 }
 
                 return currentId % 1000 + 2284; // Modificado por Nacho Palacio 2025-06-24
+                // return currentId % 1000 + DOOR_ID_START; // Modificado por Nacho Palacio 2025-06-24
+
 
                 
             case CATEGORY_STAIRS:
@@ -611,6 +613,7 @@ public class ElementIdMapper {
         systemData.minRoomId = minRoomId;
         systemData.maxRoomId = maxRoomId;
 
+
         ROOM_ID_START = 1;
         
         if (totalItems > 0 && minItemId < Long.MAX_VALUE) {
@@ -638,7 +641,7 @@ public class ElementIdMapper {
      * Clase interna para evitar dependencias circulares.
      * AÑADIDA por Nacho Palacio 2025-06-25.
      */
-    private static class SystemRangeData {
+    public static class SystemRangeData {
         public int totalItems = 0;
         public int totalDoors = 0;
         public int totalStairs = 0;
@@ -660,7 +663,11 @@ public class ElementIdMapper {
 
         public long minRoomId = 1;
         public long maxRoomId = 1;
+
+        
     }
+
+    public static SystemRangeData getSystemRangeData() { return systemData; }
 
     /**
      * Métodos auxiliares para reflexión.
@@ -711,13 +718,9 @@ public class ElementIdMapper {
                 } catch (Exception e) {
                     // Continuar con la siguiente habitación
                 }
-            }
-            
-            System.out.println("Total puertas invisibles contadas: " + totalInvisibleDoors);
-            
+            } 
         } catch (Exception e) {
             System.err.println("Error contando puertas invisibles: " + e.getMessage());
-            System.out.println("Usando valor estimado: 74 puertas invisibles");
             return 74; // Valor por defecto para gran casa
         }
         

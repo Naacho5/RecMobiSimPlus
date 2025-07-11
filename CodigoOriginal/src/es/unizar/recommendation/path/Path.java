@@ -242,14 +242,8 @@ public abstract class Path {
 	 * @return A pair of vertices.
 	 */
 	public String getCurrentVertex(long startVertex, long endVertex) {
-		// Añadido por Nacho Palacio 2025-07-05
-		System.out.println("🎯 DEBUG getCurrentVertex:");
-		System.out.println("  - startVertex: " + startVertex);
-		System.out.println("  - endVertex: " + endVertex);
-
 		// Modificado por Nacho Palacio 2025-05-31
 		if (!isValidConnection(startVertex, endVertex)) {
-			System.out.println("  - ❌ Conexión inválida, devolviendo cadena vacía");
         	return "";
 		}
 		
@@ -627,13 +621,6 @@ public abstract class Path {
 	}
 
 	public long getItemToVisit(long startVertex, List<Long> itemsByRoom, List<Integer> roomVisited, List<Long> itemVisited, List<Long> repeated) {
-		// Añadido por Nacho Palacio 2025-07-05
-		// System.out.println("🎯 DEBUG getItemToVisit:");
-		// System.out.println("  - startVertex: " + startVertex);
-		// System.out.println("  - itemsByRoom: " + itemsByRoom);
-		// System.out.println("  - itemVisited: " + itemVisited);
-		// System.out.println("  - repeated: " + repeated);
-
 		long itemToVisit = 0;
 		double initialDistance = 9999999;
 
@@ -643,23 +630,17 @@ public abstract class Path {
 
 		String startVertexLocation = diccionaryItemLocation.get(startVertex);
 
-		// System.out.println("  - startVertexLocation: " + startVertexLocation); // Añadido por Nacho Palacio 2025-7-05
-
 		// Añadido por Nacho Palacio 2025-05-17
 		if (startVertexLocation == null) {
 			// return 0;
-
-			// System.out.println("  - ❌ startVertexLocation es NULL para startVertex=" + startVertex);
         
 			long externalStartVertex = startVertex;
 			if (ElementIdMapper.isInCorrectRange(startVertex, ElementIdMapper.CATEGORY_ITEM)) {
 				externalStartVertex = ElementIdMapper.getBaseId(startVertex);
 				startVertexLocation = diccionaryItemLocation.get(externalStartVertex);
-				// System.out.println("  - Probando con ID externo " + externalStartVertex + ": " + startVertexLocation);
 			}
 			
 			if (startVertexLocation == null) {
-				// System.out.println("  - ❌ No se pudo obtener ubicación, devolviendo 0");
 				return 0;
 			}
 		}
@@ -668,10 +649,6 @@ public abstract class Path {
 		double x1 = Double.valueOf(arrayStartVertex[0]).doubleValue();
 		double y1 = Double.valueOf(arrayStartVertex[1]).doubleValue();
 
-		// Añadido por Nacho Palacio 2025-07-05
-		// System.out.println("  - Coordenadas de inicio: (" + x1 + ", " + y1 + ")");
-    	// System.out.println("  - Evaluando " + itemsByRoom.size() + " elementos candidatos:");
-		
 		/*
 		System.out.println("Repeated: ");
 		for (Long l: repeated) {
@@ -680,26 +657,19 @@ public abstract class Path {
 		System.out.println();
 		*/
 		for (Long endVertex : itemsByRoom) {
-			// Añadido por Nacho Palacio 2025-07-05
-			// System.out.println("    🔍 Evaluando endVertex: " + endVertex);
 			boolean isRepeated = repeated.contains(endVertex) && Collections.frequency(repeated, endVertex) > 5;
-			// System.out.println("      - ¿Repetido más de 5 veces? " + isRepeated);
 
 			if (!(repeated.contains(endVertex) && Collections.frequency(repeated, endVertex) > 5)) {
 				// Añadido por Nacho Palacio 2025-06-28
 				long externalEndVertex = endVertex;
 				if (ElementIdMapper.isInCorrectRange(endVertex, ElementIdMapper.CATEGORY_ITEM)) {
 					externalEndVertex = ElementIdMapper.getBaseId(endVertex);
-					// System.out.println("      - ID externo para ubicación: " + externalEndVertex); // Añadido por Nacho Palacio 2025-07-05
 				} else if (ElementIdMapper.isInCorrectRange(endVertex, ElementIdMapper.CATEGORY_DOOR)) {
 					externalEndVertex = ElementIdMapper.getBaseId(endVertex);
-					// System.out.println("      - ID externo para ubicación (puerta): " + externalEndVertex); // Añadido por Nacho Palacio 2025-07-05
 				}
 
 				String endVertexLocation = diccionaryItemLocation.get(externalEndVertex);
-				System.out.println("      - endVertexLocation: " + endVertexLocation); // Añadido por Nacho Palacio 2025-07-05
 				if (endVertexLocation == null) {
-					// System.out.println("      - ❌ Ubicación NULL, saltando"); // Añadido por Nacho Palacio 2025-07-05
 					continue;
             	}
 
@@ -707,12 +677,6 @@ public abstract class Path {
 				double x2 = Double.valueOf(arrayEndVertex[0]).doubleValue();
 				double y2 = Double.valueOf(arrayEndVertex[1]).doubleValue();
 				double currentDistance = Distance.distanceBetweenTwoPoints(x1, y1, x2, y2);
-
-				// Añadido por Nacho Palacio 2025-07-05
-				// System.out.println("      - Coordenadas: (" + x2 + ", " + y2 + ")");
-				// System.out.println("      - Distancia: " + currentDistance);
-				// System.out.println("      - ¿startVertex != endVertex? " + (startVertex != endVertex));
-				// System.out.println("      - ¿No visitado? " + (!itemVisited.contains(endVertex)));
 	
 				if (currentDistance < initialDistance) {
 					if ((startVertex != endVertex) && (!itemVisited.contains(endVertex))) {
@@ -731,12 +695,6 @@ public abstract class Path {
             	}
 			}
 		}
-
-		// Añadido por Nacho Palacio 2025-07-05
-		// System.out.println("  - 🏆 RESULTADO FINAL:");
-		// System.out.println("    - itemToVisit: " + itemToVisit);
-		// System.out.println("    - distancia: " + closestDistance);
-		// System.out.println("    - de " + itemsByRoom.size() + " candidatos evaluados");
 
 		return itemToVisit;
 	}
@@ -858,15 +816,8 @@ public abstract class Path {
 	public String getToConnectedDoor(long start, long itemToVisit, List<Long> itemVisited, long connectedDoor) {
 		String subpath = "";
 
-		// Añadido por Nacho Palacio 2025-07-05
-		System.out.println("🔧 DEBUG getToConnectedDoor:");
-		System.out.println("  - start: " + start);
-		System.out.println("  - itemToVisit: " + itemToVisit);
-		System.out.println("  - connectedDoor: " + connectedDoor);
-
 		// Añadido por Nacho Palacio 2025-05-31
 		if (connectedDoor <= 0) {
-			System.out.println("  - ❌ connectedDoor <= 0, devolviendo subpath vacío");
 			return subpath;
 		}
 
@@ -881,7 +832,6 @@ public abstract class Path {
 
 		// Añadido por Nacho Palacio 2025-07-05
 		String vertex1 = getCurrentVertex(startVertex, endVertex);
-		System.out.println("  - vertex1: " + vertex1);
 		subpath += vertex1;
 		startVertex = endVertex;
 
@@ -895,7 +845,6 @@ public abstract class Path {
 
 		// Añadido por Nacho Palacio 2025-07-05
 		String vertex2 = getCurrentVertex(startVertex, endVertex);
-		System.out.println("  - vertex2: " + vertex2); // AÑADIR ESTE DEBUG
 		subpath += vertex2;
 		startVertex = endVertex;
 
@@ -970,15 +919,10 @@ public abstract class Path {
 	 * @return The end vertex from sub-path.
 	 */
 	public long getEndVertex(String subpath) {
-		// Añadido por Nacho Palacio 2025-07-05
-		System.out.println("🏁 DEBUG getEndVertex:");
-    	System.out.println("  - subpath recibido: '" + subpath + "'");
-
 		// Añadido por Nacho Palacio 2025-05-17
 		String edges[] = subpath.split(", ");
 
 		if (edges.length == 0) { // Añadido por Nacho Palacio 2025-05-17
-			System.out.println("  - ❌ edges.length == 0, devolviendo 0"); // Añadido por Nacho Palacio 2025-07-05
 			return 0;
 		}
 
@@ -986,13 +930,11 @@ public abstract class Path {
 
 		// Añadido por Nacho Palacio 2025-05-17
 		String[] cleanedEdge = Configuration.simulation.cleanEdge(edge);
-		System.out.println("  - cleanedEdge length: " + cleanedEdge.length); // Añadido por Nacho Palacio 2025-07-05
 		if (cleanedEdge.length < 2) {
 			return 0;
 		}
 
 		long endVertex = Long.valueOf(Configuration.simulation.cleanEdge(edge)[1]).longValue();
-		System.out.println("  - endVertex calculado: " + endVertex); // Añadido por Nacho Palacio 2025-07-05
 		
 		return endVertex;
 	}

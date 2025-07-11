@@ -3033,12 +3033,20 @@ public class Simulation {
 		try {
 			if (ElementIdMapper.isInCorrectRange(doorVertex, ElementIdMapper.CATEGORY_DOOR)) {
 				long baseId = ElementIdMapper.getBaseId(doorVertex);
+
+				// Añadido por Nacho Palacio 2025-07-10
+				ElementIdMapper.SystemRangeData rangeData = ElementIdMapper.getSystemRangeData();
+				long doorStart = rangeData.totalItems + 1;
+				long doorEnd = rangeData.totalItems + rangeData.totalDoors;
+				System.out.println("doorStart: " + doorStart + ", doorEnd: " + doorEnd + ", baseId: " + baseId); 
 				
 				long mappedBaseId;
-				if (baseId >= 284 && baseId <= 495) {
+
+				// Modificado por Nacho Palacio 2025-07-10
+				if (baseId >= doorStart && baseId <= doorEnd) {
 					mappedBaseId = baseId;
 				} else {
-					mappedBaseId = 284 + (baseId % (495 - 284 + 1));
+					mappedBaseId = doorStart + (baseId % (doorEnd - doorStart + 1));
 				}
 				
 				int room = searchDoorInRooms(mappedBaseId);

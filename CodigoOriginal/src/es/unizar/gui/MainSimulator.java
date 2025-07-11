@@ -182,7 +182,7 @@ public class MainSimulator {
 		}
 
 		 // Añadido por Nacho Palacio 2025-06-30
-		configureElementIdMapperStatically();
+		// configureElementIdMapperStatically();
 
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
@@ -1096,7 +1096,7 @@ public class MainSimulator {
 	 * Configura ElementIdMapper usando acceso directo a los archivos.
 	 * Añadido por Nacho Palacio 2025-06-25.
 	 */
-	private static void configureElementIdMapperStatically() {	
+	public static void configureElementIdMapperStatically() {	
 		try {
 			DataAccessGraphFile tempGraphFile = new DataAccessGraphFile(new File(Literals.GRAPH_FLOOR_COMBINED));
 			DataAccessItemFile tempItemFile = new DataAccessItemFile(new File(Literals.ITEM_FLOOR_COMBINED));
