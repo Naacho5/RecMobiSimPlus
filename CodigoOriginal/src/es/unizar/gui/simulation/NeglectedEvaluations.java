@@ -206,7 +206,6 @@ public class NeglectedEvaluations extends javax.swing.JDialog{
 	 * - Select and enable gui again
 	 */
 	private void runNeglectedEvaluations() {
-
 		// Unselect and disable gui
 		MainSimulator.gui.setSelected(false);
 		MainSimulator.gui.setEnabled(false);
@@ -217,7 +216,7 @@ public class NeglectedEvaluations extends javax.swing.JDialog{
 			try {
 				// Read file with simulations' parameters (fileChooser)
 				DataAccessSimulations simulationsAccess = new DataAccessSimulations(this.simulations);
-				simulationsAccess.loadProperties();
+				simulationsAccess.printAllProperties(); // Añadido por Nacho Palacio 2025-04-13.
 				
 				// For every simulation
 				int numSimulations = Integer.valueOf(simulationsAccess.getPropertyValue(Literals.NUMBER_SIMULATIONS)).intValue();
@@ -273,7 +272,7 @@ public class NeglectedEvaluations extends javax.swing.JDialog{
 	 * @param numSimulation			number of simulation to read
 	 */
 	private void createConfiguration(DataAccessSimulations simulationsAccess, int numSimulation) {
-		
+
 		// Parameters for the simulation:
 		// Time available for the user [hour].
 		int timeAvailableUser = Integer.valueOf(simulationsAccess.getPropertyValue(Literals.TIME_AVAILABLE_USER + numSimulation)).intValue();

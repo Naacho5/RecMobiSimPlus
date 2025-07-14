@@ -21,11 +21,14 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.apache.mahout.cf.taste.common.TasteException;
@@ -33,10 +36,12 @@ import org.apache.mahout.cf.taste.common.TasteException;
 import es.unizar.database.DBConnection;
 import es.unizar.database.Database;
 import es.unizar.gui.Configuration;
+import es.unizar.util.ElementIdMapper;
 import es.unizar.util.Literals;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import es.unizar.util.ElementIdMapper;
 
 /**
  * Access to the data from a database. File taken from MOONRISE.jar (and optimized).
@@ -450,18 +455,31 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 	 * @return A HashMap with the number of items by user.
 	 */
 	public Map<Long, Integer> getHashWithNumberItemsByUser() {
-		Map<Long, Integer> hashWithNumberItemsByUser = new TreeMap<Long, Integer>();
+		/* Añadido por Nacho Palacio 2025-04-15. */
+		Map<Long, Integer> hashWithNumberItemsByUser = new TreeMap<>();
+		Connection conn = getConnection();
 		try {
-			
-			// Query
-			PreparedStatement select = getConnection()
-					.prepareStatement("SELECT id_user, count(id_item) AS ItemCount FROM user_item_context GROUP BY id_user");
-			ResultSet resultSet = select.executeQuery();
-			
-			while (resultSet.next()) {
-				hashWithNumberItemsByUser.put(resultSet.getLong("id_user"), resultSet.getInt("ItemCount"));
+			Set<Long> allUserIds = new HashSet<>();
+			try (PreparedStatement stmt = conn.prepareStatement("SELECT id_user FROM user")) {
+				ResultSet rs = stmt.executeQuery();
+				while (rs.next()) {
+					allUserIds.add(rs.getLong("id_user"));
+				}
 			}
 			
+			try (PreparedStatement stmt = conn.prepareStatement(
+					"SELECT id_user, count(id_item) AS ItemCount FROM user_item_context GROUP BY id_user")) {
+				ResultSet rs = stmt.executeQuery();
+				while (rs.next()) {
+					hashWithNumberItemsByUser.put(rs.getLong("id_user"), rs.getInt("ItemCount"));
+				}
+			}
+			
+			for (Long userId : allUserIds) {
+				if (!hashWithNumberItemsByUser.containsKey(userId)) {
+					hashWithNumberItemsByUser.put(userId, 0);
+				}
+			}
 		} catch (SQLException e) {
 			log.log(Level.SEVERE, e.getClass().getName() + ": " + e.getMessage());
 			e.printStackTrace();
@@ -685,6 +703,9 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 	 * @return The item latitude.
 	 */
 	public long getItemLatitude(long itemID) {
+		// Añadido por Nacho Palacio 2025-04-22
+		long externalItemId = convertToExternalId(itemID, ElementIdMapper.CATEGORY_ITEM);
+
 		long latitude = 0;
 		ResultSet resultSet = null;
 		try {
@@ -692,7 +713,7 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 			// Query
 			PreparedStatement select = getConnection()
 					.prepareStatement("SELECT latitude_gps FROM item WHERE id_item= ?");
-			select.setInt(1, (int) itemID);
+			select.setInt(1, (int) externalItemId); // Modificado por Nacho Palacio 2025-04-22
 			resultSet = select.executeQuery();
 			
 			latitude = resultSet.getInt(1);
@@ -712,6 +733,9 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 	 * @return The item longitude.
 	 */
 	public long getItemLongitude(long itemID) {
+		// Añadido por Nacho Palacio 2025-04-22
+		long externalItemId = convertToExternalId(itemID, ElementIdMapper.CATEGORY_ITEM);
+
 		long latitude = 0;
 		ResultSet resultSet = null;
 		try {
@@ -719,7 +743,7 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 			// Query
 			PreparedStatement select = getConnection()
 					.prepareStatement("SELECT longitude_gps FROM item WHERE id_item= ?");
-			select.setInt(1, (int) itemID);
+			select.setInt(1, (int) externalItemId); // Modificado por Nacho Palacio 2025-04-22
 			resultSet = select.executeQuery();
 			
 			latitude = resultSet.getInt(1);
@@ -880,8 +904,13 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 			resultSet = select.executeQuery();
 			
 			while (resultSet.next()) {
-				long itemId = resultSet.getLong(1);
-				list.add(itemId);
+				// long itemId = resultSet.getLong(1);
+				// list.add(itemId);
+
+				// Modificado por Nacho Palacio 2025-04-22
+				long externalItemId = resultSet.getLong(1);
+				long internalItemId = convertToInternalId(externalItemId, ElementIdMapper.CATEGORY_ITEM);
+				list.add(internalItemId);;
 			}
 			
 		} catch (SQLException e) {
@@ -891,4 +920,265 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 		
 		return list;
 	}
+
+		/**
+	 * Añadido por Nacho Palacio 2025-04-14. 
+	 * Ensures the database has enough users for the simulation.
+	 * If there are fewer users than needed, it adds new ones.
+	 * 
+	 * @param totalRequiredUsers The total number of users required for the simulation
+	 * @throws SQLException if a database error occurs
+	 */
+	public boolean ensureRequiredUsers(int totalRequiredUsers) throws SQLException {
+		Connection conn = getConnection();
+		if (conn == null) {
+			System.out.println("Error: Database connection is null");
+			return false;
+		}
+
+		int currentUserCount = 0;
+		
+		// Obtener el número actual de usuarios
+		try (PreparedStatement stmt = conn.prepareStatement("SELECT COUNT(*) FROM user");
+			ResultSet rs = stmt.executeQuery()) {
+			if (rs.next()) {
+				currentUserCount = rs.getInt(1);
+			}
+		}
+		
+		// Si ya hay suficientes usuarios, no hacer nada
+		if (currentUserCount >= totalRequiredUsers) {
+			// System.out.println("Database already has enough users.");
+			return false;
+		}
+		
+		// Comenzar una transacción para insertar los nuevos usuarios
+		conn.setAutoCommit(false);
+		try {
+			// Determinar el último id_ca_profile usado para distribuir perfiles de manera equitativa
+			int[] profileDistribution = {0, 0, 0, 0}; // Para contar cuántos usuarios hay de cada perfil (1-4)
+			
+			try (PreparedStatement profileStmt = conn.prepareStatement("SELECT id_ca_profile, COUNT(*) FROM user GROUP BY id_ca_profile");
+				ResultSet profileRs = profileStmt.executeQuery()) {
+				while (profileRs.next()) {
+					int profileId = profileRs.getInt(1);
+					int count = profileRs.getInt(2);
+					if (profileId >= 1 && profileId <= 4) {
+						profileDistribution[profileId-1] = count;
+					}
+				}
+			}
+			
+			// Insertar nuevos usuarios
+			try (PreparedStatement insertStmt = conn.prepareStatement(
+					"INSERT INTO user (id_user, age, sex, city_numeric, country, id_ca_profile) VALUES (?, ?, ?, ?, ?, ?)")) {
+				
+				for (int id = currentUserCount + 1; id <= totalRequiredUsers; id++) {
+					// Determinar qué perfil usar (el menos representado)
+					int minIndex = 0;
+					for (int i = 1; i < 4; i++) {
+						if (profileDistribution[i] < profileDistribution[minIndex]) {
+							minIndex = i;
+						}
+					}
+					int profileToUse = minIndex + 1; // Perfiles van de 1 a 4
+					profileDistribution[minIndex]++; // Incrementar el contador de este perfil
+					
+					insertStmt.setInt(1, id);
+					insertStmt.setNull(2, java.sql.Types.VARCHAR); // age
+					insertStmt.setNull(3, java.sql.Types.VARCHAR); // sex
+					insertStmt.setInt(4, 0);       // city_numeric
+					insertStmt.setNull(5, java.sql.Types.VARCHAR); // country
+					insertStmt.setInt(6, profileToUse); // id_ca_profile 
+					
+					insertStmt.executeUpdate();
+					// System.out.println("Added user with ID: " + id + " and profile: " + profileToUse);
+				}
+			}
+
+			conn.commit();
+			// System.out.println("Successfully added " + (totalRequiredUsers - currentUserCount) + " new users to the database.");
+		} catch (SQLException e) {
+			// Si hay un error, hacer rollback
+			conn.rollback();
+			System.out.println("Error adding new users: " + e.getMessage());
+			throw e;
+		} finally {
+			// Restaurar autocommit
+			conn.setAutoCommit(true);
+		}
+
+		for (int id = currentUserCount + 1; id <= totalRequiredUsers; id++) {
+			ensureUserHasPreferences(id);
+		}
+		return true;
+	}
+
+		/**
+	 * Añadido por Nacho Palacio 2025-04-14.
+	 * Ensures the user has basic preferences in the database.
+	 * This is important for recommendation algorithms to work.
+	 * 
+	 * @param userId The ID of the user to check/create preferences for
+	 * @throws SQLException if a database error occurs
+	 */
+	public void ensureUserHasPreferences(long userId) throws SQLException {
+		Connection conn = getConnection();
+		if (conn == null) {
+			System.out.println("Error: Database connection is null in ensureUserHasPreferences");
+			return;
+		}
+		
+		String tableName = "user_item_context";
+		
+		int preferenceCount = 0;
+		
+		try (PreparedStatement stmt = conn.prepareStatement(
+				"SELECT COUNT(*) FROM " + tableName + " WHERE id_user = ?")) {
+			stmt.setLong(1, userId);
+			try (ResultSet rs = stmt.executeQuery()) {
+				if (rs.next()) {
+					preferenceCount = rs.getInt(1);
+				}
+			}
+		}
+	
+		if (preferenceCount == 0) {
+			List<Long> items = new ArrayList<>();
+			try (PreparedStatement stmt = conn.prepareStatement(
+					"SELECT id_item FROM item ORDER BY RANDOM() LIMIT 5");
+				 ResultSet rs = stmt.executeQuery()) {
+				while (rs.next()) {
+					items.add(rs.getLong(1));
+				}
+			}
+			
+			List<Integer> contexts = new ArrayList<>();
+			try (PreparedStatement stmt = conn.prepareStatement(
+					"SELECT id_context FROM context LIMIT 3");
+				 ResultSet rs = stmt.executeQuery()) {
+				while (rs.next()) {
+					contexts.add(rs.getInt(1));
+				}
+			}
+			
+			if (contexts.isEmpty()) {
+				System.out.println("No contexts found in the database. Adding default context 1.");
+				contexts.add(1);
+			}
+			
+			if (!items.isEmpty()) {
+				conn.setAutoCommit(false);
+				try {
+					try (PreparedStatement insertStmt = conn.prepareStatement(
+							"INSERT INTO " + tableName + " (id_user, id_item, id_context, rating) VALUES (?, ?, ?, ?)")) {
+						
+						// Usar contexto disponible (por defecto el primero)
+						int contextId = contexts.get(0);
+						
+						for (Long itemId : items) {
+							insertStmt.setLong(1, userId);
+							insertStmt.setLong(2, itemId);
+							insertStmt.setInt(3, contextId);
+							
+							// Rating aleatorio
+							float rating = 2.5f + (float)(Math.random() * 2.5);
+							insertStmt.setFloat(4, rating);
+							
+							insertStmt.executeUpdate();
+						}
+					}
+					conn.commit();
+				} catch (SQLException e) {
+					conn.rollback();
+					System.out.println("Error adding preferences for user " + userId + ": " + e.getMessage());
+					throw e;
+				} finally {
+					conn.setAutoCommit(true);
+				}
+			} else {
+				System.out.println("No items found to add preferences for user " + userId);
+			}
+		}
+	}
+
+	// Añadido por Nacho Palacio 2025-04-22.
+	/**
+	 * Converts an external ID (stored in the database) to an internal ID (used in the model).
+	 * @param externalId ID stored in the database.
+	 * @param category Element category (CATEGORY_ITEM, CATEGORY_DOOR, etc.).
+	 * @return Internal ID in the correct range.
+	 */
+	public long convertToInternalId(long externalId, int category) {
+		return ElementIdMapper.convertToRangeId(externalId, category);
+	}
+
+	/**
+	 * Converts an internal ID (used in the model) to an external ID (to store in the database).
+	 * @param internalId ID used in the model.
+	 * @param category Element category.
+	 * @return External ID to be used in the database.
+	 */
+	public long convertToExternalId(long internalId, int category) {
+		// Si el ID ya está en el rango correcto, extraer el ID base
+		if (ElementIdMapper.isInCorrectRange(internalId, category)) {
+			long rangeStart = 0;
+			switch (category) {
+				case ElementIdMapper.CATEGORY_ITEM:
+					rangeStart = ElementIdMapper.ITEM_ID_START;
+					break;
+				case ElementIdMapper.CATEGORY_DOOR:
+					rangeStart = ElementIdMapper.DOOR_ID_START;
+					break;
+				case ElementIdMapper.CATEGORY_STAIRS:
+					rangeStart = ElementIdMapper.STAIRS_ID_START;
+					break;
+				case ElementIdMapper.CATEGORY_ROOM:
+					rangeStart = ElementIdMapper.ROOM_ID_START;
+					break;
+				case ElementIdMapper.CATEGORY_CORNER:
+					rangeStart = ElementIdMapper.CORNER_ID_START;
+					break;
+				case ElementIdMapper.CATEGORY_SEPARATOR:
+					rangeStart = ElementIdMapper.SEPARATOR_ID_START;
+					break;
+			}
+			
+			// Extraer el ID base, asegurando un valor mínimo de 1
+			long baseId = internalId - rangeStart;
+			return baseId > 0 ? baseId : 1;
+		}
+		
+		// Si no está en el rango correcto, devolverlo tal cual
+		return internalId;
+	}
+
+	/**
+	 * Converts a list of external IDs (stored in the database) to their equivalent internal IDs (used in the model).
+	 * @param externalIds List of external IDs.
+	 * @param category Element category (CATEGORY_ITEM, CATEGORY_DOOR, etc.).
+	 * @return List of internal IDs in the correct ranges.
+	 */
+	public List<Long> convertToInternalIds(List<Long> externalIds, int category) {
+		List<Long> internalIds = new ArrayList<>(externalIds.size());
+		for (Long externalId : externalIds) {
+			internalIds.add(convertToInternalId(externalId, category));
+		}
+		return internalIds;
+	}
+
+	/**
+	 * Converts a list of internal IDs (used in the model) to their equivalent external IDs (to store in the database).
+	 * @param internalIds List of internal IDs.
+	 * @param category Element category.
+	 * @return List of external IDs to be used in the database.
+	 */
+	public List<Long> convertToExternalIds(List<Long> internalIds, int category) {
+		List<Long> externalIds = new ArrayList<>(internalIds.size());
+		for (Long internalId : internalIds) {
+			externalIds.add(convertToExternalId(internalId, category));
+		}
+		return externalIds;
+	}
+
 }

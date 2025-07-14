@@ -10,6 +10,7 @@ import org.apache.mahout.cf.taste.recommender.RecommendedItem;
 
 import es.unizar.dao.DataAccessLayer;
 import es.unizar.database.DBDataModel;
+import es.unizar.util.ElementIdMapper;
 import es.unizar.util.GenericRecommendedItem;
 
 public class RandomRecommendation {
@@ -39,7 +40,7 @@ public class RandomRecommendation {
 
 		List<RecommendedItem> topList = new LinkedList<RecommendedItem>();
 		int posAll = 0;
-		while (topList.size() != howMany && posAll < allPreferences.size()) { // Menor o igual no, si no -> EXCEPCIÓN (y no usa el recomendador)
+		while (topList.size() != howMany && posAll < allPreferences.size()) { // Menor o igual no, si no -> EXCEPCIï¿½N (y no usa el recomendador)
 			
 			String[] array = allPreferences.get(posAll).split(";");
 			long itemID = Long.valueOf(array[1]).longValue();
@@ -51,6 +52,20 @@ public class RandomRecommendation {
 			}
 			posAll++;
 		}
+
+		if (!topList.isEmpty()) {
+			StringBuilder sb = new StringBuilder("Primeros elementos: ");
+			for (int i = 0; i < Math.min(3, topList.size()); i++) {
+				RecommendedItem item = topList.get(i);
+				sb.append("[ID=").append(item.getItemID())
+				.append(", rating=").append(item.getValue())
+				.append(", formato correcto=")
+				.append(ElementIdMapper.isInCorrectRange(item.getItemID(), ElementIdMapper.CATEGORY_ITEM))
+				.append("] ");
+			}
+		}
+
+		
 		return topList;
 	}
 }

@@ -1,0 +1,27 @@
+#Sat Jan 22 17:16:16 CET 2022
+room_corner_xy_12_1=449.0, 158.0
+room_corner_xy_6_1=377.0, 229.0
+room_corner_xy_14_1=181.0, 387.0
+room_corner_xy_8_1=237.0, 18.0
+map_height=500
+room_door_xy_2_1=473.0, 442.0
+number_room=1
+room_corner_xy_1_1=51.0, 374.0
+map_width=500
+map_pixel_represents_meters=1.0
+room_corner_xy_3_1=143.0, 14.0
+room_corner_xy_11_1=302.0, 191.0
+number_room_stairs=0
+room_number_corner_1=15
+room_label_1=1
+room_corner_xy_5_1=369.0, 347.0
+room_number_door_1=2
+room_corner_xy_13_1=478.0, 465.0
+room_corner_xy_7_1=249.0, 236.0
+room_door_xy_1_1=472.0, 457.0
+room_corner_xy_15_1=142.0, 97.0
+room_corner_xy_9_1=462.0, 15.0
+room_corner_xy_2_1=40.0, 198.0
+room_corner_xy_10_1=309.0, 70.0
+room_corner_xy_4_1=220.0, 289.0
+name=MAP

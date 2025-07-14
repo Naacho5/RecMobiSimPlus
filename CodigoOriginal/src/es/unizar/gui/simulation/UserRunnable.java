@@ -49,7 +49,6 @@ public class UserRunnable implements Runnable { // , Cloneable
 
 	@Override
 	public void run() {
-		
 		/* Logger configuration */
 		log.setUseParentHandlers(false);
 		// Set logger's level
@@ -116,6 +115,7 @@ public class UserRunnable implements Runnable { // , Cloneable
 
 				// It initializes the initial position of users.
 				Configuration.simulation.initializeUsers();
+
 				// UserRunnable "user" list is null; Same for MainMuseumSimulator
 				MainSimulator.floor.addUsersToFloorGraph(Configuration.simulation.userList);
 				
@@ -131,7 +131,6 @@ public class UserRunnable implements Runnable { // , Cloneable
 				
 				// Print time when finished initializing users and dbs
 				Configuration.simulation.currentTime();
-				
 			} else {
 				
 				long initialTime = 0, finalTime = 0;

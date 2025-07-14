@@ -40,6 +40,7 @@ import org.apache.mahout.cf.taste.model.PreferenceArray;
 import com.google.common.collect.Lists;
 
 import es.unizar.dao.DataAccessLayer;
+import es.unizar.util.ElementIdMapper;
 
 /**
  * Data model extracted from a database. File taken from MOONRISE.jar (and optimized).
@@ -68,29 +69,62 @@ public class DBDataModel extends AbstractDataModel {
 		dataAccess = new DataAccessLayer(dbURL, db);
 		this.dbURL = dbURL;
 		//this.userIDs = dataAccess.getUserIDs();
+
+		boolean usersAdded = dataAccess.ensureRequiredUsers(numUsers); // Añadido por Nacho Palacio 2025-04-14.
+
+		/* Añadido por Nacho Palacio 2025-04-15. */
+		if (usersAdded) {
+			try {
+				Thread.sleep(1000); // Esperar 1 segundo
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		}
+
 		long[] correctUserIDs = dataAccess.getUserIDs();
+
+		/* Añadido por Nacho Palacio 2025-04-14. */
+		if (numUsers > correctUserIDs.length) {
+			numUsers = correctUserIDs.length; // Limita a los usuarios disponibles
+		}
+
 		this.userIDs = Arrays.copyOfRange(correctUserIDs, 0, numUsers);
 		
 		this.preferenceFromUsers = new FastByIDMap<PreferenceArray>();
 		PreferenceArray preferenceArray = null;
 		Map<Long, Integer> hashWithNumberItemsByUser = dataAccess.getHashWithNumberItemsByUser();
+		
 		for (Map.Entry<Long, Integer> entry : hashWithNumberItemsByUser.entrySet()) {
 			long userIDKey = entry.getKey();
-			List<String> listByUser = dataAccess.getUserItemRatingFrom(userIDKey);
-			int numberOfItems = hashWithNumberItemsByUser.get(userIDKey);
-			preferenceArray = new GenericUserPreferenceArray(numberOfItems);
-			for (int k = 0; k < listByUser.size(); k++) {
-				String user_item_rating = listByUser.get(k);
-				String array[] = user_item_rating.split(";");
-				long userID = Long.valueOf(array[0]).longValue();
-				long itemID = Long.valueOf(array[1]).longValue();
-				float rating = Float.valueOf(array[2]).floatValue();
-				preferenceArray.setUserID(k, userID);
-				preferenceArray.setItemID(k, itemID);
-				preferenceArray.setValue(k, rating);
+			int numberOfItems = entry.getValue(); // Añadido por Nacho Palacio 2025-04-15.
+
+			if (numberOfItems > 0) { // Añadido por Nacho Palacio 2025-04-15. Modificado por Nacho Palacio 2025-05-08, antes == 0
+				List<String> listByUser = dataAccess.getUserItemRatingFrom(userIDKey);
+				// int numberOfItems = hashWithNumberItemsByUser.get(userIDKey);
+				preferenceArray = new GenericUserPreferenceArray(numberOfItems);
+
+				// Modificado por Nacho Palacio 2025-05-08.
+				for (int k = 0; k < listByUser.size(); k++) {
+					String user_item_rating = listByUser.get(k);
+					String array[] = user_item_rating.split(";");
+					long userID = Long.valueOf(array[0]).longValue();
+					long itemID = Long.valueOf(array[1]).longValue();
+					float rating = Float.valueOf(array[2]).floatValue();
+					
+					// Convertir los IDs externos a internos
+					long internalUserID = userID; // Los IDs de usuario ya están en el formato correcto
+					long internalItemID = ElementIdMapper.convertToRangeId(itemID, ElementIdMapper.CATEGORY_ITEM);
+					
+					preferenceArray.setUserID(k, internalUserID);
+					preferenceArray.setItemID(k, internalItemID);
+					preferenceArray.setValue(k, rating);
+				}
+			} else { 
+				preferenceArray = new GenericUserPreferenceArray(0);
 			}
 			this.preferenceFromUsers.put(userIDKey, preferenceArray);
 		}
+
 		FastByIDMap<Collection<Preference>> prefsForItems = new FastByIDMap<Collection<Preference>>();
 		FastIDSet itemIDSet = new FastIDSet();
 		int currentCount = 0;
@@ -98,22 +132,25 @@ public class DBDataModel extends AbstractDataModel {
 		float minPrefValue = Float.POSITIVE_INFINITY;
 		for (Map.Entry<Long, PreferenceArray> entry : preferenceFromUsers.entrySet()) {
 			PreferenceArray prefs = entry.getValue();
-			prefs.sortByItem();
-			for (Preference preference : prefs) {
-				long itemID = preference.getItemID();
-				itemIDSet.add(itemID);
-				Collection<Preference> prefsForItem = prefsForItems.get(itemID);
-				if (prefsForItem == null) {
-					prefsForItem = Lists.newArrayListWithCapacity(2);
-					prefsForItems.put(itemID, prefsForItem);
-				}
-				prefsForItem.add(preference);
-				float value = preference.getValue();
-				if (value > maxPrefValue) {
-					maxPrefValue = value;
-				}
-				if (value < minPrefValue) {
-					minPrefValue = value;
+
+			if (prefs.length() > 0) {
+				prefs.sortByItem();
+				for (Preference preference : prefs) {
+					long itemID = preference.getItemID();
+					itemIDSet.add(itemID);
+					Collection<Preference> prefsForItem = prefsForItems.get(itemID);
+					if (prefsForItem == null) {
+						prefsForItem = Lists.newArrayListWithCapacity(2);
+						prefsForItems.put(itemID, prefsForItem);
+					}
+					prefsForItem.add(preference);
+					float value = preference.getValue();
+					if (value > maxPrefValue) {
+						maxPrefValue = value;
+					}
+					if (value < minPrefValue) {
+						minPrefValue = value;
+					}
 				}
 			}
 			if (++currentCount % 10000 == 0) {
@@ -193,6 +230,7 @@ public class DBDataModel extends AbstractDataModel {
 		for (int i = 0; i < size; i++) {
 			result.add(prefs.getItemID(i));
 		}
+
 		return result;
 	}
 
@@ -236,13 +274,21 @@ public class DBDataModel extends AbstractDataModel {
 	 */
 	@Override
 	public Float getPreferenceValue(long userID, long itemID) throws TasteException {
+		// Modificado por Nacho Palacio 2025-05-08.
+		long internalItemID = ElementIdMapper.isInCorrectRange(itemID, ElementIdMapper.CATEGORY_ITEM) 
+                         ? itemID 
+                         : ElementIdMapper.convertToRangeId(itemID, ElementIdMapper.CATEGORY_ITEM);
+    
+
 		PreferenceArray prefs = getPreferencesFromUser(userID);
 		int size = prefs.length();
 		for (int i = 0; i < size; i++) {
-			if (prefs.getItemID(i) == itemID) {
+			if (prefs.getItemID(i) == internalItemID) {
 				return prefs.getValue(i);
 			}
 		}
+
+		
 		return null;
 	}
 
@@ -532,5 +578,24 @@ public class DBDataModel extends AbstractDataModel {
 	 */
 	public DataAccessLayer getDataAccessLayer(){
 		return dataAccess;
+	}
+
+	// Añadido por Nacho Palacio 2025-05-08.
+	/**
+	 * Convierte un ID externo de ítem a su formato interno.
+	 * @param externalItemId El ID externo del ítem
+	 * @return El ID interno correspondiente
+	 */
+	public static long convertExternalToInternalItemId(long externalItemId) {
+		return ElementIdMapper.convertToRangeId(externalItemId, ElementIdMapper.CATEGORY_ITEM);
+	}
+
+	/**
+	 * Convierte un ID interno de ítem a su formato externo.
+	 * @param internalItemId El ID interno del ítem
+	 * @return El ID externo correspondiente
+	 */
+	public static long convertInternalToExternalItemId(long internalItemId) {
+		return ElementIdMapper.getBaseId(internalItemId);
 	}
 }

@@ -31,6 +31,7 @@ import es.unizar.editor.view.EditVisitableObjectView;
 import es.unizar.editor.view.MapEditorView;
 import es.unizar.editor.view.MapPanelListener;
 import es.unizar.util.EditorLiterals;
+import es.unizar.util.ElementIdMapper;
 import es.unizar.util.PointIntersectsLine;
 
 /**
@@ -191,8 +192,8 @@ public class MapEditorController implements ActionListener, FocusListener, MapPa
 			switch (model.getSelected()) {
 				case corner:
 					// Create corner and add it to model
-//					Corner corner = new Corner(null, model.getNumCorners() + model.getNumCurrentRoomCorners(), p);
-					Corner corner = new Corner(null, model.getNumCurrentRoomCorners()+1, p);
+					Corner corner = new Corner(null, model.getNextCornerId(), p); // Modificado por Nacho Palacio 2025-04-18
+					
 					if (!model.addCornerToCurrentRoomCorners(corner)) {
 						view.showMessage(JOptionPane.WARNING_MESSAGE, "COULDN'T ADD CORNER TO MAP");
 					}
@@ -201,7 +202,7 @@ public class MapEditorController implements ActionListener, FocusListener, MapPa
 				    
 				case door:
 					// Create door and add it to model
-					Door door = new Door(null, model.getNumDoors()+1, p);
+					Door door = new Door(null, model.getNextDoorId(), p); // Modificado por Nacho Palacio 2025-04-18
 					
 					// Add room to door if it is inside a room
 					Room doorRoom = model.isInsideRoom(p, -1);
@@ -216,7 +217,8 @@ public class MapEditorController implements ActionListener, FocusListener, MapPa
 					
 				case stairs:
 					// Create corner and add it to model
-					Stairs stairs = new Stairs(null, model.getNumStairs()+1, p);
+					Stairs stairs = new Stairs(null, model.getNextStairsId(), p); // Modificado por Nacho Palacio 2025-04-18
+					
 					if (!model.addStairs(stairs)) {
 						view.showMessage(JOptionPane.WARNING_MESSAGE, "COULDN'T ADD STAIRS TO MAP");
 					}
@@ -258,8 +260,11 @@ public class MapEditorController implements ActionListener, FocusListener, MapPa
 									if (roomFirstCorner.getSubRoomsFromCorner(cornerClicked).equals(roomFirstCorner.getSubRoomsFromCorner(model.getCurrentRoomSeparatorCorner())) 
 											&& !roomFirstCorner.areConsecutive(model.getCurrentRoomSeparatorCorner(), cornerClicked)) {
 										
-										RoomSeparator rs = new RoomSeparator(roomFirstCorner, model.getNumRoomSeparators()+1,
-												model.getCurrentRoomSeparatorCorner(), cornerClicked);
+										// RoomSeparator rs = new RoomSeparator(roomFirstCorner, model.getNumRoomSeparators()+1,
+										// 		model.getCurrentRoomSeparatorCorner(), cornerClicked);
+										
+										RoomSeparator rs = new RoomSeparator(roomFirstCorner, model.getNextSeparatorId(),
+										model.getCurrentRoomSeparatorCorner(), cornerClicked); // Modificado por Nacho Palacio 2025-04-18
 										
 										if(model.addRoomSeparator(rs)) {
 											model.setCurrentRoomSeparatorCorner(null);
@@ -289,7 +294,7 @@ public class MapEditorController implements ActionListener, FocusListener, MapPa
 					
 				case visitable:
 					// Create item and add it to model
-					Item itemVisitable = new Item(null, model.getNumItems()+1, p);
+					Item itemVisitable = new Item(null, model.getNextItemId(), p); // Modificado por Nacho Palacio 2025-04-18
 					
 					Room r = model.isInsideRoom(p, -1);
 					if (r != null) {
@@ -536,7 +541,8 @@ public class MapEditorController implements ActionListener, FocusListener, MapPa
 					model.eraseDrawableList(new ArrayList<>(model.getCurrentRoomCorners()));
 					
 					// Create a new room with the current room corners
-					Room room = new Room(model.getNumRooms() + 1, model.getCurrentRoomCorners());
+					Room room = new Room(model.getNumRooms()+1, model.getCurrentRoomCorners()); // Modificado por Nacho Palacio 2025-04-18
+
 					if(model.addRoom(room)) {// (this adds the corners to persist to drawable elements)
 						model.emptyCurrentRoomCorners();
 					}
@@ -612,15 +618,15 @@ public class MapEditorController implements ActionListener, FocusListener, MapPa
 	                break;
 	            case EditorLiterals.ERASER:
 	                model.setToolClicked(ToolButtons.eraser);
-	                // model.eraseCurrentRoomCorners(); ¿¿¿¿ERASE SELECTION WHEN PRESSING OTHER BUTTON OR WHEN DOING THAT ACTION?????
+	                // model.eraseCurrentRoomCorners(); ï¿½ï¿½ï¿½ï¿½ERASE SELECTION WHEN PRESSING OTHER BUTTON OR WHEN DOING THAT ACTION?????
 	                break;
 	            case EditorLiterals.CURSOR:
 	                model.setToolClicked(ToolButtons.cursor);
-	                // model.eraseCurrentRoomCorners(); ¿¿¿¿ERASE SELECTION WHEN PRESSING OTHER BUTTON OR WHEN DOING THAT ACTION?????
+	                // model.eraseCurrentRoomCorners(); ï¿½ï¿½ï¿½ï¿½ERASE SELECTION WHEN PRESSING OTHER BUTTON OR WHEN DOING THAT ACTION?????
 	                break;
 	            case EditorLiterals.MOVER:
 	                model.setToolClicked(ToolButtons.mover);
-	                // model.eraseCurrentRoomCorners(); ¿¿¿¿ERASE SELECTION WHEN PRESSING OTHER BUTTON OR WHEN DOING THAT ACTION?????
+	                // model.eraseCurrentRoomCorners(); ï¿½ï¿½ï¿½ï¿½ERASE SELECTION WHEN PRESSING OTHER BUTTON OR WHEN DOING THAT ACTION?????
 	                break;
 	        }
 		}
@@ -631,22 +637,22 @@ public class MapEditorController implements ActionListener, FocusListener, MapPa
 	                break;
 	            case EditorLiterals.DOOR:
 	            	model.setSelected(IconButtons.door);
-	            	// model.eraseCurrentRoomCorners(); ¿¿¿¿ERASE SELECTION WHEN PRESSING OTHER BUTTON OR WHEN PAINTING THAT BUTTON'S OBJECT?????
+	            	// model.eraseCurrentRoomCorners(); ï¿½ï¿½ï¿½ï¿½ERASE SELECTION WHEN PRESSING OTHER BUTTON OR WHEN PAINTING THAT BUTTON'S OBJECT?????
 	                break;
 	            case EditorLiterals.STAIRS:
 	            	model.setSelected(IconButtons.stairs);
-	            	// model.eraseCurrentRoomCorners(); ¿¿¿¿ERASE SELECTION WHEN PRESSING OTHER BUTTON OR WHEN PAINTING THAT BUTTON'S OBJECT?????
+	            	// model.eraseCurrentRoomCorners(); ï¿½ï¿½ï¿½ï¿½ERASE SELECTION WHEN PRESSING OTHER BUTTON OR WHEN PAINTING THAT BUTTON'S OBJECT?????
 	                break;
 	            case EditorLiterals.ROOMSEPARATOR:
 	            	model.setSelected(IconButtons.roomSeparator);
-	            	// model.eraseCurrentRoomCorners(); ¿¿¿¿ERASE SELECTION WHEN PRESSING OTHER BUTTON OR WHEN PAINTING THAT BUTTON'S OBJECT?????
+	            	// model.eraseCurrentRoomCorners(); ï¿½ï¿½ï¿½ï¿½ERASE SELECTION WHEN PRESSING OTHER BUTTON OR WHEN PAINTING THAT BUTTON'S OBJECT?????
 	                break;
 	            default:
 	            	if (sourceName.matches(EditorLiterals.VISITABLE + "_(.*)$")) {
 	            		model.setSelected(IconButtons.visitable);
 	            		model.setVisitableSelected(sourceName.split("\\_")[2]);
 	            	}
-	            	// model.eraseCurrentRoomCorners(); ¿¿¿¿ERASE SELECTION WHEN PRESSING OTHER BUTTON OR WHEN PAINTING THAT BUTTON'S OBJECT?????
+	            	// model.eraseCurrentRoomCorners(); ï¿½ï¿½ï¿½ï¿½ERASE SELECTION WHEN PRESSING OTHER BUTTON OR WHEN PAINTING THAT BUTTON'S OBJECT?????
 	                break;
 	        }
 		}

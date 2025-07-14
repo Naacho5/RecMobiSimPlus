@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -21,6 +22,7 @@ import es.unizar.access.DataAccessRoomFile;
 import es.unizar.gui.Configuration;
 import es.unizar.gui.MainSimulator;
 import es.unizar.util.Distance;
+import es.unizar.util.ElementIdMapper;
 import es.unizar.util.Literals;
 
 /**
@@ -155,8 +157,35 @@ public class GraphForSpecialUser {
 			String door2 = array[1];
 			long d1 = dataAccesGraphFile.getDoorOfRoom(door1);
 			long d2 = dataAccesGraphFile.getDoorOfRoom(door2);
+
 			location1 = MainSimulator.floor.diccionaryItemLocation.get(d1);
+
+			// Añadido por Nacho Palacio 2025-06-10
+			if (location1 == null) {		
+				if (ElementIdMapper.isInCorrectRange(d1, ElementIdMapper.CATEGORY_DOOR)) {
+					long d1External = ElementIdMapper.getBaseId(d1);
+					location1 = MainSimulator.floor.diccionaryItemLocation.get(d1External);
+				}
+				
+				if (location1 == null) {
+					continue;
+				}
+			}
+
 			location2 = MainSimulator.floor.diccionaryItemLocation.get(d2);
+
+			// Añadido por Nacho Palacio 2025-06-10
+			if (location2 == null) {
+				if (ElementIdMapper.isInCorrectRange(d2, ElementIdMapper.CATEGORY_DOOR)) {
+					long d2External = ElementIdMapper.getBaseId(d2);
+					location2 = MainSimulator.floor.diccionaryItemLocation.get(d2External);
+				}
+				
+				if (location2 == null) {
+					continue;
+				}
+			}
+
 			weight = Distance.distanceBetweenTwoPoints(Double.valueOf(location1.split(", ")[0]).doubleValue(), Double.valueOf(location1.split(", ")[1]).doubleValue(),
 					Double.valueOf(location2.split(", ")[0]).doubleValue(), Double.valueOf(location2.split(", ")[1]).doubleValue());
 			graph.setEdgeWeight(graph.addEdge(d1, d2), weight);
@@ -171,8 +200,35 @@ public class GraphForSpecialUser {
 			String invisibleDoor2 = array[1];
 			long invD1 = dataAccesGraphFile.getInvisibleDoorOfSubroom(invisibleDoor1);
 			long invD2 = dataAccesGraphFile.getInvisibleDoorOfSubroom(invisibleDoor2);
+
 			location1 = MainSimulator.floor.diccionaryItemLocation.get(invD1);
+
+			// Añadido por Nacho Palacio 2025-06-10
+			if (location1 == null) {		
+				if (ElementIdMapper.isInCorrectRange(invD1, ElementIdMapper.CATEGORY_DOOR)) {
+					long invD1External = ElementIdMapper.getBaseId(invD1);
+					location1 = MainSimulator.floor.diccionaryItemLocation.get(invD1External);
+				}
+				
+				if (location1 == null) {
+					continue;
+				}
+			}
+
 			location2 = MainSimulator.floor.diccionaryItemLocation.get(invD2);
+
+			// Añadido por Nacho Palacio 2025-06-10
+			if (location2 == null) {		
+				if (ElementIdMapper.isInCorrectRange(invD2, ElementIdMapper.CATEGORY_DOOR)) {
+					long invD2External = ElementIdMapper.getBaseId(invD2);
+					location2 = MainSimulator.floor.diccionaryItemLocation.get(invD2External);
+				}
+				
+				if (location2 == null) {
+					continue;
+				}
+			}
+
 			weight = Distance.distanceBetweenTwoPoints(Double.valueOf(location1.split(", ")[0]).doubleValue(), Double.valueOf(location1.split(", ")[1]).doubleValue(),
 					Double.valueOf(location2.split(", ")[0]).doubleValue(), Double.valueOf(location2.split(", ")[1]).doubleValue());
 			graph.setEdgeWeight(graph.addEdge(invD1, invD2), weight);
@@ -191,22 +247,82 @@ public class GraphForSpecialUser {
 		double weight = 0;
 		String location1 = null;
 		String location2 = null;
-		
+
 		//System.out.println("Vertices related size: " + verticesRelated.size());
 		// Add edges: items and doors:
 		for (int k = 0; k < verticesRelated.size(); k++) {
 			long v1 = verticesRelated.get(k);
 			for (int j = k + 1; j < verticesRelated.size(); j++) {
 				long v2 = verticesRelated.get(j);
+
+				boolean v1ExistsInDict = MainSimulator.floor.diccionaryItemLocation.containsKey(v1);
+				boolean v2ExistsInDict = MainSimulator.floor.diccionaryItemLocation.containsKey(v2);
+				
+				if (!v1ExistsInDict) {
+					if (ElementIdMapper.isInCorrectRange(v1, ElementIdMapper.CATEGORY_ITEM)) {
+						long v1External = ElementIdMapper.getBaseId(v1);;
+					} else if (ElementIdMapper.isInCorrectRange(v1, ElementIdMapper.CATEGORY_DOOR)) {
+						long v1External = ElementIdMapper.getBaseId(v1);
+					}
+				}
+				
+				if (!v2ExistsInDict) {				
+					if (ElementIdMapper.isInCorrectRange(v2, ElementIdMapper.CATEGORY_ITEM)) {
+						long v2External = ElementIdMapper.getBaseId(v2);
+					} else if (ElementIdMapper.isInCorrectRange(v2, ElementIdMapper.CATEGORY_DOOR)) {
+						long v2External = ElementIdMapper.getBaseId(v2);
+					}
+				}
+
 				//System.out.println("Vertices related: " + v1 + ", " + v2);
 				location1 = MainSimulator.floor.diccionaryItemLocation.get(v1);
 				location2 = MainSimulator.floor.diccionaryItemLocation.get(v2);
+
+				// Añadido por Nacho Palacio 2025-06-09
+				if (location1 == null) {
+					if (ElementIdMapper.isInCorrectRange(v1, ElementIdMapper.CATEGORY_ITEM)) {
+						long v1External = ElementIdMapper.getBaseId(v1);
+						location1 = MainSimulator.floor.diccionaryItemLocation.get(v1External);
+					} else if (ElementIdMapper.isInCorrectRange(v1, ElementIdMapper.CATEGORY_DOOR)) {
+						long v1External = ElementIdMapper.getBaseId(v1);
+						location1 = MainSimulator.floor.diccionaryItemLocation.get(v1External);
+					}
+				}
+
+				if (location2 == null) {
+					if (ElementIdMapper.isInCorrectRange(v2, ElementIdMapper.CATEGORY_ITEM)) {
+						long v2External = ElementIdMapper.getBaseId(v2);
+						location2 = MainSimulator.floor.diccionaryItemLocation.get(v2External);
+					} else if (ElementIdMapper.isInCorrectRange(v2, ElementIdMapper.CATEGORY_DOOR)) {
+						long v2External = ElementIdMapper.getBaseId(v2);
+						location2 = MainSimulator.floor.diccionaryItemLocation.get(v2External);
+					} else {
+						for (int categoryTest = 1; categoryTest <= 10; categoryTest++) {
+							if (ElementIdMapper.isInCorrectRange(v2, categoryTest)) {
+								long v2Alternative = ElementIdMapper.getBaseId(v2);
+								String testLocation = MainSimulator.floor.diccionaryItemLocation.get(v2Alternative);
+								if (testLocation != null) {
+									location2 = testLocation;
+									break;
+								}
+							}
+						}
+					}
+				}
+
+				if (location1 == null) {
+					return;
+				}
+				
+				if (location2 == null) {
+					return;
+				}
+
 				//System.out.println(location1 + " - " + location2);
 				weight = Distance.distanceBetweenTwoPoints(Double.valueOf(location1.split(", ")[0]).doubleValue(), Double.valueOf(location1.split(", ")[1]).doubleValue(),
 						Double.valueOf(location2.split(", ")[0]).doubleValue(), Double.valueOf(location2.split(", ")[1]).doubleValue());
 				graph.setEdgeWeight(graph.addEdge(v1, v2), weight);
 				
-				// System.out.println(v1 + " connected to " + v2 + " (" + weight + ")");
 			}
 		}
 		
@@ -226,8 +342,28 @@ public class GraphForSpecialUser {
 			BufferedReader br = new BufferedReader(new FileReader(new File(path)));
 			String line = null;
 			while ((line = br.readLine()) != null) {
-				String[] array = line.split(", ");
-				paths.add(Arrays.asList(array));
+
+				// Añadido por Nacho Palacio 2025-04-24
+				if (line.trim().isEmpty()) {
+					// Crear una ruta simple por defecto para líneas vacías
+					List<String> defaultPath = new ArrayList<>();
+					defaultPath.add("(1 : 2)");  // Arista ficticia mínima
+					paths.add(defaultPath);
+				}
+				else {
+					String[] array = line.split(", ");
+					// Convertir IDs externos a internos en las rutas leídas
+					List<String> internalPathEdges = new ArrayList<>();
+					for (String edge : array) {
+						if (!edge.trim().isEmpty()) {
+							internalPathEdges.add(convertEdgeIdsToInternal(edge));
+						}
+					}
+					paths.add(internalPathEdges);
+				}
+
+				// String[] array = line.split(", ");
+				// paths.add(Arrays.asList(array));
 			}
 			// Add RS user paths with null information:
 			for (int i = 0; i < Configuration.simulation.getNumberOfSpecialUser(); i++) {
@@ -318,5 +454,31 @@ public class GraphForSpecialUser {
 			i++;
 		}
 		return currentRoom;
+	}
+
+	// Añadido por Nacho Palacio 2025-04-24
+	private String convertEdgeIdsToInternal(String edge) {
+		String[] vertices = edge.replace("(", "").replace(")", "").split(" : ");
+		if (vertices.length == 2) {
+			long v1 = Long.parseLong(vertices[0]);
+			long v2 = Long.parseLong(vertices[1]);
+			
+			int numberOfItems = accessItemFile.getNumberOfItems();
+
+			if (v1 > 0 && v1 <= numberOfItems) {
+				v1 = ElementIdMapper.convertToRangeId(v1, ElementIdMapper.CATEGORY_ITEM);
+			} else if (v1 > numberOfItems) {
+				v1 = ElementIdMapper.convertToRangeId(v1, ElementIdMapper.CATEGORY_DOOR);
+			}
+			
+			if (v2 > 0 && v2 <= numberOfItems) {
+				v2 = ElementIdMapper.convertToRangeId(v2, ElementIdMapper.CATEGORY_ITEM);
+			} else if (v2 > numberOfItems) {
+				v2 = ElementIdMapper.convertToRangeId(v2, ElementIdMapper.CATEGORY_DOOR);
+			}
+			
+			return "(" + v1 + " : " + v2 + ")";
+		}
+		return edge;
 	}
 }

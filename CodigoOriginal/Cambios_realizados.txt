@@ -1,0 +1,43 @@
+El principal problema consistía en que para un mismo ítem, había ids internos y externos.
+Esto generaba inconsistencias al interactuar entre diferentes módulos del sistema, como el modelo, la base de datos y los algoritmos de recomendación.
+
+### Solución implementada: Clase ElementIdMapper
+Se creó la clase "ElementIdMapper" como un sistema centralizado para gestionar la coherencia entre IDs internos y externos. Esta clase permite:
+- Definir rangos específicos de IDs para cada categoría de elementos (habitaciones, ítems, puertas, etc.).
+- Convertir entre IDs internos y externos mediante métodos como "convertToRangeId" y "getBaseId".
+- Validar si un ID pertenece al rango correcto de su categoría con el método "isInCorrectRange".
+
+### Impacto en el resto del proyecto
+La implementación de ElementIdMapper afectó a varias partes del sistema:
+
+1. Clases del modelo ("Room", "Item", "Door"...)**:
+   - Se modificaron los constructores para convertir los IDs al rango correcto al crear elementos.
+   - Ejemplo: "ElementIdMapper.convertToRangeId(vertex_label, ElementIdMapper.CATEGORY_ITEM)".
+
+2. Clases de generación de caminos ("Path", "RandomPath", "NearestPath"...)**:
+   - Se validan los IDs antes de procesarlos para asegurarse de que pertenecen a la categoría correcta.
+   - Ejemplo: "ElementIdMapper.isInCorrectRange(itemToVisit, ElementIdMapper.CATEGORY_ITEM)".
+
+3. Clases de acceso a datos ("DataAccessLayer", "DBDataModel")**:
+   - Se añadieron métodos para convertir entre IDs internos y externos al interactuar con la base de datos.
+   - Ejemplo: "convertToInternalId" y "convertToExternalId".
+
+4. Clases del editor de mapas ("MapEditorModel", "MapEditorController"...)**:
+   - Se asignan IDs consistentes al crear elementos en el editor.
+   - Se implementó lógica para reasignar IDs al cargar o guardar mapas.
+
+5. Clases de recomendación ("RandomRecommendation", "TrajectoryPostfilteringBasedRecommendation"...)**:
+   - Se validan y convierten los IDs al generar recomendaciones o procesar trayectorias.
+
+-----------------------------------------------------
+
+El segundo problema consistía en que el simulador no funcionaba si se usaban más de 176 usuarios.
+Esto ocurría porque al aumentar el número de usuarios, el sistema intentaba incluir usuarios que no
+existían en la base de datos empezando por el ID = 0.
+
+Asimismo, se añadió un método encargado de añadir a la base de datos los usuarios que hicieran falta 
+para llegar a los definidos en la constante TOTAL_USERS en Literals.java.
+Este método es "DataAccessLayer.ensureRequiredUsers()", que se llama en el constructor de "DBDataModel".
+
+Además, también se ha creado a función "DataAccessLayer.ensureUserHasPreferences()", para asegurar que los 
+nuevos usuarios añadidos tengan preferencias en la base de datos.

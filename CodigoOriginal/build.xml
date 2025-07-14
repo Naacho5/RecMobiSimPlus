@@ -6,8 +6,8 @@
 		value="../../../../../../../../../eclipse/java-photon/eclipse/" />
 		
 	<property name="debuglevel" value="source,lines,vars" />
-	<property name="target" value="1.8" />
-	<property name="source" value="1.8" />
+	<property name="target" value="21" />
+	<property name="source" value="21" />
 	<property name="projectName" value="RecMobiSim" />
 	<property name="build.dir" location="bin" />
 	<property name="dist.dir" location="dist" />

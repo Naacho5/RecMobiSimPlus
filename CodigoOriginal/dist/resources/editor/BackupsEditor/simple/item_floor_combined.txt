@@ -1,0 +1,5 @@
+#Thu Dec 23 14:35:21 CET 2021
+number_items=0
+name=MAP
+vertex_dimension_width=10
+vertex_dimension_height=10

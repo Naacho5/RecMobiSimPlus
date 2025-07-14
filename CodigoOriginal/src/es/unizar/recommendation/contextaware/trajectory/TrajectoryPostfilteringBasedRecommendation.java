@@ -4,12 +4,28 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.mahout.cf.taste.common.TasteException;
+import org.apache.mahout.cf.taste.impl.common.FastIDSet;
+import org.apache.mahout.cf.taste.impl.common.LongPrimitiveIterator;
+import org.apache.mahout.cf.taste.impl.neighborhood.ThresholdUserNeighborhood;
+import org.apache.mahout.cf.taste.neighborhood.UserNeighborhood;
 import org.apache.mahout.cf.taste.recommender.RecommendedItem;
+import org.apache.mahout.cf.taste.similarity.UserSimilarity;
 import org.jgrapht.alg.DijkstraShortestPath;
 
+import org.apache.mahout.cf.taste.impl.common.FastIDSet;
+import org.apache.mahout.cf.taste.impl.neighborhood.ThresholdUserNeighborhood;
+import org.apache.mahout.cf.taste.impl.similarity.PearsonCorrelationSimilarity;
+import org.apache.mahout.cf.taste.model.PreferenceArray;
+import org.apache.mahout.cf.taste.neighborhood.UserNeighborhood;
+import org.apache.mahout.cf.taste.similarity.UserSimilarity;
+
 import es.unizar.database.DBDataModel;
+import es.unizar.recommendation.RandomRecommendation;
 import es.unizar.recommendation.contextaware.PostfilteringBasedRecommendation;
 import es.unizar.util.Distance;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * Recommendations based in Post-filtering and trajectory.
@@ -38,26 +54,104 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 	// Para P2P
 	@Override
 	public List<RecommendedItem> recommend(long userID, int howMany) throws TasteException {
+		try {
+			LongPrimitiveIterator userIdsIterator = dataModel.getUserIDs();
+			List<Long> userIdsList = new ArrayList<>();
+			while (userIdsIterator.hasNext()) {
+				userIdsList.add(userIdsIterator.nextLong());
+			}
+			long[] userIds = new long[userIdsList.size()];
+			for (int i = 0; i < userIdsList.size(); i++) {
+				userIds[i] = userIdsList.get(i);
+			}
+
+			// Verificar si el usuario actual existe en el modelo
+			boolean exists = false;
+			for (long id : userIds) {
+				if (id == userID) {
+					exists = true;
+					break;
+				}
+			}
+
+		} catch (Exception e) {
+			System.out.println("Error al obtener usuarios: " + e.getMessage());
+		}
+
+		// Verificar vecinos y similitud con otros usuarios
+		try {
+			if (getRecommender() instanceof org.apache.mahout.cf.taste.recommender.UserBasedRecommender) {
+				// Probar diferentes umbrales de similitud
+				try {
+					UserSimilarity similarity = new PearsonCorrelationSimilarity(dataModel);
+					double[] thresholds = {0.5, 0.3, 0.2, 0.1, 0.05, 0.01};
+					
+					for (double testThreshold : thresholds) {
+						UserNeighborhood neighborhood = 
+							new ThresholdUserNeighborhood(testThreshold, similarity, dataModel);
+						
+						long[] neighbors = neighborhood.getUserNeighborhood(userID);
+						
+						if (neighbors != null && neighbors.length > 0) {
+							break;
+						}
+					}
+				} catch (Exception e) {
+					System.out.println("Error al probar umbrales: " + e.getMessage());
+				}
+			}
+		} catch (Exception e) {
+			System.out.println("Error general: " + e.getMessage());
+		}
+
+
 		// Traditional recommendation
 		List<RecommendedItem> candidateItemsFromRecommender = getRecommender().recommend(userID, howMany);
 
 		// Filtra los items teniendo en cuenta un umbral de rating
 		List<RecommendedItem> candidateItemsFiltered = listRecommendedItemThreshold(candidateItemsFromRecommender);
 
+		/* Añadido por Nacho Palacio 2025-04-14. */
+		if (candidateItemsFiltered == null || candidateItemsFiltered.isEmpty()) {
+            return candidateItemsFromRecommender;
+        }
+
 		// Las lista previamente filtrada se lleva a una lista de entero con solo los items a recomendar
 		List<Long> candidateItemsToLong = listRecommendedItemToListLong(candidateItemsFiltered);
+					 
+		/* Añadido por Nacho Palacio 2025-04-14. */
+		if (candidateItemsToLong.isEmpty()) {
+            return candidateItemsFiltered;
+        }
 
 		// Candidate items from graph
 		long initialVertex = getItemClosestToTheFrontDoor(door, candidateItemsToLong);
+
 		List<Long> pathHamiltonianCycle = getTrajectoryStrategy().getOptimalTrajectory(candidateItemsToLong, initialVertex);
 		// Los items son ordenados teniendo en cuenta una trayectoria
 		List<Long> sortedItems = sortingItemsBeginBy(initialVertex, pathHamiltonianCycle);
 
 		// Obtiene un path
-		finalPath = ShortestTrajectoryStrategy.preprocessingPath(door, DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, door, initialVertex).toString());
-		convertRecommendItemsToPath(sortedItems);
+		// finalPath = ShortestTrajectoryStrategy.preprocessingPath(door, DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, door, initialVertex).toString());
+		// convertRecommendItemsToPath(sortedItems);
 
-		// Obtiene nuevamente la lista de RecommendedItem pero teniendo en cuenta la trayectoria.
+		/* Añadido por Nacho Palacio 2015-04-14. */
+		try {
+            finalPath = ShortestTrajectoryStrategy.preprocessingPath(door, 
+                      DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, door, initialVertex).toString());
+            
+            // Si finalPath es nulo, devuelve los items filtrados sin trayectoria
+            if (finalPath == null) {;
+                return candidateItemsFiltered;
+            }
+            
+            convertRecommendItemsToPath(sortedItems);
+        } catch (Exception e) {
+            // System.out.println("Error calculating path: " + e.getMessage());
+            return candidateItemsFiltered;
+        }
+
+		// Obtiene la lista de RecommendedItem teniendo en cuenta la trayectoria.
 		List<RecommendedItem> finalRecommendedItems = new LinkedList<>();
 		for (int i = 0; i < sortedItems.size(); i++) {
 			long itemGraph = sortedItems.get(i);
@@ -74,6 +168,7 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 				}
 			}
 		}
+
 		return finalRecommendedItems;
 	}
 

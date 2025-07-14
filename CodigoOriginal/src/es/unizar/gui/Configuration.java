@@ -82,6 +82,7 @@ public class Configuration extends javax.swing.JDialog {
 		setTitle("Configuration");
 
 		initComponents();
+
 		pack();
 
 		// Center in the parent
@@ -262,6 +263,8 @@ public class Configuration extends javax.swing.JDialog {
 					checkAlgorithmAndNetworkParams(recommendationAlgorithm, thresholdRecommendation, thresholdSimilarity, howMany, networkType, 
 							propagationStrategy, probabilityUserDisobedience, numberVoteReceived)) {
 				
+				MainSimulator.configureElementIdMapperStatically(); // Añadido por Nacho Palacio 2025-07-10
+				
 				// Build a floor panel but including the users.
 //				MainSimulator.floorPanelCombined = new FloorPanelCombined(MainSimulator.DRAWING_WIDTH, MainSimulator.DRAWING_HEIGHT);				
 //				MainSimulator.frmSimulator.getContentPane().add(MainSimulator.floorPanelCombined);
@@ -307,6 +310,8 @@ public class Configuration extends javax.swing.JDialog {
 				//verifyResolution(timeForIteration, screenRefreshTime, latencyOfTransmission);
 				System.out.println("end simulation");
 				// Generate a path for each non-RS user.
+
+				/* Añadido por Nacho Palacio 2025-04-13. */
 				if (ifGenerateuserPathCheckBox.isSelected()) {
 					Path strategy = null;
 					// Apply the specified path strategy in the Configuration form.
@@ -336,6 +341,8 @@ public class Configuration extends javax.swing.JDialog {
 					}
 				}
 				
+				// MainSimulator.configureElementIdMapperStatically(); // Añadido por Nacho Palacio 2025-07-10
+
 				System.out.println("end");
 				this.dispose();
 			} else {
@@ -653,6 +660,10 @@ public class Configuration extends javax.swing.JDialog {
 							Literals.ROOM_FLOOR_COMBINED = f.getAbsolutePath();
 							Literals.ITEM_FLOOR_COMBINED = f.getAbsolutePath();
 						}
+						
+						MainSimulator.configureElementIdMapperStatically(); // Añadido por Nacho Palacio 2025-07-10
+
+
 						//System.out.println("2: "+Literals.GRAPH_FLOOR_COMBINED);
 						
 					default:
@@ -976,13 +987,23 @@ public class Configuration extends javax.swing.JDialog {
 		pathStrategyComboBox = new JComboBox();
 		pathStrategyComboBox.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				/* Añadido por Nacho Palacio 2025-04-12. */
+				String selectedStrategy = (String) pathStrategyComboBox.getSelectedItem();
+				String fileName = "";
+				int numberOfNonSpecialUsers = Integer.parseInt(numberOfNonSpecialUsersTextField.getText());
+				// Final añadido
+
 				if (pathStrategyComboBox.getSelectedItem().equals("Completely-random (FULLY-RAND)")) {
+					fileName = "rand_non_special_user_paths_" + numberOfNonSpecialUsers + ".txt";
 					nonSpecialUserPathsJTextField.setText("rand_non_special_user_paths_" + numberOfNonSpecialUsersTextField.getText() + ".txt");
 				} else if (pathStrategyComboBox.getSelectedItem().equals("Exhaustive visit (ALL)")) {
+					fileName = "all_non_special_user_paths_" + numberOfNonSpecialUsers + ".txt";
 					nonSpecialUserPathsJTextField.setText("all_non_special_user_paths_" + numberOfNonSpecialUsersTextField.getText() + ".txt");
 				} else if (pathStrategyComboBox.getSelectedItem().equals("Near POI (NPOI)")) {
+					fileName = "npoi_non_special_user_paths_" + numberOfNonSpecialUsers + ".txt";
 					nonSpecialUserPathsJTextField.setText("npoi_non_special_user_paths_" + numberOfNonSpecialUsersTextField.getText() + ".txt");
 				} else if (pathStrategyComboBox.getSelectedItem().equals("Select a strategy")) {
+					fileName = "";
 					nonSpecialUserPathsJTextField.setText("");
 				}
 			}
