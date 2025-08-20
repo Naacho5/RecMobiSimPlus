@@ -51,6 +51,7 @@ import es.unizar.access.DataAccessItemFile;
 import es.unizar.controller.AppListener;
 import es.unizar.controller.Controller;
 import es.unizar.editor.MapEditor;
+import es.unizar.epidemic.EpidemicConfiguration;
 import es.unizar.graph.GraphManager;
 import es.unizar.gui.graph.DrawFloorGraph;
 import es.unizar.gui.simulation.NeglectedEvaluations;
@@ -679,6 +680,14 @@ public class MainSimulator {
 		startMenuItem = new JMenuItem("Start");
 		startMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
+
+				es.unizar.epidemic.statistics.SimulationShutdownHandler.setupShutdownHook();
+				// Statistics
+				es.unizar.epidemic.statistics.EpidemicStatistics stats = 
+					es.unizar.epidemic.statistics.EpidemicStatistics.getInstance();
+				stats.startSimulation(Configuration.simulation.getNumberOfUser(), 
+									EpidemicConfiguration.getInstance().getInitialInfectedUsers());
+
 				printConsole("Simulation started", Level.WARNING);
 				// Create and execute the threads.
 				reloadInfoTables();
@@ -782,6 +791,56 @@ public class MainSimulator {
 		// Separator.
 		JSeparator separator_simulation_2 = new JSeparator();
 		simulationMenu.add(separator_simulation_2);
+
+		// TEST MODELOS (Añadido por Nacho Palacio 2025-08-03)
+		JMenuItem testModelMenuItem1 = new JMenuItem("Test Aerosol Model1");
+		testModelMenuItem1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				// Ejecutar tests en un hilo separado para no bloquear la GUI
+				new Thread(() -> {
+					MainSimulator.printConsole("Ejecutando tests del modelo de aerosoles 1...", Level.WARNING);
+					es.unizar.epidemic.tests.AerosolTransmissionModel1Test.main(new String[]{});
+				}).start();
+			}
+		});
+		testModelMenuItem1.setFont(new Font("SansSerif", Font.PLAIN, 16));
+		simulationMenu.add(testModelMenuItem1);
+
+		JMenuItem testModelMenuItem2 = new JMenuItem("Test Aerosol Model2");
+		testModelMenuItem2.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				// Ejecutar tests en un hilo separado para no bloquear la GUI
+				new Thread(() -> {
+					MainSimulator.printConsole("Ejecutando tests del modelo de aerosoles 2...", Level.WARNING);
+					es.unizar.epidemic.tests.AerosolTransmissionModel2Test.main(new String[]{});
+				}).start();
+			}
+		});
+		testModelMenuItem2.setFont(new Font("SansSerif", Font.PLAIN, 16));
+		simulationMenu.add(testModelMenuItem2);
+
+		JMenuItem testModelMenuItem3 = new JMenuItem("Test Simple Proximity Model");
+		testModelMenuItem3.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				// Ejecutar tests en un hilo separado para no bloquear la GUI
+				new Thread(() -> {
+					MainSimulator.printConsole("Ejecutando tests del modelo simple...", Level.WARNING);
+					es.unizar.epidemic.tests.SimpleProximityModelTest.main(new String[]{});
+				}).start();
+			}
+		});
+		testModelMenuItem3.setFont(new Font("SansSerif", Font.PLAIN, 16));
+		simulationMenu.add(testModelMenuItem3);
+
+
+
+
+		// Separator adicional (opcional, para separar el test de la configuración)
+		JSeparator separator_simulation_test = new JSeparator();
+		simulationMenu.add(separator_simulation_test);
+
+
+
 		// Configuration menu item.
 		configurationMenuItem = new JMenuItem("Configuration");
 		configurationMenuItem.setFont(new Font("SansSerif", Font.PLAIN, 16));
@@ -1177,6 +1236,11 @@ public class MainSimulator {
 	
 		return data;
 	}
+
+	// Añadido por Nacho Palacio 2025-07-20
+	public static DrawFloorGraph getDrawFloorGraph() {
+        return floor;
+    }
 
 	/**
 	 * Clase para almacenar datos de rangos del sistema.

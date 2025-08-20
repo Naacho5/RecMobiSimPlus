@@ -48,6 +48,8 @@ import es.unizar.dao.SQLiteDataManagementQueueDB;
 import es.unizar.dao.SQLiteDataManagementUserDB;
 import es.unizar.database.DBDataModel;
 import es.unizar.database.Database;
+import es.unizar.epidemic.HealthStatus;
+import es.unizar.epidemic.UserEpidemicExtension;
 import es.unizar.gui.Configuration;
 import es.unizar.gui.MainSimulator;
 import es.unizar.gui.UserInfo;
@@ -86,7 +88,7 @@ public class Simulation {
 	private double screenRefreshTime; // =1; *Would change if "timeForIteration" is modified
 	private double timeForThePaths; // =1;
 	private double userVelocity; // =3;
-	private double kmToPixel; // =6597;
+	public double kmToPixel; // =6597;
 	private int ttl; // Propagation of items: =4000; // Options: 180; // 900; //1800; //2700; seconds
 	private int timeOnStairs; // =60;
 	private int minimumTimeToUpdateRecommendation; // =30;
@@ -112,6 +114,7 @@ public class Simulation {
 	private String propagationStrategy; // ="Opportunistic";
 	private double probabilityUserDisobedience; // =0.4;
 	private int numberVoteReceived; // =40;
+	public es.unizar.epidemic.EpidemicSimulationManager epidemicManager; // Añadido por Nacho Palacio 2025-07-15
 
 	// =========== Auxiliary parameters================================:
 	// Number total of users.
@@ -188,6 +191,8 @@ public class Simulation {
 	public Set<Long> idUsersWatchingSameItem;
 	public List<DistancesBetweenUsersAndTime> distancesBetweenUsers;
 	public List<DistancesBetweenUsersAndTime> completedDistancesBetweenUsers;
+
+	
 	
 	// =========== Logger ================================:
 	public static final Logger log = Logger.getLogger(Literals.DEBUG_MESSAGES);
@@ -388,6 +393,8 @@ public class Simulation {
 		
 		distancesBetweenUsers = new ArrayList<DistancesBetweenUsersAndTime>();
 		completedDistancesBetweenUsers = new ArrayList<DistancesBetweenUsersAndTime>();
+
+		this.epidemicManager = new es.unizar.epidemic.EpidemicSimulationManager(); // Añadido por Nacho Palacio 2025-07-15
 	}
 
 	/**
@@ -479,7 +486,9 @@ public class Simulation {
 			}
 		}
 
+		epidemicManager.initializeEpidemicSystem(getAllUsers()); // Añadido por Nacho Palacio 2025-07-15
 	}
+	
 
 	/**
 	 * Generate non-RS user paths.
@@ -1490,6 +1499,23 @@ public class Simulation {
 		log.log(Level.INFO, " -TIEMPO TOTAL BUCLE: " + (finalTimeTotal - initialTimeTotal));
 		
 		initialTimeTotal = System.currentTimeMillis();
+
+		// Añadido por Nacho Palacio 2025-07-15
+    	epidemicManager.updateEpidemicState(getAllUsers(), getCurrentIteration());
+
+		// Añadido por Nacho Palacio 2025-07-30
+		if (areAllUsersInfected()) {
+			System.out.println("Todos los usuarios infectados");
+
+			MainSimulator.userRunnable.setRunning(false);
+			MainSimulator.printConsole("[Simulación finalizada - Todos los usuarios están infectados]", Level.WARNING);
+			MainSimulator.printConsole("Estadísticas finales: " + getInfectionStatistics(), Level.WARNING);
+			currentTime();
+			
+			disconnect();
+			return; 
+		}
+
 		// The criterion for stopping the simulation is that all users have finished their time.
 		if (countFinishedSpecialUsers >= getNumberOfSpecialUser()) {
 			// The thread is killed because the visit is over.
@@ -3038,7 +3064,6 @@ public class Simulation {
 				ElementIdMapper.SystemRangeData rangeData = ElementIdMapper.getSystemRangeData();
 				long doorStart = rangeData.totalItems + 1;
 				long doorEnd = rangeData.totalItems + rangeData.totalDoors;
-				System.out.println("doorStart: " + doorStart + ", doorEnd: " + doorEnd + ", baseId: " + baseId); 
 				
 				long mappedBaseId;
 
@@ -3092,5 +3117,96 @@ public class Simulation {
 		return 0;
 	}
 
+	/**
+	 * Gets all users in the simulation
+	 * Añadido por Nacho Palacio 2025-07-15
+	 */
+	public List<User> getAllUsers() {
+		return new ArrayList<>(userList);
+	}
+
+	/**
+	 * Gets current iteration number
+	 * Añadido por Nacho Palacio 2025-07-15
+	 */
+	private int getCurrentIteration() {
+		return (int) ((System.currentTimeMillis() - startTime) / 1000);
+	}
+
+	// Añadido por Nacho Palacio 2025-07-15
+	public es.unizar.epidemic.EpidemicSimulationManager getEpidemicManager() {
+		return epidemicManager;
+	}
+
+	/**
+	 * Verifies if all users are infected
+	 * Añadido por Nacho Palacio 2025-07-30
+	 */
+	private boolean areAllUsersInfected() {
+		int totalUsers = userList.size();
+		int infectedUsers = 0;
+		
+		for (User user : userList) {
+			UserEpidemicExtension extension = user.getEpidemicExtension();
+			if (extension != null && isUserInfected(extension)) {
+				infectedUsers++;
+			}
+		}
+
+		boolean allInfected = (infectedUsers >= totalUsers);
+		
+		if (infectedUsers > totalUsers * 0.8) {
+			MainSimulator.printConsole(String.format("📊 Progreso epidémico: %d/%d usuarios infectados (%.1f%%)", 
+									infectedUsers, totalUsers, (infectedUsers * 100.0) / totalUsers), Level.INFO);
+		}
+		
+		return allInfected;
+	}
+
+	/**
+	 * Verifies if a user is infected
+	 * Añadido por Nacho Palacio 2025-07-30
+	 */
+	private boolean isUserInfected(UserEpidemicExtension extension) {
+		HealthStatus status = extension.getHealthStatus();
+		return status == HealthStatus.EXPOSED ||
+			status == HealthStatus.INFECTIOUS_ASYMPTOMATIC ||
+			status == HealthStatus.INFECTIOUS_SYMPTOMATIC ||
+			status == HealthStatus.SUPER_SPREADER;
+	}
+
+	/**
+	 * Gets infection statistics of all users
+	 * Añadido por Nacho Palacio 2025-07-30
+	 */
+	private String getInfectionStatistics() {
+		int susceptible = 0, exposed = 0, infectiousAsymp = 0, infectiousSymp = 0, superSpreader = 0, recovered = 0;
+		
+		for (User user : userList) {
+			UserEpidemicExtension extension = user.getEpidemicExtension();
+			if (extension != null) {
+				switch (extension.getHealthStatus()) {
+					case SUSCEPTIBLE:
+						susceptible++;
+						break;
+					case EXPOSED:
+						exposed++;
+						break;
+					case INFECTIOUS_ASYMPTOMATIC:
+						infectiousAsymp++;
+						break;
+					case INFECTIOUS_SYMPTOMATIC:
+						infectiousSymp++;
+						break;
+					case SUPER_SPREADER:
+						superSpreader++;
+						break;
+				}
+			}
+		}
+
+		return String.format("S:%d, E:%d, I_A:%d, I_S:%d, SS:%d", 
+							susceptible, exposed, infectiousAsymp, infectiousSymp, superSpreader, recovered);
+	}
 
 }

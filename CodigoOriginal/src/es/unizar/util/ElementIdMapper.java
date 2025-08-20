@@ -21,13 +21,13 @@ import es.unizar.editor.model.Stairs;
 public class ElementIdMapper {
     
     // ID ranges for each type of element
-    public static long ROOM_ID_START = 0;          // 1-999
-    public static long ITEM_ID_START = 1000;       // 1000-1999
-    public static long DOOR_ID_START = 2000;       // 2000-2999
-    public static long STAIRS_ID_START = 3000;     // 3000-3999
-    public static long CORNER_ID_START = 4000;     // 4000-4999
-    public static long SEPARATOR_ID_START = 5000;  // 5000-5999
-    public static long USER_ID_START = 6000;       // 6000-6999
+    public static long ROOM_ID_START = 0;
+    public static long ITEM_ID_START = 1000;
+    public static long DOOR_ID_START = 2000;
+    public static long STAIRS_ID_START = 3000;
+    public static long CORNER_ID_START = 4000;
+    public static long SEPARATOR_ID_START = 5000;
+    public static long USER_ID_START = 6000;
 
     // Añadido por Nacho Palacio 2025-06-03
     // Flags

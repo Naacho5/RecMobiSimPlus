@@ -1,0 +1,82 @@
+# Parámetros del modelo de riesgo por aerosoles (Lelieveld et al., 2020)
+# Adaptado para implementación programática estilo modelParameters.java
+
+# ----- PARÁMETROS DE LA EPISODIO INFECCIOSO / VIRUS -----
+infectious_episode_days         = 2.0          # Dura la máxima infectividad, típicamente 2 días (Tabla 1)
+virus_lifetime_hours            = 1.7          # Vida media (e-fold) en aerosol, ~1.7 h (Tabla 1, sección 3.4)
+virus_decay_rate_h              = 0.59         # 1 / lifetime (opcional, puedes calcularlo en código)
+aerosol_diameter_um             = 5.0          # Diámetro medio aerosol húmedo al emitirse (Tabla 1, sección 3.1)
+
+# ----- PARÁMETROS DE GENERACIÓN DE AEROSOLES/VIRUS -----
+concentration_breathing_cm3     = 0.1          # Nº partículas/cm³ al respirar (Tabla 1, 3.2)
+concentration_speaking_cm3      = 1.1          # Nº partículas/cm³ al hablar (Tabla 1, 3.2)
+speaking_breathing_ratio        = 0.10         # Fracción de tiempo hablando (Tabla 1, 3.2)
+respiratory_rate_Lmin           = 10.0         # Tasa de respiración emitida, L/min (Tabla 1, 3.2)
+
+# ----- CARGA VIRAL (según tipo) -----
+viral_load_high_cm3             = 5e8          # Copias RNA/cm³ "muy infecciosos" (Tabla 1, 3.3)
+viral_load_super_cm3            = 5e9          # Copias RNA/cm³ "super-infecciosos" (Tabla 1, 3.3)
+
+# ----- PARÁMETROS DE DEPOSICIÓN E INFECCIÓN -----
+deposition_probability          = 0.5          # Probabilidad de depósito en el pulmón (Tabla 1, 3.5)
+infective_dose_d50              = 316          # D50: dosis necesaria para infectar al 50%, RNA copias (Tabla 1, 3.7)
+
+# ----- PARÁMETROS DEL ENTORNO -----
+room_area_m2                    = 60.0         # Área espacio (aula típica) (Tabla 1, 2)
+room_height_m                   = 3.0          # Altura techo (Tabla 1, 2)
+room_volume_m3                  = 180.0        # Calculado: área x altura
+room_length_m                   = 10.0         # Solo si quieres definir dimensiones (Tabla 2, opcional)
+room_width_m                    = 6.0          # Solo si quieres definir dimensiones (Tabla 2, opcional)
+temperature_C                   = 20.0         # °C (Tabla 1, 3.4)
+relative_humidity_pct           = 50           # % (Tabla 1, 3.4)
+background_co2_ppm              = 415          # Valor estándar global
+
+# ----- VENTILACIÓN -----
+ventilation_rate_passive_h      = 0.35         # Ventilación pasiva/hora (Tabla 1, 3.3)
+ventilation_rate_active_h       = 2.0          # Ventilación activa/hora (Tabla 1, 3)
+hepa_rate_h                     = 9.0          # Filtrado HEPA (Tabla 3, opcional según escenario)
+
+# ----- PARÁMETROS DE OCUPANTES -----
+subjects_in_room                = 25           # Personas totales presentes (Tabla 1, 2)
+infective_people                = 1            # Por defecto 1 en ejemplos de Lelieveld
+fraction_immune                 = 0.0          # Fracción de inmunes (campo opcional para escenarios mixtos)
+susceptible_people              = 24           # Calculado: total - infectivos (opcional si necesitas explícito)
+
+# ----- MASCARILLAS -----
+mask_efficiency_inh             = 0.3          # Eficiencia de filtrado, inhalación (Tabla 1, sección 3.6)
+mask_efficiency_exh             = 0.4          # Eficiencia de filtrado, exhalación (Tabla 1, sección 3.6)
+mask_efficiency_total           = 0.7          # Suma aproximada inh+exh (Tabla 1). Usa este campo si no separas.
+mask_type                      = "surgical"    # Opcional, solo etiqueta descriptiva
+
+# ----- EVENTO / TIEMPO DE EXPOSICIÓN -----
+exposure_duration_hours         = 6.0          # Horas/día exposición (Tabla 2; ejemplo escuela 2x6=12h)
+num_exposure_days               = 2            # Número de días de exposición
+
+# ----- CAMPOS AVANZADOS / OPCIONALES -----
+hepa_filter_on                  = false        # Si quieres activar el escenario E (Tabla 3)
+scenario_label                  = "clase"      # Etiqueta descriptiva del escenario
+
+# ----- CAMPOS DE SALIDA (no modificar, calcular) -----
+# net_emission_rate_quanta        = [calcular]
+# avg_quanta_concentration        = [calcular]
+# quanta_inhaled_per_person       = [calcular]
+# infection_probability           = [calcular]
+
+# Opcional: riesgos adicionales
+# hospitalization_rate           = [opcional]
+# death_rate                     = [opcional]
+
+# Opcional: CO2 como indicador
+# avg_co2_ppm                   = [calcular/estimado]
+
+
+Fórmulas empleadas:
+
+1. Probabilidad de infección de una copia viral individual (PRNA, en %)
+PRNA_percent = (1 - 10^(log10(0.5) / D50)) * 100
+
+2. Riesgo de infección de una persona tras inhalar Depisode copias virales
+Ri_percent = [1 - (1 - PRNA_percent / 100)^Depisode] * 100
+
+3. Riesgo de al menos una infección en un grupo de n personas (todas susceptibles), cada uno inhalando Depisode copias
+R_group_percent = [1 - (1 - PRNA_percent / 100)^(Depisode * n)] * 100

@@ -27,6 +27,8 @@ public class User {
 	public boolean hasFinishedVisit;
 	
 	public mxCell userCell;
+
+	private es.unizar.epidemic.UserEpidemicExtension epidemicExtension; // Añadido por Nacho Palacio 2025-07-15
 	
 	// Move user X_DISPLACEMENT pixels in order to not collapse with item while watching it.
 	private static final int X_DISPLACEMENT = -5; // Move user a bit to the left
@@ -38,9 +40,22 @@ public class User {
 		this.drawImage = true;
 		this.isSpecialUser = isSpecialUser;
 		this.hasFinishedVisit = false;
+
+		// Añadido por Nacho Palacio 2025-07-15
+		this.epidemicExtension = new es.unizar.epidemic.UserEpidemicExtension();
 		
 		createUserCell();
 	}
+
+	// Añadido por Nacho Palacio 2025-07-15
+	public es.unizar.epidemic.UserEpidemicExtension getEpidemicExtension() {
+        return epidemicExtension;
+    }
+    
+    public void setEpidemicExtension(es.unizar.epidemic.UserEpidemicExtension epidemicExtension) {
+        this.epidemicExtension = epidemicExtension;
+    }
+	
 
 	/**
 	 * The user's next move in the current room.
