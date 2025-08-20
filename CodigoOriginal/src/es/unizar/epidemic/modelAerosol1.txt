@@ -1,0 +1,110 @@
+Environmental Parameters
+
+Length of room:                 80 ft (24.4 m)
+Width of room:                  50 ft (15.3 m)
+Area:                           4000 sq ft (372 m²)
+Height:                         18 ft (5.5 m)
+Volume:                         2043 m³
+
+Pressure:                       0.95 atm
+Temperature:                    20 °C
+Relative Humidity:             50 %
+Background CO2 Outdoors:      415 ppm
+
+Duration of event:            480 min (8.0 h)
+Repetitions of event:         21 times
+
+Ventilation w/ outside air:     3 h⁻¹
+Decay rate of the virus:        0.62 h⁻¹
+Deposition to surfaces:         0.3 h⁻¹
+Additional control measures:    0 h⁻¹
+Total first-order loss rate:    3.92 h⁻¹
+
+Ventilation rate per person:    22.7 L/s/person
+
+Parameters related to people and activity in the room
+
+Total people present:           75
+Infective people:               1
+Fraction immune:                6%
+Susceptible people:             69.56
+
+Density (area/person):          53 sq ft/person
+Density (people/m²):            0.20 persons/m²
+Density (volume/person):        27.2 m³/person
+
+Breathing rate (susceptibles):  0.72 m³/h
+Relative breathing rate factor: 2.50
+CO2 emission rate (1 person):   0.00675 L/s
+CO2 emission rate (all):        0.5719 L/s
+
+Basic quanta exhalation rate:   18.6 quanta/h
+Q enhancement (variant):        2.5
+Q enhancement (activity):       5.0
+Quanta exhalation (infected):   232.5 quanta/h
+
+Exhalation mask efficiency:     50%
+Fraction of people w/ masks:    100%
+Inhalation mask efficiency:     30%
+
+COVID-19 Disease Parameters
+
+Probability of being infective: 0.10%
+Hospitalization rate:          10%
+Death rate:                     1%
+
+CONDITIONAL result for ONE EVENT
+
+Net emission rate:             116.25 quanta/h
+Avg Quanta Concentration:       0.01 quanta/m³
+Quanta inhaled per person:      0.06
+
+Individual Risk:
+  - Infection probability:      5.5%
+  - Hospitalization:            0.6%
+  - Death:                      0.1%
+  - Risk vs. car travel death:  918x
+
+Group Risk:
+  - COVID cases:                3.83
+  - Hospitalizations:           0.38
+  - Deaths:                     0.04
+
+Airborne Infection Risk (Peng et al., 2022)
+H parameter:                   0.29 h²·person/m³
+Hr parameter:                 0.004 h²/m³
+
+CO2 as Risk Indicator
+
+Avg CO2 mixing ratio:          722 ppm
+Avg CO2 concentration:         0.56 g/m³
+Exhaled CO2 re-inhaled (g):     3.22 g
+Exhaled CO2 re-inhaled (ppm·h): 2575.64
+Exhaled CO2 re-inhaled (%CO₂·h): 0.2576
+Infection risk per %CO₂·h:      0.214 %
+CO2 for 1% infection (1 hr):    861 ppm
+
+ABSOLUTE result for ONE EVENT
+
+Expected infective persons:     0.071
+
+Individual Risk:
+  - Infection probability:      0.41%
+  - Hospitalization:            0.04%
+  - Death:                      0.00%
+  - Risk vs. car travel death:  68x
+
+Group Risk:
+  - COVID cases:                0.28
+  - Hospitalizations:           0.03
+  - Deaths:                     0.00
+
+CO2 for 1% infection (abs.):    6451 ppm
+
+ABSOLUTE result for MULTIPLE EVENTS
+
+Individual Risk (across events):
+  - Infection probability:      8.21%
+  - Hospitalization:            0.82%
+  - Death:                      0.08%
+  - Risk vs. car travel death:  65x

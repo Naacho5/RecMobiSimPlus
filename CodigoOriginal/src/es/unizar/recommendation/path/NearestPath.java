@@ -32,10 +32,7 @@ public class NearestPath extends Path {
 	 */
 	@Override
 	public String generatePath(long startVertex) {
-		System.out.println("NearestPath.generatePath: Start vertex: " + startVertex); // Añadido por Nacho Palacio 2025-06-28
-
 		startVertex = ensureInternalId(startVertex, ElementIdMapper.CATEGORY_ITEM);
-    	System.out.println("NearestPath.generatePath: Start vertex DESPUÉS: " + startVertex);
 
 		String finalPath = "";
 		long endVertex = 0;
@@ -81,17 +78,13 @@ public class NearestPath extends Path {
 
 		LinkedList<Long> itemsByRoom = (LinkedList<Long>) itemsDoorVisited_cloned.get(room);
 		if (itemsByRoom == null) {
-			System.out.println("ADVERTENCIA: itemsByRoom es null para room=" + room + ". Inicializando lista vacía.");
+			// System.out.println("ADVERTENCIA: itemsByRoom es null para room=" + room + ". Inicializando lista vacía.");
 			itemsByRoom = new LinkedList<>();
 			itemsDoorVisited_cloned.put(room, itemsByRoom);
 		}
 
 		// Añadido por Nacho Palacio 2025-05-28
 		itemsByRoom = convertAndValidateItems(itemsByRoom, "itemsByRoom", numberOfItemsInMap);
-    
-		System.out.println("🔍 DEBUG HABITACIÓN " + room + " EN NearestPath:");
-		System.out.println("  itemsByRoom después de conversión: " + itemsByRoom);
-		System.out.println("  tamaño de itemsByRoom: " + (itemsByRoom != null ? itemsByRoom.size() : "NULL"));
 		
 		/*
 		System.out.println("Items by room: ");
@@ -281,7 +274,6 @@ public class NearestPath extends Path {
 
 							// Modificado por Nacho Palacio 2025-05-31
 							if (connectedDoor <= 0) {
-								System.out.println("ADVERTENCIA: Connected door es <= 0 para itemCandidateToVisit=" + itemCandidateToVisit + ". Saltando candidato."); // Añadido por Nacho Palacio 2025-07-04
 								count++;
 								continue;
 							}
@@ -329,20 +321,6 @@ public class NearestPath extends Path {
 					// Modificado por Nacho Palacio 2025-05-31
 					int indexDoor = random.nextInt(numberOfDoors - 1 + 1) + 1;
 					itemToVisit = accessGraphFile.getDoorOfRoomWithIndex(indexDoor, room);
-
-					// Añadido por Nacho Palacio 2025-06-03
-					if (!ElementIdMapper.isInCorrectRange(itemToVisit, ElementIdMapper.CATEGORY_ITEM) && 
-						!ElementIdMapper.isInCorrectRange(itemToVisit, ElementIdMapper.CATEGORY_DOOR)) {
-						System.out.println("*** ELEMENTO FUERA DE RANGO EN NearestPath ***");
-						System.out.println("itemToVisit: " + itemToVisit);
-						System.out.println("startVertex: " + startVertex);
-						System.out.println("itemsByRoom.size(): " + itemsByRoom.size());
-						System.out.println("Validación ElementIdMapper:");
-						System.out.println("  - ¿Es ítem válido? " + ElementIdMapper.isInCorrectRange(itemToVisit, ElementIdMapper.CATEGORY_ITEM));
-						System.out.println("  - ¿Es puerta válida? " + ElementIdMapper.isInCorrectRange(itemToVisit, ElementIdMapper.CATEGORY_DOOR));
-						System.out.println("itemsByRoom contenido: " + itemsByRoom);
-						System.out.println("*** FIN DEBUG ***");
-					}
 
 					long connectedDoor = getConnectedDoor(itemToVisit);
 
@@ -464,7 +442,7 @@ public class NearestPath extends Path {
 			return getValidRandomDoor();
 			
 		} catch (Exception e) {
-			System.err.println("ERROR getting valid connected door for " + doorId + ": " + e.getMessage());
+			// System.err.println("ERROR getting valid connected door for " + doorId + ": " + e.getMessage());
 			return getValidRandomDoor();
 		}
 	}

@@ -172,6 +172,7 @@ public class Configuration extends javax.swing.JDialog {
 			e.printStackTrace();
 		}
 	}
+	
 
 	/**
 	 * Saves the changes.
@@ -252,6 +253,16 @@ public class Configuration extends javax.swing.JDialog {
 			// Number of votes received.
 			int numberVoteReceived = Integer.valueOf(numberVoteReceivedTextField.getText()).intValue(); // Propagation of
 																										// items
+
+			// Añadido por Nacho Palacio 2025-07-16
+			String epidemicModel = (String) epidemicModelComboBox.getSelectedItem();
+			int initialInfected = Integer.valueOf(initialInfectedTextField.getText()).intValue();
+			double maskCompliance = Double.valueOf(maskComplianceTextField.getText()).doubleValue();
+
+			es.unizar.epidemic.EpidemicConfiguration epidemicConfig = es.unizar.epidemic.EpidemicConfiguration.getInstance();
+			epidemicConfig.setSelectedModel(epidemicModel);
+			epidemicConfig.setInitialInfectedUsers(initialInfected);
+			epidemicConfig.setMaskComplianceRate(maskCompliance);
 	
 			// Validation of fields:
 			if ( checkParametersForSimulation(timeAvailableUser, delayObservingItem, timeForIteration, screenRefreshTime, timeForThePaths, 
@@ -261,7 +272,9 @@ public class Configuration extends javax.swing.JDialog {
 					checkUsersInfo(numberOfSpecialUser, numberOfNonSpecialUser, nonSpecialUserPaths, pathStrategy)
 					&& 
 					checkAlgorithmAndNetworkParams(recommendationAlgorithm, thresholdRecommendation, thresholdSimilarity, howMany, networkType, 
-							propagationStrategy, probabilityUserDisobedience, numberVoteReceived)) {
+							propagationStrategy, probabilityUserDisobedience, numberVoteReceived)
+					&& // Añadido por Nacho Palacio 2025-07-16
+        			checkEpidemicParameters(epidemicModel, initialInfected, maskCompliance)) {
 				
 				MainSimulator.configureElementIdMapperStatically(); // Añadido por Nacho Palacio 2025-07-10
 				
@@ -672,6 +685,76 @@ public class Configuration extends javax.swing.JDialog {
 				}
 			}
 		});
+
+		// Añadido por Nacho Palacio 2025-07-16
+		JLabel epidemicLabel = new JLabel("Epidemic simulation settings:");
+		epidemicLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
+
+		JPanel epidemicPanel = new JPanel();
+		epidemicPanel.setBorder(javax.swing.BorderFactory.createEtchedBorder());
+
+		JLabel lblEpidemicModel = new JLabel("Epidemic model");
+		lblEpidemicModel.setFont(new Font("SansSerif", Font.PLAIN, 14));
+
+		epidemicModelComboBox = new JComboBox();
+		epidemicModelComboBox.setFont(new Font("SansSerif", Font.PLAIN, 14));
+		epidemicModelComboBox.setModel(new DefaultComboBoxModel(new String[] { 
+			"SIMPLE_PROXIMITY", 
+			"AEROSOL_WELLS_RILEY",
+			"AEROSOL_LELIEVELD_2020"
+		}));
+
+		JLabel lblInitialInfected = new JLabel("Initial infected users");
+		lblInitialInfected.setFont(new Font("SansSerif", Font.PLAIN, 14));
+
+		initialInfectedTextField = new JTextField();
+		initialInfectedTextField.setFont(new Font("SansSerif", Font.PLAIN, 14));
+		initialInfectedTextField.setText("2");
+		initialInfectedTextField.setColumns(10);
+
+		JLabel lblMaskCompliance = new JLabel("Mask compliance rate [0-1]");
+		lblMaskCompliance.setFont(new Font("SansSerif", Font.PLAIN, 14));
+
+		maskComplianceTextField = new JTextField();
+		maskComplianceTextField.setFont(new Font("SansSerif", Font.PLAIN, 14));
+		maskComplianceTextField.setText("0.3");
+		maskComplianceTextField.setColumns(10);
+
+		// Layout del panel epidemiológico
+		GroupLayout gl_epidemicPanel = new GroupLayout(epidemicPanel);
+		gl_epidemicPanel.setHorizontalGroup(
+			gl_epidemicPanel.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_epidemicPanel.createSequentialGroup()
+					.addContainerGap()
+					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.LEADING)
+						.addComponent(lblEpidemicModel)
+						.addComponent(lblInitialInfected)
+						.addComponent(lblMaskCompliance))
+					.addGap(18)
+					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.LEADING, false)
+						.addComponent(epidemicModelComboBox, 0, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+						.addComponent(initialInfectedTextField)
+						.addComponent(maskComplianceTextField, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE))
+					.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+		);
+		gl_epidemicPanel.setVerticalGroup(
+			gl_epidemicPanel.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_epidemicPanel.createSequentialGroup()
+					.addContainerGap()
+					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
+						.addComponent(lblEpidemicModel)
+						.addComponent(epidemicModelComboBox, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addGap(18)
+					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
+						.addComponent(lblInitialInfected)
+						.addComponent(initialInfectedTextField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addGap(18)
+					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
+						.addComponent(lblMaskCompliance)
+						.addComponent(maskComplianceTextField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addContainerGap(20, Short.MAX_VALUE))
+		);
+		epidemicPanel.setLayout(gl_epidemicPanel);
 		
 		javax.swing.GroupLayout gl_simulationPanel = new javax.swing.GroupLayout(simulationPanel);
 		gl_simulationPanel.setHorizontalGroup(
@@ -1285,28 +1368,61 @@ public class Configuration extends javax.swing.JDialog {
 		});
 		
 		GroupLayout gl_panel = new GroupLayout(panel);
+		// gl_panel.setHorizontalGroup(
+		// 	gl_panel.createParallelGroup(Alignment.LEADING)
+		// 		.addGroup(gl_panel.createSequentialGroup()
+		// 			.addGap(10)
+		// 			.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
+		// 				.addGroup(gl_panel.createSequentialGroup()
+		// 					.addComponent(simulationLabel)
+		// 					.addPreferredGap(ComponentPlacement.RELATED, 64, Short.MAX_VALUE)
+		// 					.addComponent(btnFasttestusersrandcent)
+		// 					.addPreferredGap(ComponentPlacement.RELATED)
+		// 					.addComponent(btnFasttestusersrandP2P)
+		// 					.addGap(30))
+		// 				.addGroup(gl_panel.createSequentialGroup()
+		// 					.addComponent(simulationPanel, GroupLayout.PREFERRED_SIZE, 480, GroupLayout.PREFERRED_SIZE)
+		// 					// // Añadido por Nacho Palacio 2022-07-16
+		// 					// .addGap(18)
+		// 					// .addComponent(epidemicLabel)
+		// 					// .addGap(11)
+		// 					// .addComponent(epidemicPanel, GroupLayout.PREFERRED_SIZE, 480, GroupLayout.PREFERRED_SIZE)
+		// 					.addPreferredGap(ComponentPlacement.RELATED)))
+		// 			.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
+		// 				.addComponent(experimentLabel)
+		// 				.addGroup(gl_panel.createParallelGroup(Alignment.TRAILING)
+		// 					.addComponent(saveButton)
+		// 					.addComponent(experimentPanel, GroupLayout.PREFERRED_SIZE, 513, GroupLayout.PREFERRED_SIZE)))
+		// 			.addContainerGap(225, Short.MAX_VALUE))
+		// );
+
+		// Modificado por Nacho Palacio 2022-07-16
 		gl_panel.setHorizontalGroup(
-			gl_panel.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_panel.createSequentialGroup()
-					.addGap(10)
-					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
-						.addGroup(gl_panel.createSequentialGroup()
-							.addComponent(simulationLabel)
-							.addPreferredGap(ComponentPlacement.RELATED, 64, Short.MAX_VALUE)
-							.addComponent(btnFasttestusersrandcent)
-							.addPreferredGap(ComponentPlacement.RELATED)
-							.addComponent(btnFasttestusersrandP2P)
-							.addGap(30))
-						.addGroup(gl_panel.createSequentialGroup()
-							.addComponent(simulationPanel, GroupLayout.PREFERRED_SIZE, 480, GroupLayout.PREFERRED_SIZE)
-							.addPreferredGap(ComponentPlacement.RELATED)))
-					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
-						.addComponent(experimentLabel)
-						.addGroup(gl_panel.createParallelGroup(Alignment.TRAILING)
-							.addComponent(saveButton)
-							.addComponent(experimentPanel, GroupLayout.PREFERRED_SIZE, 513, GroupLayout.PREFERRED_SIZE)))
-					.addContainerGap(225, Short.MAX_VALUE))
-		);
+		gl_panel.createParallelGroup(Alignment.LEADING)
+			.addGroup(gl_panel.createSequentialGroup()
+				.addGap(10)
+				.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
+					.addGroup(gl_panel.createSequentialGroup()
+						.addComponent(simulationLabel)
+						.addPreferredGap(ComponentPlacement.RELATED, 64, Short.MAX_VALUE)
+						.addComponent(btnFasttestusersrandcent)
+						.addPreferredGap(ComponentPlacement.RELATED)
+						.addComponent(btnFasttestusersrandP2P)
+						.addGap(30))
+					.addGroup(gl_panel.createSequentialGroup()
+						.addComponent(simulationPanel, GroupLayout.PREFERRED_SIZE, 480, GroupLayout.PREFERRED_SIZE)
+						.addPreferredGap(ComponentPlacement.RELATED)))
+				.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
+					.addComponent(experimentLabel)
+					.addGroup(gl_panel.createParallelGroup(Alignment.TRAILING)
+						.addComponent(saveButton)
+						.addComponent(experimentPanel, GroupLayout.PREFERRED_SIZE, 513, GroupLayout.PREFERRED_SIZE)))
+				.addGap(18)
+				.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
+					.addComponent(epidemicLabel)
+					.addComponent(epidemicPanel, GroupLayout.PREFERRED_SIZE, 450, GroupLayout.PREFERRED_SIZE))
+				.addContainerGap(225, Short.MAX_VALUE))
+	);
 		gl_panel.setVerticalGroup(
 			gl_panel.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_panel.createSequentialGroup()
@@ -1314,17 +1430,19 @@ public class Configuration extends javax.swing.JDialog {
 					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
 						.addGroup(gl_panel.createParallelGroup(Alignment.BASELINE)
 							.addComponent(simulationLabel)
-							.addComponent(experimentLabel))
+							.addComponent(experimentLabel)
+							.addComponent(epidemicLabel))  // AÑADIR epidemicLabel aquí
 						.addGroup(gl_panel.createParallelGroup(Alignment.BASELINE)
 							.addComponent(btnFasttestusersrandcent)
 							.addComponent(btnFasttestusersrandP2P)))
 					.addGap(11)
 					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
+						.addComponent(simulationPanel, GroupLayout.PREFERRED_SIZE, 751, GroupLayout.PREFERRED_SIZE)
 						.addGroup(gl_panel.createSequentialGroup()
 							.addComponent(experimentPanel, GroupLayout.PREFERRED_SIZE, 715, GroupLayout.PREFERRED_SIZE)
 							.addGap(18)
 							.addComponent(saveButton))
-						.addComponent(simulationPanel, GroupLayout.PREFERRED_SIZE, 751, GroupLayout.PREFERRED_SIZE))
+						.addComponent(epidemicPanel, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE))  // MOVER aquí
 					.addGap(25))
 		);
 		panel.setLayout(gl_panel);
@@ -1450,6 +1568,41 @@ public class Configuration extends javax.swing.JDialog {
 		
 		return (notNullParameters && correctAlgorithmNetworkCorrelation);
 	}
+
+
+	/**
+	 * Añadido por Nacho Palacio 2025-07-15.
+	 * Gets the number of pixels that represent one kilometer
+	 * @return pixels per kilometer, or default value if simulation not configured
+	 */
+	public static double getPixelsPerKilometer() {
+		if (simulation != null) {
+			return simulation.kmToPixel;
+		}
+		return 6597.0; // Valor por defecto del campo de texto
+	}
+
+	/**
+	 * Añadido por Nacho Palacio 2025-07-15.
+	 * Gets the number of pixels that represent one meter
+	 * @return pixels per meter, or default value if simulation not configured
+	 */
+	public static double getPixelsPerMeter() {
+		if (simulation != null) {
+			return simulation.kmToPixel / 1000.0;
+		}
+		return 6.597; // Valor por defecto: 6597 píxeles/km ÷ 1000 = 6.597 píxeles/metro
+	}
+
+	/**
+	 * Añadido por Nacho Palacio 2022-07-16.
+	 * Validates epidemic parameters
+	 */
+	private boolean checkEpidemicParameters(String epidemicModel, int initialInfected, double maskCompliance) {
+		return epidemicModel != null && 
+			initialInfected > 0 && 
+			maskCompliance >= 0.0 && maskCompliance <= 1.0;
+	}
 	
 	
 	
@@ -1522,4 +1675,10 @@ public class Configuration extends javax.swing.JDialog {
 	
 	private JButton chooseMap;
 	private String pathMap;
+
+	// Añadido por Nacho Palacio 2022-07-16
+	@SuppressWarnings("rawtypes")
+	public JComboBox epidemicModelComboBox;
+	public JTextField initialInfectedTextField;
+	public JTextField maskComplianceTextField;
 }

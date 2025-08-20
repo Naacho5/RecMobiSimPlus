@@ -41,8 +41,15 @@ public class UserInfo extends JDialog {
 		public int room;
 		public String action;
 		public Long item;
+		public String healthStatus; // Añadido por Nacho Palacio 2025-07-21
+
 		public UserState(int room) {
 			this.room = room;
+		}
+
+		// Añadido por Nacho Palacio 2025-07-21
+		public void setHealthStatus(String status) {
+			this.healthStatus = status;
 		}
 	}
 	
@@ -145,6 +152,43 @@ public class UserInfo extends JDialog {
 			}
 		};
 		locationOfUsers = new JTable(tableModel1);
+
+		// Añadido por Nacho Palacio 2025-07-21
+		locationOfUsers.setDefaultRenderer(Object.class, new javax.swing.table.DefaultTableCellRenderer() {
+		@Override
+		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+			Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+			
+			// Si es la columna de estado de salud (índice 4)
+			if (column == 4 && value != null) {
+				String status = value.toString();
+				switch (status) {
+					case "Susceptible":
+						c.setBackground(java.awt.Color.WHITE);
+						break;
+					case "Expuesto":
+						c.setBackground(java.awt.Color.YELLOW);
+						break;
+					case "Infectado Asintomático":
+						c.setBackground(java.awt.Color.ORANGE);
+						break;
+					case "Infectado Sintomático":
+						c.setBackground(java.awt.Color.RED);
+						c.setForeground(java.awt.Color.WHITE);
+						break;
+					default:
+						c.setBackground(java.awt.Color.WHITE);
+						c.setForeground(java.awt.Color.BLACK);
+				}
+			} else if (!isSelected) {
+				c.setBackground(table.getBackground());
+				c.setForeground(table.getForeground());
+			}
+			
+			return c;
+		}
+	});
+
 		tableScroll1 = new JScrollPane(locationOfUsers);
 		locationOfUsers.addMouseListener(new MouseAdapter() {
 			@Override
@@ -183,10 +227,11 @@ public class UserInfo extends JDialog {
 		tableModel1.addColumn("Room");
 		tableModel1.addColumn("Action");
 		tableModel1.addColumn("Last item observed");
+		tableModel1.addColumn("Health Status"); // Añadido por Nacho Palacio 2025-07-21
 		for (Map.Entry<Integer,UserState> entry : stateOfUsers.entrySet()) {
 //			System.out.println(entry.getKey()+" "+entry.getValue());
 			UserState ui = entry.getValue();
-	        tableModel1.addRow(new Object[]{entry.getKey(),ui.room,ui.action,ui.item});
+	        tableModel1.addRow(new Object[]{entry.getKey(),ui.room,ui.action,ui.item,ui.healthStatus}); // Modificado por Nacho Palacio 2025-07-21
 	    }
 		
 		gbc = new GridBagConstraints();
@@ -285,7 +330,7 @@ public class UserInfo extends JDialog {
 		tableModel1.setRowCount(0);
 		for (Map.Entry<Integer,UserState> entry : stateOfUsers.entrySet()) {
 			UserState ui = entry.getValue();
-			if(roomFilter == -1 || ui.room == roomFilter) tableModel1.addRow(new Object[]{entry.getKey(),ui.room,ui.action,ui.item});
+			if(roomFilter == -1 || ui.room == roomFilter) tableModel1.addRow(new Object[]{entry.getKey(),ui.room,ui.action,ui.item, ui.healthStatus}); // Modificado por Nacho Palacio 2025-07-21
 	    }
 		locationOfUsers.repaint();
 		locationOfUsers.revalidate();
@@ -313,6 +358,21 @@ public class UserInfo extends JDialog {
 	
 	public void filterTables(int room) {
 		roomFilter = room;
+	}
+
+	/**
+	 * Actualiza el estado epidemiológico de un usuario específico
+	 * Añadido por Nacho Palacio 2025-07-21
+	 */
+	public void updateHealthStatus(int userId, String status) {
+		UserState state = stateOfUsers.get(userId);
+		if (state != null) {
+			state.healthStatus = status;
+		} else {
+			state = new UserState(0); // Habitación por defecto 0
+			state.healthStatus = status;
+			stateOfUsers.put(userId, state);
+		}
 	}
 	
 }
