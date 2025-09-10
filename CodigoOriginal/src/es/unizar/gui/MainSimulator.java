@@ -792,47 +792,29 @@ public class MainSimulator {
 		JSeparator separator_simulation_2 = new JSeparator();
 		simulationMenu.add(separator_simulation_2);
 
-		// TEST MODELOS (Añadido por Nacho Palacio 2025-08-03)
-		JMenuItem testModelMenuItem1 = new JMenuItem("Test Aerosol Model1");
-		testModelMenuItem1.addActionListener(new ActionListener() {
+		JMenuItem testModelMenuItem4 = new JMenuItem("Test Gráficas");
+		testModelMenuItem4.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				// Ejecutar tests en un hilo separado para no bloquear la GUI
 				new Thread(() -> {
-					MainSimulator.printConsole("Ejecutando tests del modelo de aerosoles 1...", Level.WARNING);
-					es.unizar.epidemic.tests.AerosolTransmissionModel1Test.main(new String[]{});
+					MainSimulator.printConsole("Ejecutando tests de gráficas...", Level.WARNING);
+					es.unizar.epidemic.tests.TestGraficas.main(new String[]{});
 				}).start();
 			}
 		});
-		testModelMenuItem1.setFont(new Font("SansSerif", Font.PLAIN, 16));
-		simulationMenu.add(testModelMenuItem1);
+		testModelMenuItem4.setFont(new Font("SansSerif", Font.PLAIN, 16));
+		simulationMenu.add(testModelMenuItem4);
 
-		JMenuItem testModelMenuItem2 = new JMenuItem("Test Aerosol Model2");
-		testModelMenuItem2.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				// Ejecutar tests en un hilo separado para no bloquear la GUI
-				new Thread(() -> {
-					MainSimulator.printConsole("Ejecutando tests del modelo de aerosoles 2...", Level.WARNING);
-					es.unizar.epidemic.tests.AerosolTransmissionModel2Test.main(new String[]{});
-				}).start();
-			}
-		});
-		testModelMenuItem2.setFont(new Font("SansSerif", Font.PLAIN, 16));
-		simulationMenu.add(testModelMenuItem2);
-
-		JMenuItem testModelMenuItem3 = new JMenuItem("Test Simple Proximity Model");
-		testModelMenuItem3.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				// Ejecutar tests en un hilo separado para no bloquear la GUI
-				new Thread(() -> {
-					MainSimulator.printConsole("Ejecutando tests del modelo simple...", Level.WARNING);
-					es.unizar.epidemic.tests.SimpleProximityModelTest.main(new String[]{});
-				}).start();
-			}
-		});
-		testModelMenuItem3.setFont(new Font("SansSerif", Font.PLAIN, 16));
-		simulationMenu.add(testModelMenuItem3);
-
-
+		// JMenuItem testModelMenuItem5 = new JMenuItem("Test Escenarios");
+		// testModelMenuItem5.addActionListener(new ActionListener() {
+		// 	public void actionPerformed(ActionEvent arg0) {
+		// 		new Thread(() -> {
+		// 			MainSimulator.printConsole("Ejecutando tests de escenarios...", Level.WARNING);
+		// 			es.unizar.epidemic.tests.TestScenarios.main(new String[]{});
+		// 		}).start();
+		// 	}
+		// });
+		// testModelMenuItem5.setFont(new Font("SansSerif", Font.PLAIN, 16));
+		// simulationMenu.add(testModelMenuItem5);
 
 
 		// Separator adicional (opcional, para separar el test de la configuración)

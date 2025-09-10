@@ -4,8 +4,8 @@ import es.unizar.gui.MainSimulator;
 import es.unizar.gui.simulation.User;
 import es.unizar.epidemic.models.EpidemicModel;
 import es.unizar.epidemic.models.SimpleProximityModel;
-import es.unizar.epidemic.models.AerosolTransmissionModel1;
-import es.unizar.epidemic.models.AerosolTransmissionModel2;
+import es.unizar.epidemic.models.PengTransmissionModel;
+import es.unizar.epidemic.models.LelieveldTransmissionModel;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,10 +36,10 @@ public class EpidemicSimulationManager {
             this.epidemicModel = simpleModel;
             System.out.println("Using SimpleProximityModel with permissive parameters");
         } else if ("AEROSOL_LELIEVELD_2020".equals(config.getSelectedModel())) {
-            this.epidemicModel = new AerosolTransmissionModel2();
-            System.out.println("Using AerosolTransmissionModel2 (Lelieveld)");
+            this.epidemicModel = new LelieveldTransmissionModel();
+            System.out.println("Using LelieveldTransmissionModel");
         } else {
-            this.epidemicModel = new AerosolTransmissionModel1();
+            this.epidemicModel = new PengTransmissionModel();
             System.out.println("Using AerosolTransmissionModel");
         }
         
@@ -57,8 +57,8 @@ public class EpidemicSimulationManager {
         // Infect initial users
         stateManager.infectInitialUsers(users, config.getInitialInfectedUsers());
 
-        if (epidemicModel instanceof AerosolTransmissionModel1) {
-            ((AerosolTransmissionModel1) epidemicModel).initializeExposureTracking(users);
+        if (epidemicModel instanceof PengTransmissionModel) {
+            ((PengTransmissionModel) epidemicModel).initializeExposureTracking(users);
         }
         
         System.out.println("Epidemic system initialized for " + users.size() + " users");
@@ -74,92 +74,13 @@ public class EpidemicSimulationManager {
         
         stateManager.updateHealthStates(users, currentIteration);
 
-        // Añadido para debug
         if (epidemicModel != null) {
             epidemicModel.updateHealthStates(users, currentIteration);
-        } else {
-            // System.out.println("⚠️ No hay modelo epidémico configurado para updateHealthStates");
         }
         
         // Update user visual appearance based on health status
         updateUserVisualStatus(users);
 
-
-        // AÑADIDO PARA DEBUG
-        if (epidemicModel instanceof AerosolTransmissionModel1) {
-            AerosolTransmissionModel1 aerosolModel = (AerosolTransmissionModel1) epidemicModel;
-            
-            // Actualizar exposición acumulada (0.1 horas = 6 minutos por iteración)
-            aerosolModel.updateRoomExposure(users, 0.1);
-            
-            // Calcular riesgo para cada habitación
-            Map<Integer, Integer> roomOccupancy = new HashMap<>();
-            for (User user : users) {
-                roomOccupancy.put(user.room, roomOccupancy.getOrDefault(user.room, 0) + 1);
-            }
-            
-            for (Integer roomId : roomOccupancy.keySet()) {
-                if (roomOccupancy.get(roomId) > 1) {
-                    List<User> usersInRoom = users.stream()
-                        .filter(u -> u.room == roomId)
-                        .collect(Collectors.toList());
-                        
-                    double risk = aerosolModel.calculateRoomInfectionRisk(roomId, usersInRoom, 0.1);
-                    // System.out.println("📊 RIESGO: Habitación " + roomId + " → " + 
-                    //                 (risk * 100) + "% de infección por iteración");
-                }
-            }
-            
-            // Para el primer usuario susceptible encontrado, mostrar su riesgo individual
-            Optional<User> susceptibleUser = users.stream()
-                .filter(u -> u.getEpidemicExtension().getHealthStatus() == HealthStatus.SUSCEPTIBLE)
-                .findFirst();
-            
-            if (susceptibleUser.isPresent()) {
-                User user = susceptibleUser.get();
-                double risk = aerosolModel.calculateAirborneTransmissionProbability(
-                    user, user.room, 0.1);
-                // System.out.println("👤 RIESGO INDIVIDUAL: Usuario " + user.userID + 
-                //                 " → " + (risk * 100) + "% de infección por iteración");
-            }
-        }
-
-        if (epidemicModel instanceof AerosolTransmissionModel2) {
-            AerosolTransmissionModel2 aerosolModel2 = (AerosolTransmissionModel2) epidemicModel;
-            
-            aerosolModel2.updateRoomExposure(users, 0.1);
-            
-            Map<Integer, Integer> roomOccupancy = new HashMap<>();
-            for (User user : users) {
-                roomOccupancy.put(user.room, roomOccupancy.getOrDefault(user.room, 0) + 1);
-            }
-            
-            for (Integer roomId : roomOccupancy.keySet()) {
-                if (roomId < 0) continue; // Añadido por Nacho Palacio 2025-08-01
-                if (roomOccupancy.get(roomId) > 1) {
-                    List<User> usersInRoom = users.stream()
-                        .filter(u -> u.room == roomId)
-                        .collect(Collectors.toList());
-
-                    System.out.println("Llamando a configureModelForRoom desde updateEpidemicState con roomId: " + roomId);
-                        
-                    aerosolModel2.configureModelForRoom(roomId);
-                }
-            }
-            
-            Optional<User> susceptibleUser = users.stream()
-                .filter(u -> u.getEpidemicExtension().getHealthStatus() == HealthStatus.SUSCEPTIBLE)
-                .findFirst();
-            
-            if (susceptibleUser.isPresent()) {
-                User user = susceptibleUser.get();
-                double risk = aerosolModel2.calculateAirborneTransmissionProbability(
-                    user, user.room, 0.1);
-                // System.out.println("👤 RIESGO LELIEVELD: Usuario " + user.userID + 
-                //                 " → " + (risk * 100) + "% de infección por iteración");
-            }
-        }
- 
     }
     
     /**
@@ -228,7 +149,7 @@ public class EpidemicSimulationManager {
                     borderColor = "#FF0000"; // Red
                     break;
                 case SUPER_SPREADER:
-                    borderColor = "#FFF0000"; // HARD Red
+                    borderColor = "#FF0000"; // HARD Red
                     break;
                 default:
                     borderColor = "#FF0000"; // Red default

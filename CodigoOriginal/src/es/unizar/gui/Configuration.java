@@ -700,8 +700,8 @@ public class Configuration extends javax.swing.JDialog {
 		epidemicModelComboBox.setFont(new Font("SansSerif", Font.PLAIN, 14));
 		epidemicModelComboBox.setModel(new DefaultComboBoxModel(new String[] { 
 			"SIMPLE_PROXIMITY", 
-			"AEROSOL_WELLS_RILEY",
-			"AEROSOL_LELIEVELD_2020"
+			"AEROSOL_PENG",
+			"AEROSOL_LELIEVELD"
 		}));
 
 		JLabel lblInitialInfected = new JLabel("Initial infected users");
@@ -1494,6 +1494,12 @@ public class Configuration extends javax.swing.JDialog {
         int x = (int) rect.getMaxX()/2 - this.getWidth()/2;
         int y = 0;
         this.setLocation(x, y); // x centered, y top
+	}
+
+	public static void setPixelsPerMeter(double pixelsPerMeter) {
+		if (simulation != null) {
+			simulation.kmToPixel = pixelsPerMeter * 1000.0;
+		}
 	}
 	
 	/**

@@ -22,15 +22,15 @@ import java.util.Properties;
  * Implementa el modelo de quanta basado en el de Wells-Riley
  * Añadido por Nacho Palacio 2025-07-11
  */
-public class AerosolTransmissionModel1 implements EpidemicModel {
+public class PengTransmissionModel implements EpidemicModel {
     
-    private ModelParameters1 parameters;
-    private String modelName = "Aerosol Transmission Model (Wells-Riley)";
+    private PengParameters parameters;
+    private String modelName = "Peng Aerosol Transmission Model";
     private Map<Integer, Map<Integer, Double>> userRoomExposureTime;
 
     
-    public AerosolTransmissionModel1() {
-        this.parameters = new ModelParameters1();
+    public PengTransmissionModel() {
+        this.parameters = new PengParameters();
     }
     
 
@@ -60,7 +60,7 @@ public class AerosolTransmissionModel1 implements EpidemicModel {
         EpidemicStatistics.getInstance().recordRoomAerosolConcentration(roomId, concentration);
         
         EpidemicStatistics stats = EpidemicStatistics.getInstance();
-        stats.setModelSpecificStat("Modelo utilizado", "Aerosol Transmission Model (Wells-Riley)");
+        stats.setModelSpecificStat("Modelo utilizado", "Peng Aerosol Transmission Model");
         stats.setModelSpecificStat("Tasa ventilación promedio", parameters.getVentilationRate() + " h⁻¹");
        
         return Math.min(1.0, Math.max(0.0, infectionProb));
@@ -98,7 +98,7 @@ public class AerosolTransmissionModel1 implements EpidemicModel {
                 break;
                 
             case INFECTIOUS_ASYMPTOMATIC:
-                double asymptomaticRate = parameters.getBasicQuantaExhalationRate() * 0.8;
+                double asymptomaticRate = parameters.getBasicQuantaExhalationRate() * 0.8; // Antes 0.8
                 extension.setViralEmissionRate(asymptomaticRate);
                 break;
                 
@@ -139,14 +139,13 @@ public class AerosolTransmissionModel1 implements EpidemicModel {
     public double calculateCO2Risk(List<User> usersInRoom) {
         double co2Concentration = parameters.calculateCO2Concentration(usersInRoom.size());
         
-        // UMBRALES AJUSTADOS PARA SER MÁS SENSIBLES
         if (co2Concentration > 500) {
             return 2.0;
-        } else if (co2Concentration > 460) {   // ← Captura el caso de 6 usuarios (464 ppm)
+        } else if (co2Concentration > 460) { 
             return 1.8;
         } else if (co2Concentration > 450) {
             return 1.5;
-        } else if (co2Concentration > 430) {   // ← Captura el caso de 2 usuarios (431 ppm)
+        } else if (co2Concentration > 430) {
             return 1.2;
         } else {
             return 1.0;
@@ -213,29 +212,27 @@ public class AerosolTransmissionModel1 implements EpidemicModel {
         }
     }
 
+    /**
+     * Calculates the fraction of people wearing masks in a room
+     */
     public void configureModelForRoom(int roomId) {
         roomId += 1; 
         double roomWidth = getRoomWidth(roomId);
         double roomLength = getRoomLength(roomId);
-        double roomHeight = 3.0; // SE SUPONE ESTA ALTURA
+        double roomHeight = 3.0;
         
-        double widthMeters = ModelParameters1.pixelsToMeters(roomWidth);
-        double lengthMeters = ModelParameters1.pixelsToMeters(roomLength);
+        double widthMeters = PengParameters.pixelsToMeters(roomWidth);
+        double lengthMeters = PengParameters.pixelsToMeters(roomLength);
         
         parameters.setRoomDimensions(lengthMeters, widthMeters, roomHeight);
 
-        // double ventilationRate = getVentilationRateForRoomType(getRoomType(roomId));
-        // parameters.setVentilationRate(ventilationRate);
-        parameters.setVentilationRate(3.0); // Default
+        parameters.setVentilationRate(3.0);
         
         List<User> usersInRoom = getUsersInRoom(roomId);
         parameters.setPeopleCount(usersInRoom.size(), countInfectiousPeople(usersInRoom));
         
         double fractionWithMasks = calculateFractionWithMasks(usersInRoom);
         parameters.setMaskParameters(0.5, 0.3, fractionWithMasks);
-
-        double areaFactor = widthMeters * lengthMeters;
-
     }
 
     /**
@@ -255,7 +252,6 @@ public class AerosolTransmissionModel1 implements EpidemicModel {
                 }
             }
         } catch (Exception e) {
-            // System.out.println("❌ Error al obtener usuarios en habitación " + roomId + ": " + e.getMessage());
         }
         
         return usersInRoom;
@@ -312,17 +308,17 @@ public class AerosolTransmissionModel1 implements EpidemicModel {
     }
     
     @Override
-    public ModelParameters1 getParameters() {
+    public PengParameters getParameters() {
         return parameters;
     }
     
     @Override
-    public void setParameters(ModelParameters1 parameters) {
+    public void setParameters(PengParameters parameters) {
         this.parameters = parameters;
     }
     
     /**
-     * Configura el modelo para una habitación específica
+     * Configures the model for a specific room
      */
     public void configureForRoom(double length, double width, double height, double ventilationRate) {
         parameters.setRoomDimensions(length, width, height);
@@ -330,7 +326,7 @@ public class AerosolTransmissionModel1 implements EpidemicModel {
     }
     
     /**
-     * Configura parámetros de mascarillas
+     * Configures mask parameters
      */
     public void configureMasks(double exhalationEff, double inhalationEff, double compliance) {
         parameters.setMaskParameters(exhalationEff, inhalationEff, compliance);
@@ -390,82 +386,6 @@ public class AerosolTransmissionModel1 implements EpidemicModel {
             return maxY - minY;
         } catch (Exception e) {
             return 15.3 * Configuration.getPixelsPerMeter();
-        }
-    }
-
-    /**
-     * Gets the type of a room based on its contents
-     * NO SE USARÁ DE MOMENTO
-     */
-    private String getRoomType(int roomId) {
-        try {
-            File itemFile = new File(Literals.ITEM_FLOOR_COMBINED);
-            Properties props = new Properties();
-            try (FileInputStream fis = new FileInputStream(itemFile)) {
-                props.load(fis);
-            }
-            
-            int restaurantItems = 0;
-            int officeItems = 0;
-            int classroomItems = 0;
-            
-            for (String key : props.stringPropertyNames()) {
-                if (key.startsWith("item_room_")) {
-                    String value = props.getProperty(key);
-                    if (value.equals(String.valueOf(roomId))) {
-                        String itemId = key.substring("item_room_".length());
-                        
-                        String itemType = props.getProperty("vertex_label_" + itemId);
-                        if (itemType != null) {
-                            if (itemType.contains("Restaurante") || itemType.contains("Cafeteria"))
-                                restaurantItems++;
-                            else if (itemType.contains("Office") || itemType.contains("Oficina"))
-                                officeItems++;
-                            else if (itemType.contains("Classroom") || itemType.contains("Aula"))
-                                classroomItems++;
-                        }
-                    }
-                }
-            }
-            
-            if (restaurantItems > officeItems && restaurantItems > classroomItems)
-                return "RESTAURANT";
-            else if (officeItems > restaurantItems && officeItems > classroomItems)
-                return "OFFICE";
-            else if (classroomItems > restaurantItems && classroomItems > officeItems)
-                return "CLASSROOM";
-            
-            double area = getRoomWidth(roomId) * getRoomLength(roomId);
-            if (area > 20000) 
-                return "HALL";
-            else if (area > 5000)
-                return "MEDIUM_ROOM";
-            else
-                return "SMALL_ROOM";
-                
-        } catch (Exception e) {
-            return "STANDARD_ROOM"; 
-        }
-    }
-
-    /**
-     * Gets the ventilation rate for a room type
-     * NO SE USARÁ DE MOMENTO
-     */
-    private double getVentilationRateForRoomType(String roomType) {
-        switch (roomType) {
-            case "RESTAURANT":
-                return 8.0;
-            case "CLASSROOM":
-                return 6.0;
-            case "OFFICE":
-                return 4.0;
-            case "HALL":
-                return 3.0;
-            case "SMALL_ROOM":
-                return 2.0;
-            default:
-                return 3.0;
         }
     }
 

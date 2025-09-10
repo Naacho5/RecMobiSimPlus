@@ -11,6 +11,6 @@ public interface EpidemicModel {
     double calculateTransmissionProbability(User infectious, User susceptible, ContactRecord contact);
     void updateHealthStates(List<User> users, int currentDay);
     String getModelName();
-    ModelParameters1 getParameters();
-    void setParameters(ModelParameters1 parameters);
+    PengParameters getParameters();
+    void setParameters(PengParameters parameters);
 }

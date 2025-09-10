@@ -6,7 +6,7 @@ public enum HealthStatus {
     EXPOSED("Expuesto", "Amarillo"), 
     INFECTIOUS_ASYMPTOMATIC("Infectado Asintomático", "Naranja"),
     INFECTIOUS_SYMPTOMATIC("Infectado Sintomático", "Rojo"),
-    SUPER_SPREADER("Superdiseminador", "Morado"); // Añadido para modelo 2
+    SUPER_SPREADER("SuperSpreader", "Morado"); // Añadido para modelo 2
     
     private final String description;
     private final String color;
