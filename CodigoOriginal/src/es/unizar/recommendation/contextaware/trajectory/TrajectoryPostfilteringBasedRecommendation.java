@@ -137,7 +137,7 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 
 		/* Añadido por Nacho Palacio 2015-04-14. */
 		try {
-            finalPath = ShortestTrajectoryStrategy.preprocessingPath(door, 
+			finalPath = ShortestTrajectoryStrategy.preprocessingPath(door, 
                       DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, door, initialVertex).toString());
             
             // Si finalPath es nulo, devuelve los items filtrados sin trayectoria
@@ -219,6 +219,17 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 
 		// Obtiene un path
 		//System.out.println("Door: " + door + "; shortest path " + DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, door, initialVertex) + "; TrajectoryStrategy.graph: " + trajectoryStrategy.graph + "; initialVertex: " + initialVertex);
+		
+		// Añadido por Nacho Palacio 2025-09-28
+		if (!trajectoryStrategy.graph.containsVertex(door)) {
+			System.err.println("❌ El grafo NO contiene el vértice de puerta: " + door);
+			return candidateItemsFromRecommender;
+		}
+		if (!trajectoryStrategy.graph.containsVertex(initialVertex)) {
+			System.err.println("❌ El grafo NO contiene el vértice de destino: " + initialVertex);
+			return candidateItemsFromRecommender;
+		}
+
 		finalPath = ShortestTrajectoryStrategy.preprocessingPath(door, DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, door, initialVertex).toString());
 		convertRecommendItemsToPath(candidateItemsToLong);
 

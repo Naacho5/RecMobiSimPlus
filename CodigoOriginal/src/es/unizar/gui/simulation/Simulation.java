@@ -48,8 +48,11 @@ import es.unizar.dao.SQLiteDataManagementQueueDB;
 import es.unizar.dao.SQLiteDataManagementUserDB;
 import es.unizar.database.DBDataModel;
 import es.unizar.database.Database;
+import es.unizar.epidemic.EpidemicConfiguration;
 import es.unizar.epidemic.HealthStatus;
 import es.unizar.epidemic.UserEpidemicExtension;
+import es.unizar.epidemic.models.LelieveldTransmissionModel;
+import es.unizar.epidemic.models.PengTransmissionModel;
 import es.unizar.gui.Configuration;
 import es.unizar.gui.MainSimulator;
 import es.unizar.gui.UserInfo;
@@ -71,6 +74,7 @@ import es.unizar.util.Pair;
 import es.unizar.util.PredictedRatingsInfo;
 import es.unizar.util.Seed;
 import es.unizar.recommendation.path.RandomPath;
+import es.unizar.epidemic.statistics.EpidemicRiskCalculator;
 
 /**
  * Configuration parameters of the simulation.
@@ -192,23 +196,30 @@ public class Simulation {
 	public List<DistancesBetweenUsersAndTime> distancesBetweenUsers;
 	public List<DistancesBetweenUsersAndTime> completedDistancesBetweenUsers;
 
+	boolean manualSimulation = true;
+
 	
 	
 	// =========== Logger ================================:
 	public static final Logger log = Logger.getLogger(Literals.DEBUG_MESSAGES);
 	public static final Logger logRecommender = Logger.getLogger("RECOMMENDER");
 
+	public Simulation() {}
+
 	public Simulation(int timeAvailableUser, int delayObservingPainting, double timeForIteration, double screenRefreshTime, double timeForThePaths, double userVelocity, double kmToPixel, int ttl,
 			int timeOnStairs, int minimumTimeToUpdateRecommendation, int communicationRange, int maxKnowledgeBaseSize, int communicationBandwidth, int latencyOfTransmission, int numberOfSpecialUser,
 			int numberOfNonSpecialUser, String nonSpecialUserPaths, String pathStrategy, String recommendationAlgorithm, float thresholdRecommendation, int howMany, String propagationStrategy,
-			double probabilityUserDisobedience, int numberVoteReceived, double thresholdSimilarity, String networkType, int timeToChangeMood, boolean useFixedSeed, long seed) {
+			double probabilityUserDisobedience, int numberVoteReceived, double thresholdSimilarity, String networkType, int timeToChangeMood, boolean useFixedSeed, long seed, boolean manualSimulation) {
 		
 		MainSimulator.printConsole("Creating simulation", Level.WARNING);
 		currentTime();
 		
 		// Logger configuration 
 		logRecommender.setUseParentHandlers(false);
-		logRecommender.setLevel(Literals.DEBUG_DEFAULT_LEVEL);
+		// logRecommender.setLevel(Literals.DEBUG_DEFAULT_LEVEL);
+
+		log.setLevel(Level.OFF);
+		logRecommender.setLevel(Level.OFF);
 		
 		DebugFormatter df = new DebugFormatter();
 		ConsoleHandler ch = new ConsoleHandler();
@@ -395,6 +406,20 @@ public class Simulation {
 		completedDistancesBetweenUsers = new ArrayList<DistancesBetweenUsersAndTime>();
 
 		this.epidemicManager = new es.unizar.epidemic.EpidemicSimulationManager(); // Añadido por Nacho Palacio 2025-07-15
+
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			// printFinalEpidemicStatistics();
+			
+			try {
+				es.unizar.epidemic.statistics.EpidemicStatistics.getInstance().endSimulation();
+				// es.unizar.epidemic.statistics.EpidemicStatistics.getInstance().printFinalStatistics();
+			} catch (Exception e) {
+				System.err.println("⚠️ Error finalizando EpidemicStatistics en ShutdownHook: " + e.getMessage());
+			}
+		}));
+
+		this.simulationIterationCounter = 0;
+		this.manualSimulation = manualSimulation;
 	}
 
 	/**
@@ -422,20 +447,44 @@ public class Simulation {
 	 * 
 	 */
 	public void initializeUsers() {
+		// System.out.println("🔧 DEBUG: === INICIO initializeUsers() ===");
+        // System.out.println("🔧 DEBUG: Paso 1 - Verificando estado inicial...");
+
+		//  System.out.println("🔧 DEBUG: - graphSpecialUser: " + (graphSpecialUser != null ? "OK" : "NULL"));
+		// System.out.println("🔧 DEBUG: - userList: " + (userList != null ? userList.size() + " usuarios" : "NULL"));
+		// System.out.println("🔧 DEBUG: - nonSpecialUserPaths: " + nonSpecialUserPaths);
+		
+		// System.out.println("🔧 DEBUG: Paso 2 - Llamando a MainSimulator.printConsole...");
+
 		MainSimulator.printConsole("Initializing users: ", Level.WARNING);
+
+		// System.out.println("🔧 DEBUG: Paso 3 - Llamando a graphSpecialUser.getPathsFromFile()...");
 
 		// Get the non-special and RS user paths. The non-RS user path is obtained from generated path file (e.g., nearest_non_special_user_paths.txt), by using the strategy (Nearest,
 		// Random or Exhaustive) specified in the Configuration form. While the RS user path (initially null) is generated with the recommender specified in the Configuration form.
 		
 		graphSpecialUser.getPathsFromFile();
 
+		// System.out.println("🔧 DEBUG: Paso 4 - getPathsFromFile() completado");
+
+		// System.out.println("🔧 DEBUG: Paso 5 - Iniciando bucle de inicialización de usuarios...");
+
 		String edge = null;
 		for (int i = 0; i < userList.size(); i++) {
+			// System.out.println("🔧 DEBUG: Paso 5." + (i+1) + " - Procesando usuario " + (i+1) + "/" + userList.size());
+
 			User currentUser = userList.get(i);
+
+			// System.out.println("🔧 DEBUG: - Usuario " + currentUser.userID + " obtenido, isSpecial: " + currentUser.isSpecialUser);
+						 
 			// Identify to RS users to generate their paths.
 			if (currentUser.isSpecialUser) {
+				System.out.println("🔧 DEBUG: - Usuario especial detectado, generando ruta...");
+
 				// Gets the randomly door where RS users will enter.
 				long startVertex = dataAccessGraphFile.getRandomDoor();
+
+				System.out.println("🔧 DEBUG: - StartVertex obtenido: " + startVertex);
 				// The RS user path is updated with the hybrid recommendation algorithm.
 				//System.out.println(currentUser.userID);
 
@@ -446,12 +495,17 @@ public class Simulation {
 					startVertex = externalStartVertex;
 				}
 				
+				// System.out.println("🔧 DEBUG: - Llamando a updateSpecialUserPath...");
 				updateSpecialUserPath(startVertex, startVertex, false, 0, false, currentUser);
+				// System.out.println("🔧 DEBUG: - updateSpecialUserPath completado");
 			}
+
+			// System.out.println("🔧 DEBUG: - Obteniendo path del usuario " + (i+1) + "...");
 			path = graphSpecialUser.paths.get(i);
 
 			// Añadido por Nacho Palacio 2025-04-24
 			if (path == null || path.isEmpty() || (path.size() == 1 && path.get(0).isEmpty())) {
+				System.out.println("🔧 DEBUG: - Path nulo/vacío detectado, asignando ruta por defecto...");
 				// Ruta por defecto
 				path = new ArrayList<>();
 				path.add("(1 : 2)");
@@ -459,13 +513,23 @@ public class Simulation {
 			}
 
 			MainSimulator.printConsole("Path of user " + (i + 1) + ": " + path, Level.WARNING);
-			System.out.println("Path of user " + (i + 1) + ": " + path);
+			// System.out.println("🔧 DEBUG: - Path asignado: " + path);
+			// System.out.println("Path of user " + (i + 1) + ": " + path);
 			// Get the current edge.
 			edge = path.get(this.userPositionInPath[i]);
+			// System.out.println("🔧 DEBUG: - Edge obtenido: " + edge);
+
 			if (edge != null) {
+				// System.out.println("🔧 DEBUG: - Procesando edge y ubicación del usuario...");
+
 				String[] array = cleanEdge(edge);
+
+				// System.out.println("🔧 DEBUG: - Array limpio: [" + array[0] + ", " + array[1] + "]");
+
 				// Get the vertices.
 				long v1 = Long.valueOf(array[0]).longValue();
+
+				// System.out.println("🔧 DEBUG: - v1 = " + v1);
 
 				// Añadido por Nacho Palacio 2025-06-09
 				long v1External = v1;
@@ -475,18 +539,31 @@ public class Simulation {
 					v1External = ElementIdMapper.getBaseId(v1);
 				}	
 
+				// System.out.println("🔧 DEBUG: - v1External = " + v1External);
+
 				// Gets the position user where he/she will start the simulation.
+				//System.out.println("🔧 DEBUG: - Llamando a getRoomOfTheUser...");
 				currentUser.getRoomOfTheUser();
+				//System.out.println("🔧 DEBUG: - getRoomOfTheUser completado, room = " + currentUser.room);
 				// Stores the initial location of the current user.
 				// locationNextIteration[i] = MainSimulator.floor.diccionaryItemLocation.get(v1);
-				locationNextIteration[i] = MainSimulator.floor.diccionaryItemLocation.get(v1External); // Modificado por Nacho Palacio 2025-06-09
+				//System.out.println("🔧 DEBUG: - Obteniendo ubicación del diccionario...");
+				locationNextIteration[i] = MainSimulator.floor.diccionaryItemLocation.get(v1External);
+				//System.out.println("🔧 DEBUG: - Ubicación obtenida: " + locationNextIteration[i]); // Modificado por Nacho Palacio 2025-06-09
 
 				// Initialize the user start position.
+				//System.out.println("🔧 DEBUG: - Llamando a user.move...");
 				currentUser.move(locationNextIteration[i], currentUser.room);
+				//System.out.println("🔧 DEBUG: - user.move completado");
 			}
+			// System.out.println("🔧 DEBUG: Paso 5." + (i+1) + " - Usuario " + (i+1) + " completado ✅");
 		}
 
+		// System.out.println("🔧 DEBUG: Paso 6 - Bucle de usuarios completado, llamando a epidemicManager...");
+
 		epidemicManager.initializeEpidemicSystem(getAllUsers()); // Añadido por Nacho Palacio 2025-07-15
+
+		// System.out.println("🔧 DEBUG: Paso 7 - initializeUsers() completado exitosamente ✅");
 	}
 	
 
@@ -601,6 +678,14 @@ public class Simulation {
 	 * @param specialUserID:    The RS user ID.
 	 */
 	public void updateSpecialUserPath(long startVertex, long endVertex, boolean disobedience, long nextItemSelected, boolean finishPath, User currentUser) {		
+		// Añadido por Nacho Palacio 2025-09-28
+		// String recommendationType = getRecommendationAlgorithm();
+		// System.out.println("🔧 DEBUG: updateSpecialUserPath initial recommendationType: " + recommendationType);
+		// if (recommendationType == null || recommendationType.isEmpty()) {
+		// 	recommendationType = "Near POI (NPOI)";
+		// }
+		// System.out.println("🔧 DEBUG: updateSpecialUserPath recommendationType: " + recommendationType);
+		
 		long initialTimeTotal = 0, finalTimeTotal = 0, initialTimeNetwork = 0, finalTimeNetwork = 0;
 		initialTimeTotal = System.currentTimeMillis();
 		
@@ -685,6 +770,14 @@ public class Simulation {
 			// Recommendation type
 			recommendationType = getRecommendationAlgorithm();
 
+			// Añadido por Nacho Palacio 2025-09-28
+			// if (!manualSimulation) { // Random fija para cuando no es manual
+			// 	recommendationType = "Completely-random (FULLY-RAND)";
+			// }
+			// else if (recommendationType == null || recommendationType.isEmpty()) {
+			// 	recommendationType = "Near POI (NPOI)";
+			// }
+
 			if (recommendationType == null || recommendationType.isEmpty()) {
 				recommendationType = "Near POI (NPOI)";
 			}
@@ -694,6 +787,8 @@ public class Simulation {
 				recommendedItems = recommender.recommend(currentUser.userID, getHowMany());
 				//log.log(Level.WARNING, "Recommended items: " + recommendedItems.toString());
 				// The path is obtained from the recommended items.
+				System.out.println("Se llama a postfiltering 1");
+
 				postfiltering.recommendBaseline(recommendedItems);	// NoSuchUserException -> SOLUCIONADO (Check de l�mites en funci�n recommend
 																	// IndexOutOfBoundsException -> Index: 0, Size: 0
 				currentPath = postfiltering.getFinalPath();
@@ -736,6 +831,8 @@ public class Simulation {
 					ExhaustiveRecommendation recommender = new ExhaustiveRecommendation(dataModelSpecialUser, dataAccesLayerDBMuseum);
 					recommendedItems = recommender.recommend(currentUser.userID, 1);
 					// The path is obtained from the recommended items.
+
+					System.out.println("Se llama a postfiltering 2");
 					postfiltering.recommendBaseline(recommendedItems); // NoSuchUserException
 					// The path is obtained from the recommended items.
 					currentPath = postfiltering.getFinalPath();
@@ -1007,6 +1104,20 @@ public class Simulation {
 	public synchronized void updateUsers(Map<Integer,UserInfo.UserState> stateOfUsers,Map<Pair<Integer,Integer>,Double> timeUsersInRooms) {
 		long initialTimeTotal = 0, finalTimeTotal = 0;
 		initialTimeTotal = System.currentTimeMillis();
+
+		incrementSimulationIteration();
+		showSimulationProgress();
+
+		if (hasSimulationTimeExpired()) {
+			printFinalEpidemicStatistics();
+			MainSimulator.userRunnable.setRunning(false);
+			MainSimulator.printConsole("[Simulación finalizada - Duración completada]", Level.WARNING);
+			MainSimulator.printConsole("Estadísticas finales: " + getInfectionStatistics(), Level.WARNING);
+			currentTime();
+			disconnect();
+			return;
+		}
+
 		MainSimulator.printConsole("Updating user positions: ", Level.INFO);
 		log.log(Level.INFO, "Updating user positions: ");
 		long initialTime = 0, finalTime = 0;
@@ -1028,12 +1139,22 @@ public class Simulation {
 			
 			// New userPosition -> Equivalent to previous loop's variable
 			int userPosition = u.userID - 1;
+
 			
 			initialTime = System.currentTimeMillis();
 			
 			User currentUser = Configuration.simulation.userList.get(userPosition);
+
 			availableTimeOfUsers[userPosition] += Configuration.simulation.getTimeForIterationInSecond();
-			
+
+			if (currentUser.hasFinishedVisit) {
+				if (simulationIterationCounter <= 2) {
+					System.out.println("   - Usuario " + u.userID + " ya terminó visita - SKIP");
+				}
+				log.log(Level.FINEST, "Skipping user's " + currentUser.userID + " iteration");
+				continue;
+			}
+
 			MainSimulator.printConsole("User: " + currentUser.userID, Level.INFO);
 			MainSimulator.printConsole("Available time for iteration in seconds: " + availableTimeOfUsers[userPosition], Level.INFO);
 
@@ -1052,7 +1173,6 @@ public class Simulation {
 			// The user will be moving while he has time available.
 			while ((availableTimeOfUsers[userPosition] > 0) && (currentTimeOfUsers[userPosition] < getTimeAvailableUserInSecond())) {
 				// Añadido por Nacho Palacio 2025-06-11
-				
 				int previousRoomOfUser = currentUser.room;
 				currentUser.getRoomOfTheUser();
 //				int roomOfUser = currentUser.room;
@@ -1479,6 +1599,7 @@ public class Simulation {
 				//
 			}
 
+
 			initialTime = System.currentTimeMillis();
 			
 			// If RS users consumed the time of the visit, then the visit will be terminated for all users.
@@ -1494,30 +1615,32 @@ public class Simulation {
 			finalTime = System.currentTimeMillis();
 			log.log(Level.FINE, "   Tiempo en imprimir tiempos en consola: " + (finalTime - initialTime));
 		}
+
 		
 		finalTimeTotal = System.currentTimeMillis();
 		log.log(Level.INFO, " -TIEMPO TOTAL BUCLE: " + (finalTimeTotal - initialTimeTotal));
 		
 		initialTimeTotal = System.currentTimeMillis();
 
-		// Añadido por Nacho Palacio 2025-07-15
     	epidemicManager.updateEpidemicState(getAllUsers(), getCurrentIteration());
 
 		// Añadido por Nacho Palacio 2025-07-30
 		if (areAllUsersInfected()) {
-			System.out.println("Todos los usuarios infectados");
+			// System.out.println("Todos los usuarios infectados");
+			// printFinalEpidemicStatistics();
 
 			MainSimulator.userRunnable.setRunning(false);
 			MainSimulator.printConsole("[Simulación finalizada - Todos los usuarios están infectados]", Level.WARNING);
 			MainSimulator.printConsole("Estadísticas finales: " + getInfectionStatistics(), Level.WARNING);
 			currentTime();
-			
+
 			disconnect();
 			return; 
 		}
 
 		// The criterion for stopping the simulation is that all users have finished their time.
 		if (countFinishedSpecialUsers >= getNumberOfSpecialUser()) {
+			// printFinalEpidemicStatistics();
 			// The thread is killed because the visit is over.
 			MainSimulator.userRunnable.setRunning(false);
 			MainSimulator.printConsole("[Finished visits]", Level.WARNING);
@@ -1533,6 +1656,7 @@ public class Simulation {
 	}
 
 	public void disconnect() {
+		// printFinalEpidemicStatistics();
 		// Commit info in databases.
 		// CENTRALIZED
 		if (Configuration.simulation.getNetworkType().equalsIgnoreCase("Centralized (Centralized)")) {
@@ -3167,7 +3291,7 @@ public class Simulation {
 	 * Verifies if a user is infected
 	 * Añadido por Nacho Palacio 2025-07-30
 	 */
-	private boolean isUserInfected(UserEpidemicExtension extension) {
+	public boolean isUserInfected(UserEpidemicExtension extension) {
 		HealthStatus status = extension.getHealthStatus();
 		return status == HealthStatus.EXPOSED ||
 			status == HealthStatus.INFECTIOUS_ASYMPTOMATIC ||
@@ -3207,6 +3331,325 @@ public class Simulation {
 
 		return String.format("S:%d, E:%d, I_A:%d, I_S:%d, SS:%d", 
 							susceptible, exposed, infectiousAsymp, infectiousSymp, superSpreader, recovered);
+	}
+
+
+	// EPIDEMIC STATISTICS
+	/**
+	 * Prints final epidemic statistics when simulation ends
+	 * Añadido por Nacho Palacio 2025-09-18
+	 */
+	private void printFinalEpidemicStatistics() {
+		if (!manualSimulation) {
+			return;
+		}	
+
+		try {
+			if (epidemicManager.getEpidemicModel() instanceof es.unizar.epidemic.models.PengTransmissionModel) {
+				epidemicManager.evaluateFinalAerosolTransmissions(getAllUsers());
+			}
+			else if (epidemicManager.getEpidemicModel() instanceof es.unizar.epidemic.models.LelieveldTransmissionModel) {
+				epidemicManager.evaluateFinalAerosolTransmissions(getAllUsers());
+			}
+
+			System.out.println("\n" + "=".repeat(100));
+			System.out.println("📊 ESTADÍSTICAS FINALES DE LA SIMULACIÓN");
+			System.out.println("=".repeat(100));
+			
+			EpidemicConfiguration config = es.unizar.epidemic.EpidemicConfiguration.getInstance();
+			String model = config.getSelectedModel();
+			
+			List<User> users = getAllUsers();
+			int totalUsers = users.size();
+			int susceptible = 0, exposed = 0, infectiousSymp = 0, infectiousAsymp = 0, superSpreaders = 0, recovered = 0;
+			
+			for (User user : users) {
+				if (user.getEpidemicExtension() != null) {
+					switch (user.getEpidemicExtension().getHealthStatus()) {
+						case SUSCEPTIBLE:
+							susceptible++;
+							break;
+						case EXPOSED:
+							exposed++;
+							break;
+						case INFECTIOUS_SYMPTOMATIC:
+							infectiousSymp++;
+							break;
+						case INFECTIOUS_ASYMPTOMATIC:
+							infectiousAsymp++;
+							break;
+						case SUPER_SPREADER:
+							superSpreaders++;
+							break;
+					}
+				} else {
+					susceptible++;
+				}
+			}
+			
+			int initialInfected = EpidemicConfiguration.getInstance().getInitialInfectedUsers();
+			int newInfected = (totalUsers - susceptible) - initialInfected;
+			config.setFinalInfectedUsers(initialInfected + newInfected);
+			config.setTotalUsers(totalUsers);
+			
+			int initialSusceptibles = totalUsers - initialInfected;
+			double attackRate = initialSusceptibles > 0 ? (double)newInfected / initialSusceptibles : 0.0;
+			int totalInfectious = infectiousSymp + infectiousAsymp + superSpreaders;
+
+			int totalContacts = 0;
+			int infectiousContacts = 0;
+			double averageConcentration = 0.0;
+			
+			try {
+				es.unizar.epidemic.statistics.EpidemicStatistics stats = 
+					es.unizar.epidemic.statistics.EpidemicStatistics.getInstance();
+				totalContacts = stats.getTotalContacts();
+				infectiousContacts = stats.getInfectiousContacts();
+				
+				double concentration = stats.getAverageAerosolConcentration();
+				averageConcentration = Double.isNaN(concentration) ? 0.0 : concentration;
+			} catch (Exception e) {
+				System.out.println("⚠️ Warning: No se pudieron obtener estadísticas epidémicas detalladas");
+			}
+
+			double individualRisk = calculateIndividualRiskForCurrentModel();
+			double combinedRisk = calculateCombinedIndividualRiskForAllRooms();
+			double avgRisk = calculateAverageTheoreticalRiskForAllRooms();
+			
+			// System.out.printf("%-20s %-12s %-12s %-12s %-12s %-12s %-12s\n",
+			// 				"MODELO", "TASA ATAQUE", "INFECTIVOS", "CONTACTOS", "CONT.INFEC", "CONCENTR.", "RIESGO INDIV.");
+			// System.out.println("-".repeat(110));
+			
+			// System.out.printf("%-20s %-11.2f%% %-12d %-12d %-12d %-12.6f %-11.2f%%\n",
+			// 				model != null ? model : "UNKNOWN",
+			// 				attackRate * 100,
+			// 				totalInfectious,
+			// 				totalContacts,
+			// 				infectiousContacts,
+			// 				averageConcentration,
+			// 				avgRisk * 100);
+
+			 if ("SIMPLE_PROXIMITY".equals(model)) {
+				System.out.printf("%-20s %-12s %-12s %-12s %-12s\n",
+					"CONFIGURACIÓN", "TASA ATAQUE", "INFECTIVOS", "CONTACTOS", "CONT.INFEC");
+			} else if ("AEROSOL_PENG".equals(model)) {
+				System.out.printf("%-20s %-12s %-12s %-22s %-12s\n",
+					"CONFIGURACIÓN", "TASA ATAQUE", "INFECTIVOS", "CONCENTR. (quanta/m³)", "RIESGO INDIV.");
+			} else if ("AEROSOL_LELIEVELD".equals(model)) {
+				System.out.printf("%-20s %-12s %-12s %-28s %-12s\n",
+					"CONFIGURACIÓN", "TASA ATAQUE", "INFECTIVOS", "CONCENTR. (copias RNA/m³)", "RIESGO INDIV.");
+			}
+
+
+			if ("SIMPLE_PROXIMITY".equals(model)) {
+				System.out.printf("%-20s %-12.2f %-12d %-12d %-12d\n",
+					model,
+					attackRate * 100,
+					totalInfectious,
+					totalContacts,
+					infectiousContacts
+				);
+			} 
+			else if ("AEROSOL_PENG".equals(model)) {
+				System.out.printf("%-20s %-12.2f %-12d %-22.6f %-12.2f\n",
+					model,
+					attackRate * 100,
+					totalInfectious,
+					averageConcentration,
+					avgRisk * 100
+				);
+			} 
+			else if ("AEROSOL_LELIEVELD".equals(model)) {
+				System.out.printf("%-20s %-12.2f %-12d %-22.6f %-12.2f\n",
+					model,
+					attackRate * 100,
+					totalInfectious,
+					averageConcentration,
+					avgRisk * 100
+				);
+			}
+			
+			System.out.println("-".repeat(90));
+			System.out.println("\n📋 DETALLES DE LA SIMULACIÓN:");
+			System.out.printf("   👥 Total usuarios: %d\n", totalUsers);
+
+			double elapsedSimulatedTime = 0.0;
+
+			try {
+				config = es.unizar.epidemic.EpidemicConfiguration.getInstance();
+				double timePerIteration = getTimeForIterationInSecond();
+				elapsedSimulatedTime = getCurrentSimulationIteration() * timePerIteration;
+				
+				System.out.printf("   ⏱️  Duración configurada: %d minutos (%.0f segundos)\n", 
+								config.getSimulationDuration(), 
+								(double) config.getSimulationDurationSeconds());
+				System.out.printf("   ⏱️  Tiempo simulado transcurrido: %.1f segundos (%.1f minutos)\n", 
+								elapsedSimulatedTime, elapsedSimulatedTime / 60.0);
+				System.out.printf("   🔄 Iteraciones ejecutadas: %d\n", getCurrentSimulationIteration());
+				System.out.printf("   ⚡ Tiempo por iteración: %.1f segundos simulados\n", timePerIteration);
+			} catch (Exception e) {
+				System.err.println("⚠️ Error obteniendo información de duración: " + e.getMessage());
+			}
+
+
+			System.out.printf("   🟢 Susceptibles: %d (%.1f%%)\n", susceptible, (susceptible * 100.0 / totalUsers));
+			System.out.printf("   🟡 Expuestos: %d (%.1f%%)\n", exposed, (exposed * 100.0 / totalUsers));
+			System.out.printf("   🔴 Infectivos sintomáticos: %d (%.1f%%)\n", infectiousSymp, (infectiousSymp * 100.0 / totalUsers));
+			System.out.printf("   🟠 Infectivos asintomáticos: %d (%.1f%%)\n", infectiousAsymp, (infectiousAsymp * 100.0 / totalUsers));
+			System.out.printf("   🔥 Super-spreaders: %d (%.1f%%)\n", superSpreaders, (superSpreaders * 100.0 / totalUsers));
+			System.out.printf("   🟦 Recuperados: %d (%.1f%%)\n", recovered, (recovered * 100.0 / totalUsers));
+			
+			System.out.println("\n📊 MÉTRICAS EPIDÉMICAS:");
+			System.out.printf("   📈 Tasa de ataque final: %.2f%%\n", attackRate * 100);
+			System.out.printf("   🦠 Casos activos: %d (%.1f%%)\n", totalInfectious, (totalInfectious * 100.0 / totalUsers));
+			System.out.printf("   🤝 Contactos totales registrados: %d\n", totalContacts);
+			System.out.printf("   ⚠️  Contactos infecciosos: %d\n", infectiousContacts);
+			if (totalContacts > 0) {
+				System.out.printf("   📊 Proporción contactos infecciosos: %.1f%%\n", (infectiousContacts * 100.0 / totalContacts));
+			}
+			System.out.printf("   🌬️  Concentración aerosol promedio: %.6f\n", averageConcentration);
+			System.out.printf("   🎯 Riesgo individual teórico: %.2f%%\n", individualRisk);
+			System.out.printf("   ⏱️  Tiempo simulado transcurrido: %.1f segundos (%.1f minutos)\n", 
+                elapsedSimulatedTime, elapsedSimulatedTime / 60.0);
+			System.out.printf("   🔄 Iteraciones ejecutadas: %d\n", getCurrentSimulationIteration());
+
+			System.out.println("=".repeat(100));
+			
+		} catch (Exception e) {
+			System.err.println("❌ Error imprimiendo estadísticas finales: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+
+	public double calculateCombinedIndividualRiskForAllRooms() {
+		List<User> allUsers = getAllUsers();
+		double totalRisk = 0.0;
+		int susceptibleCount = 0;
+
+		if (epidemicManager.getEpidemicModel() instanceof PengTransmissionModel) {
+			PengTransmissionModel pengModel = (PengTransmissionModel) epidemicManager.getEpidemicModel();
+			for (User user : allUsers) {
+				UserEpidemicExtension ext = user.getEpidemicExtension();
+				if (ext != null && ext.getHealthStatus() == HealthStatus.SUSCEPTIBLE && !ext.isImmune()) {
+					double risk = pengModel.calculateCombinedInfectionRiskForUser(user);
+					totalRisk += risk;
+					susceptibleCount++;
+				}
+			}
+		} else if (epidemicManager.getEpidemicModel() instanceof LelieveldTransmissionModel) {
+			LelieveldTransmissionModel lelieveldModel = (LelieveldTransmissionModel) epidemicManager.getEpidemicModel();
+			for (User user : allUsers) {
+				UserEpidemicExtension ext = user.getEpidemicExtension();
+				if (ext != null && ext.getHealthStatus() == HealthStatus.SUSCEPTIBLE && !ext.isImmune()) {
+					double risk = lelieveldModel.calculateCombinedInfectionRiskForUser(user);
+					totalRisk += risk;
+					susceptibleCount++;
+				}
+			}
+		}
+
+		return susceptibleCount > 0 ? totalRisk / susceptibleCount : 0.0;
+	}
+
+	/**
+	 * Calculates individual risk for the current epidemic model
+	 * Añadido por Nacho Palacio 2025-09-18
+	 */
+	private double calculateIndividualRiskForCurrentModel() {
+        return EpidemicRiskCalculator.calculateCurrentModelRisk();
+    }
+
+	/**
+	 * Verifies if the simulation has finished based on configured duration
+	 * Añadido por Nacho Palacio 2025-09-18
+	 */
+	private boolean hasSimulationTimeExpired() {
+		try {
+			EpidemicConfiguration config = es.unizar.epidemic.EpidemicConfiguration.getInstance();
+			int maxDurationSeconds = config.getSimulationDurationSeconds();
+			
+			double timePerIteration = getTimeForIterationInSecond();
+			int currentIterationCount = getCurrentSimulationIteration();
+			double elapsedSimulatedTime = currentIterationCount * timePerIteration;
+			
+			boolean timeExpired = elapsedSimulatedTime >= maxDurationSeconds;
+			
+			if (timeExpired) {
+				System.out.println("   \n🛑 Criterio de parada: Duración de simulación completada (" + 
+								String.format("%.1f", elapsedSimulatedTime) + "/" + maxDurationSeconds + " segundos)");
+			}
+			
+			return timeExpired;
+			
+		} catch (Exception e) {
+			System.err.println("⚠️ Error verificando duración de simulación: " + e.getMessage());
+			return false;
+		}
+	}
+
+	/**
+	 * Gets the current iteration count for the simulation
+	 * Añadido por Nacho Palacio 2025-09-18
+	 */
+	private int simulationIterationCounter = 0;
+
+	private int getCurrentSimulationIteration() {
+		return simulationIterationCounter;
+	}
+
+	private void incrementSimulationIteration() {
+		simulationIterationCounter++;
+	}
+
+	/**
+	 * Shows simulation progress every simulated minute
+	 * Añadido por Nacho Palacio 2025-09-18
+	 * DEBUG
+	 */
+	private void showSimulationProgress() {
+		try {
+			EpidemicConfiguration config = es.unizar.epidemic.EpidemicConfiguration.getInstance();
+			double timePerIteration = getTimeForIterationInSecond();
+			double elapsedSimulatedTime = getCurrentSimulationIteration() * timePerIteration;
+			int maxDurationSeconds = config.getSimulationDurationSeconds();
+			
+			if (simulationIterationCounter % 60 == 0 && simulationIterationCounter > 0) {
+				int minutesElapsed = (int) (elapsedSimulatedTime / 60);
+				int totalMinutes = maxDurationSeconds / 60;
+				double progressPercent = (elapsedSimulatedTime / maxDurationSeconds) * 100;
+				
+				MainSimulator.printConsole(String.format("⏰ Progreso simulación: %d/%d minutos (%.1f%%)", 
+										minutesElapsed, totalMinutes, progressPercent), Level.INFO);
+			}
+			
+		} catch (Exception e) {
+		}
+	}
+
+	/**
+	 * Calculates the average theoretical risk for all rooms based on current epidemic model
+	 */
+	public double calculateAverageTheoreticalRiskForAllRooms() {
+		List<User> allUsers = getAllUsers();
+		Map<Integer, List<User>> usersInRoom = new HashMap<>();
+		for (User user : allUsers) {
+			int roomId = user.room;
+			if (roomId < 0) continue;
+			usersInRoom.computeIfAbsent(roomId, k -> new ArrayList<>()).add(user);
+		}
+		List<Integer> roomIds = new ArrayList<>(usersInRoom.keySet());
+		double exposureTimeHours = (getCurrentSimulationIteration() * getTimeForIterationInSecond()) / 3600.0;
+
+		double avgRisk = 0.0;
+		if (epidemicManager.getEpidemicModel() instanceof PengTransmissionModel) {
+			PengTransmissionModel pengModel = (PengTransmissionModel) epidemicManager.getEpidemicModel();
+			avgRisk = EpidemicRiskCalculator.calculateAveragePengRiskForAllRooms(roomIds, usersInRoom, pengModel, exposureTimeHours);
+		} else if (epidemicManager.getEpidemicModel() instanceof LelieveldTransmissionModel) {
+			LelieveldTransmissionModel lelieveldModel = (LelieveldTransmissionModel) epidemicManager.getEpidemicModel();
+			avgRisk = EpidemicRiskCalculator.calculateAverageLelieveldRiskForAllRooms(roomIds, usersInRoom, lelieveldModel, exposureTimeHours);
+		}
+		
+		return avgRisk;
 	}
 
 }

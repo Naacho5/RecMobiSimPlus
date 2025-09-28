@@ -18,12 +18,13 @@ public class LelieveldParameters {
     private double respiratoryRateM3h = 0.6;           // m³/h (calculado)
 
     // CARGA VIRAL
-    private double viralLoadHighCm3 = 1.5e6;             // copias RNA/cm³ (antes 5e8 -> 1.5e6)
+    // Modificado porque 5e8 es el momento de máxima carga viral, no la carga típica
+    private double viralLoadHighCm3 = 1.5e7;             // copias RNA/cm³ (antes 5e8 -> 1.5e6, 1.5e7)
     private double viralLoadSuperCm3 = 5e9;            // copias RNA/cm³
 
     // PARÁMETROS DE DEPOSICIÓN E INFECCIÓN
     private double depositionProbability = 0.5;        // probabilidad
-    private double infectiveDoseD50 = 316;             // copias RNA
+    private double infectiveDoseD50 = 100;             // copias RNA (antes 316)
 
     // PARÁMETROS DEL ENTORNO
     private double roomAreaM2 = 60.0;                  // m²
@@ -85,20 +86,20 @@ public class LelieveldParameters {
         double avgEmissionConcentration = concentrationBreathingCm3 * (1 - speakingBreathingRatio) + 
                                         concentrationSpeakingCm3 * speakingBreathingRatio;
         double viralEmission = avgEmissionConcentration * viralLoadCm3;
-
         double maskFactor = 1.0 - (maskEfficiencyExh * fractionWithMasks);
-
+    
         if (maskFactor <= 0) {
+            System.out.println("   ❌ ERROR: Factor mascarilla <= 0, devolviendo 0");
             return 0.0;
         }
         
         double totalEmission = viralEmission * respiratoryRateM3h * infectivePeople * maskFactor;
-       
+
         double lossRate = totalVentilationRateH + virusDecayRateHour;
         
         double denominatorFactor = roomVolumeM3 * lossRate;
-        double finalConcentration = totalEmission / denominatorFactor;
         
+        double finalConcentration = totalEmission / denominatorFactor;
         
         return finalConcentration;
     }
@@ -113,22 +114,23 @@ public class LelieveldParameters {
         if (viralLoadCm3 <= 0) {
             return 0.0;
         }
+
+        // Modificado por Nacho Palacio 2025-09-25
+        // double fractionMasks = subjectsInRoom > 0 ? (subjectsInRoom - infectivePeople) / (double)subjectsInRoom : 0;
+        // double concentration = calculateViralConcentration(viralLoadCm3, fractionMasks);
         
-        double fractionMasks = subjectsInRoom > 0 ? (subjectsInRoom - infectivePeople) / (double)subjectsInRoom : 0;
-        double concentration = calculateViralConcentration(viralLoadCm3, fractionMasks);  
+        double concentration = calculateViralConcentration(viralLoadCm3, fractionPeopleWithMasks);
+        
         double inhalaedDose = concentration * respiratoryRateM3h * timeHours * maskProtectionFactor * depositionProbability;
-             
+
         double PRNA = calculateSingleVirusProbability();
+        
         double infectionProb = 1.0 - Math.pow(1.0 - PRNA, inhalaedDose);
+
+        double immunityReduction = 1.0 - (fractionImmune * 0.7); // Inmunidad reduce 70% la transmisión
+        double finalInfectionProb = infectionProb * immunityReduction;
         
-        if (infectionProb < 0) {
-            return 0.0;
-        }
-        if (infectionProb > 1) {
-            infectionProb = 1.0;
-        }
-        
-        return infectionProb;
+        return Math.min(1.0, Math.max(0.0, finalInfectionProb));
     }
 
     /**
@@ -273,5 +275,13 @@ public class LelieveldParameters {
     
     public static double metersToPixels(double meters) {
         return meters * es.unizar.gui.Configuration.getPixelsPerMeter();
+    }
+
+    public void setDepositionProbability(double depositionProbability2) {
+        this.depositionProbability = depositionProbability2;
+    }
+
+    public void setInfectiveDoseD50(double infectiousDose) {
+        this.infectiveDoseD50 = infectiousDose;
     }
 }

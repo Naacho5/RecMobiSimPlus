@@ -5,7 +5,9 @@ import es.unizar.epidemic.HealthStatus;
 import es.unizar.epidemic.UserEpidemicExtension;
 import es.unizar.epidemic.models.*;
 import es.unizar.gui.Configuration;
+import es.unizar.gui.simulation.Simulation;
 import es.unizar.gui.simulation.User;
+import es.unizar.epidemic.tests.SimulationUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,49 +37,206 @@ import java.util.Arrays;
  */
 public class TestGraficas {
     
-    // REFERENCE PARAMETERS
-    private static final double VENTILATION_RATE = 3.0;        // h⁻¹
-    private static final double VIRUS_DECAY_RATE = 0.62;       // h⁻¹
-    private static final double MASK_FRACTION = 0.1;           // 10%
-    private static final double IMMUNE_FRACTION = 0.05;        // 5%
-    private static final double INFECTIOUS_PROBABILITY = 0.02; // 2%
-    
-    // ROOM CONFIGURATION
-    private static final double ROOM_LENGTH = 24.4; /*10.0;*/    // meters
-    private static final double ROOM_WIDTH = 15.3; /*8.0;*/      // meters
-    private static final double ROOM_HEIGHT = 5.5; /*3.0;*/      // meters
-    // private static final double ROOM_VOLUME = 240.0;   // m³
-    
-    // REFERENCE GRAPHS DATA
-    private static final int[] VISITOR_COUNTS = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200};
-    private static final double[] VISITOR_RISKS_MODEL = {0.008, 0.068, 0.141, 0.213, 0.297, 0.379, 0.461, 0.533, 0.612, 0.693, 0.767, 0.847, 0.928, 1.003, 1.083, 1.158, 1.238, 1.319, 1.396, 1.473, 1.547};
-    
-    private static final int[] DURATION_MINUTES = {0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60};
-    private static final double[] DURATION_RISKS_MODEL = {0.000, 0.076, 0.175, 0.284, 0.401, 0.525, 0.653, 0.786, 0.922, 1.062, 1.205, 1.351, 1.500};
-    
+    // Current scenario being tested
+    private static Scenarios.TestScenario currentScenario;
 
-    private static double[] pengVisitorResults = new double[VISITOR_COUNTS.length];
-    private static double[] pengDurationResults = new double[DURATION_MINUTES.length];
-    private static double[] lelieveldVisitorResults = new double[VISITOR_COUNTS.length];
-    private static double[] lelieveldDurationResults = new double[DURATION_MINUTES.length];
-    private static double[] proximityVisitorResults = new double[VISITOR_COUNTS.length];
-    private static double[] proximityDurationResults = new double[DURATION_MINUTES.length];
+    // Results storage for current scenario
+    private static double[] pengVisitorResults;
+    private static double[] pengDurationResults;
+    private static double[] lelieveldVisitorResults;
+    private static double[] lelieveldDurationResults;
+    private static double[] proximityVisitorResults;
+    private static double[] proximityDurationResults;
+
+    private static double pengSpecificResult = 0.0;
+    private static double lelieveldSpecificResult = 0.0;
+    private static double proximitySpecificResult = 0.0;
 
     
     public static void main(String[] args) {
-        System.out.println("📊 === VALIDATION AGAINST REFERENCE GRAPHS ===");
+        System.out.println("📊 === VALIDATION AGAINST REFERENCE GRAPHS - MULTIPLE SCENARIOS ===");
         System.out.println("📅 Date: " + java.time.LocalDateTime.now());
-        System.out.println("🔬 Testing 3 epidemic models against expected data");
-        System.out.println("=".repeat(70));
+        System.out.println("🔬 Testing 3 epidemic models across different scenarios");
+        System.out.println("=".repeat(80));
         
+        // Test all scenarios
+        testAllScenarios();
+        
+        System.out.println("\n=".repeat(80));
+        System.out.println("📅 Finalizado: " + java.time.LocalDateTime.now());
+    }
+
+    /**
+     * Tests all predefined scenarios
+     */
+    private static void testAllScenarios() {
+        List<Scenarios.TestScenario> scenarios = Scenarios.getAllScenarios();
+        
+        for (int i = 0; i < scenarios.size(); i++) {
+            Scenarios.TestScenario scenario = scenarios.get(i);
+            
+            System.out.println("\n" + "=".repeat(80));
+            System.out.println("🎯 ESCENARIO " + (i + 1) + "/" + scenarios.size() + ": " + scenario.name);
+            System.out.println("📝 " + scenario.description);
+            System.out.println("=".repeat(80));
+            
+            testSingleScenario(scenario);
+            
+            System.out.println("\n=== GENERATING SCENARIO GRAPHS ===");
+            generateScenarioGraphs(scenario, i + 1);
+        }
+        
+        // Generate comparison between scenarios
+        System.out.println("\n=== GENERATING SCENARIO COMPARISON ===");
+        generateScenarioComparison(scenarios);
+    }
+
+    /**
+     * Tests a single scenario with all three models
+     */
+    private static void testSingleScenario(Scenarios.TestScenario scenario) {
+        currentScenario = scenario;
+        
+        // Initialize result arrays
+        pengVisitorResults = new double[scenario.visitorCounts.length];
+        pengDurationResults = new double[scenario.durationMinutes.length];
+        lelieveldVisitorResults = new double[scenario.visitorCounts.length];
+        lelieveldDurationResults = new double[scenario.durationMinutes.length];
+        proximityVisitorResults = new double[scenario.visitorCounts.length];
+        proximityDurationResults = new double[scenario.durationMinutes.length];
+        
+        // Test all models with incremental ranges
         testPengTransmissionModel();
         testLelieveldTransmissionModel();
-        testSimpleProximityModel();
-
-        System.out.println("\n === GENERATING VALIDATION GRAPHS ===");
-        generateValidationGraphs();
+        // testSimpleProximityModel();
         
-        printFinalSummary();
+        if (!scenario.name.equals("Original Reference")) {
+            System.out.println("\n🎯 === PRUEBA ESPECÍFICA CON PARÁMETROS DEL ESCENARIO ===");
+            testSpecificScenarioParameters(scenario);
+        }
+        
+        // Print scenario summary
+        printScenarioSummary();
+    }
+
+    /**
+     * Tests the scenario with its specific defined parameters
+     */
+    private static void testSpecificScenarioParameters(Scenarios.TestScenario scenario) {
+        System.out.println("📋 Parámetros específicos del escenario '" + scenario.name + "':");
+        System.out.println("   👥 Visitantes estándar: " + scenario.standardVisitorCount);
+        System.out.println("   ⏱️  Exposición estándar: " + scenario.standardExposureHours + " horas (" + 
+                        (scenario.standardExposureHours * 60) + " minutos)");
+        System.out.println("   🏠 Dimensiones: " + scenario.roomLength + "×" + scenario.roomWidth + "×" + scenario.roomHeight + " m");
+        System.out.println("   💨 Ventilación: " + scenario.ventilationRate + " h⁻¹");
+        System.out.println("   😷 Fracción mascarillas: " + (scenario.maskFraction * 100) + "%");
+        System.out.println("   🦠 Probabilidad infecciosa: " + (scenario.infectiousProbability * 100) + "%");
+        
+        // Test with specific parameters
+        testSpecificParameters_Peng(scenario);
+        testSpecificParameters_Lelieveld(scenario);
+        testSpecificParameters_SimpleProximity(scenario);
+        
+        printSpecificParametersResults(scenario);
+    }
+
+    /**
+     * Tests Peng model with specific scenario parameters
+     */
+    private static void testSpecificParameters_Peng(Scenarios.TestScenario scenario) {
+        try {
+            PengTransmissionModel model = new PengTransmissionModel();
+            
+            model.configureForRoom(scenario.roomLength, scenario.roomWidth, 
+                    scenario.roomHeight, scenario.ventilationRate);
+            model.configureMasks(0.5, 0.3, scenario.maskFraction);
+
+            PengParameters params = model.getParameters();
+            params.setVirusDecayRate(scenario.virusDecayRate);
+            params.setFractionImmune(scenario.immuneFraction);
+            
+            int infectiousCount = Math.max(1, (int) Math.round(scenario.standardVisitorCount * scenario.infectiousProbability));
+            params.setPeopleCount(scenario.standardVisitorCount, infectiousCount);
+            
+            double specificRisk = params.calculateInfectionProbability(scenario.standardExposureHours, infectiousCount) * 100;
+            
+            pengSpecificResult = specificRisk;
+            
+            System.out.println("   🧪 Peng: " + String.format("%.3f", specificRisk) + "%");
+
+            System.out.println("   🧪 Peng (teórico): " + String.format("%.3f", specificRisk) + "%");
+
+            Simulation simulation = SimulationUtils.createAndRunSimulation(scenario, "AEROSOL_PENG");
+            double avgRiskSim = simulation.calculateAverageTheoreticalRiskForAllRooms() * 100;
+            System.out.println("   🧪 Peng (simulación real): " + String.format("%.3f", avgRiskSim) + "%");
+            
+        } catch (Exception e) {
+            System.out.println("   ❌ Error en Peng específico: " + e.getMessage());
+            pengSpecificResult = -1.0;
+        }
+    }
+
+    /**
+     * Tests Lelieveld model with specific scenario parameters
+     */
+    private static void testSpecificParameters_Lelieveld(Scenarios.TestScenario scenario) {
+        try {
+            LelieveldTransmissionModelTestVersion model = new LelieveldTransmissionModelTestVersion();
+            
+            LelieveldParameters params = model.getLelieveldParameters();
+            params.setRoomDimensions(scenario.roomLength, scenario.roomWidth, scenario.roomHeight);
+            params.setVentilationRates(scenario.ventilationRate, 0.0, false);
+            params.setMaskParameters(0.3, 0.4, scenario.maskFraction);
+            params.setFractionImmune(scenario.immuneFraction);
+            
+            int infectiousCount = Math.max(1, (int) Math.round(scenario.standardVisitorCount * scenario.infectiousProbability));
+            params.setPeopleCount(scenario.standardVisitorCount, infectiousCount);
+            
+            double maskInhalationProtection = 1.0;  // Usar protección completa para consistencia
+            double specificRisk = params.calculateInfectionProbability(
+                scenario.standardExposureHours, params.getViralLoadHighCm3(), maskInhalationProtection) * 100;
+            
+            // Store in a global variable for display
+            lelieveldSpecificResult = specificRisk;
+            
+            System.out.println("   🔬 Lelieveld: " + String.format("%.3f", specificRisk) + "%");
+
+            System.out.println("   🧪 Lelieveld (teórico): " + String.format("%.3f", specificRisk) + "%");
+
+            Simulation simulation = SimulationUtils.createAndRunSimulation(scenario, "AEROSOL_LELIEVELD");
+            double avgRiskSim = simulation.calculateAverageTheoreticalRiskForAllRooms() * 100;
+            System.out.println("   🧪 Lelieveld (simulación real): " + String.format("%.3f", avgRiskSim) + "%");
+
+        } catch (Exception e) {
+            System.out.println("   ❌ Error en Lelieveld específico: " + e.getMessage());
+            lelieveldSpecificResult = -1.0;
+        }
+    }
+
+    /**
+     * Tests SimpleProximity model with specific scenario parameters
+     */
+    private static void testSpecificParameters_SimpleProximity(Scenarios.TestScenario scenario) {
+        try {
+            Configuration.setPixelsPerMeter(6.6);
+            
+            SimpleProximityModel model = new SimpleProximityModel();
+            model.configureSimpleModel(5.0, scenario.infectiousProbability, 10);
+            
+            int infectiousCount = Math.max(1, (int) Math.round(scenario.standardVisitorCount * scenario.infectiousProbability));
+            
+            double specificRisk = simulateFixedRoomOccupancy(model, scenario.standardVisitorCount, 
+                                                            infectiousCount, scenario.standardExposureHours);
+            
+            // Store in a global variable for display
+            proximitySpecificResult = specificRisk;
+            
+            System.out.println("   📏 SimpleProximity: " + String.format("%.3f", specificRisk) + "%");
+            
+        } catch (Exception e) {
+            System.out.println("   ❌ Error en SimpleProximity específico: " + e.getMessage());
+            proximitySpecificResult = -1.0;
+        }
     }
     
     
@@ -92,14 +251,15 @@ public class TestGraficas {
         try {
             PengTransmissionModel model = new PengTransmissionModel();
             
-            model.configureForRoom(ROOM_LENGTH, ROOM_WIDTH, ROOM_HEIGHT, VENTILATION_RATE);
-            model.configureMasks(0.5, 0.3, MASK_FRACTION);
-            
+            model.configureForRoom(currentScenario.roomLength, currentScenario.roomWidth, 
+                     currentScenario.roomHeight, currentScenario.ventilationRate);
+            model.configureMasks(0.5, 0.3, currentScenario.maskFraction);
+
             PengParameters params = model.getParameters();
-            params.setVirusDecayRate(VIRUS_DECAY_RATE);
-            params.setFractionImmune(IMMUNE_FRACTION);
-            
-            System.out.println("   ✓ Peng model configured");
+            params.setVirusDecayRate(currentScenario.virusDecayRate);
+            params.setFractionImmune(currentScenario.immuneFraction);
+
+            System.out.println("   ✓ Peng model configured for scenario: " + currentScenario.name);
             
             // Test 1: Variation by number of visitors
             runTest("Peng: Variation by number of visitors", 
@@ -120,27 +280,16 @@ public class TestGraficas {
         System.out.println("   Testing variation by number of visitors...");
         
         PengParameters params = model.getParameters();
-
-        double exposureHours = 0.33;
         
-        List<Double> calculatedRisks = new ArrayList<>();
-        List<Double> expectedRisks = new ArrayList<>();
-        
-        for (int i = 0; i < VISITOR_COUNTS.length; i++) {
-            int visitors = VISITOR_COUNTS[i];
-            double expectedRisk = VISITOR_RISKS_MODEL[i];
+        for (int i = 0; i < currentScenario.visitorCounts.length; i++) {
+            int visitors = currentScenario.visitorCounts[i];
             
             if (visitors == 0) {
-                calculatedRisks.add(0.0);
-                expectedRisks.add(expectedRisk);
-                pengVisitorResults[i] = 0.0; 
+                pengVisitorResults[i] = 0.0;
                 continue;
             }
 
-            double calculatedRisk = calculateRiskWithInterpolation(params, visitors, exposureHours); // Modificado
-            
-            calculatedRisks.add(calculatedRisk);
-            expectedRisks.add(expectedRisk);
+            double calculatedRisk = calculateRiskWithInterpolation(params, visitors, currentScenario.standardExposureHours);
             pengVisitorResults[i] = calculatedRisk;
         }
         
@@ -151,21 +300,15 @@ public class TestGraficas {
         System.out.println("    Testing variation by duration...");
         
         PengParameters params = model.getParameters();
-        int standardVisitors = 40;
-        int infectiousCount = Math.max(1, (int) Math.round(standardVisitors * INFECTIOUS_PROBABILITY));
+        int standardVisitors = currentScenario.standardVisitorCount;
+        int infectiousCount = Math.max(1, (int) Math.round(standardVisitors * currentScenario.infectiousProbability));
         
         params.setPeopleCount(standardVisitors, infectiousCount);
         
-        List<Double> calculatedRisks = new ArrayList<>();
-        List<Double> expectedRisks = new ArrayList<>();
-        
-        for (int i = 0; i < DURATION_MINUTES.length; i++) {
-            int durationMinutes = DURATION_MINUTES[i];
-            double expectedRisk = DURATION_RISKS_MODEL[i];
+        for (int i = 0; i < currentScenario.durationMinutes.length; i++) {
+            int durationMinutes = currentScenario.durationMinutes[i];
             
             if (durationMinutes == 0) {
-                calculatedRisks.add(0.0);
-                expectedRisks.add(expectedRisk);
                 pengDurationResults[i] = 0.0;
                 continue;
             }
@@ -173,8 +316,6 @@ public class TestGraficas {
             double exposureHours = durationMinutes / 60.0;
             double calculatedRisk = params.calculateInfectionProbability(exposureHours, infectiousCount) * 100;
             
-            calculatedRisks.add(calculatedRisk);
-            expectedRisks.add(expectedRisk);
             pengDurationResults[i] = calculatedRisk;
         }
         
@@ -194,13 +335,11 @@ public class TestGraficas {
             LelieveldTransmissionModelTestVersion model = new LelieveldTransmissionModelTestVersion();
             
             LelieveldParameters params = model.getLelieveldParameters();
-            params.setRoomDimensions(ROOM_LENGTH, ROOM_WIDTH, ROOM_HEIGHT);
-            params.setVentilationRates(VENTILATION_RATE, 0.0, false);
-            params.setMaskParameters(0.3, 0.4, MASK_FRACTION);
-            
-            params.setFractionImmune(IMMUNE_FRACTION);
-            
-            System.out.println("   ✓ Lelieveld model configured");
+
+            params.setRoomDimensions(currentScenario.roomLength, currentScenario.roomWidth, currentScenario.roomHeight);
+            params.setVentilationRates(currentScenario.ventilationRate, 0.0, false);
+            params.setMaskParameters(0.3, 0.4, currentScenario.maskFraction);
+            params.setFractionImmune(currentScenario.immuneFraction);
             
             // Test 1: Variation by number of visitors
             runTest("Lelieveld: Variation by number of visitors", 
@@ -221,27 +360,29 @@ public class TestGraficas {
         System.out.println("   📈 Testing variation by number of visitors...");
         
         LelieveldParameters params = model.getLelieveldParameters();
-        double exposureHours = 0.33;
+        double exposureHours = currentScenario.standardExposureHours;
+
+        System.out.println("   📋 DIAGNÓSTICO - Variación por visitantes:");
+        System.out.println("      Exposición estándar: " + exposureHours + " horas");
+        System.out.println("      Probabilidad infecciosa: " + currentScenario.infectiousProbability);
         
-        List<Double> calculatedRisks = new ArrayList<>();
-        List<Double> expectedRisks = new ArrayList<>();
         
-        for (int i = 0; i < VISITOR_COUNTS.length; i++) {
-            int visitors = VISITOR_COUNTS[i];
-            double expectedRisk = VISITOR_RISKS_MODEL[i];
+        for (int i = 0; i < currentScenario.visitorCounts.length; i++) {
+            int visitors = currentScenario.visitorCounts[i];
             
             if (visitors == 0) {
-                calculatedRisks.add(0.0);
-                expectedRisks.add(expectedRisk);
                 lelieveldVisitorResults[i] = 0.0;
                 continue;
             }
 
-            double calculatedRisk = calculateRiskWithInterpolation_Lelieveld(params, visitors, exposureHours); // Modificado
-            
-            calculatedRisks.add(calculatedRisk);
-            expectedRisks.add(expectedRisk);
+            // DEBUG
+            System.out.println("   🔍 VISITANTE " + visitors + ":");
+
+            double calculatedRisk = calculateRiskWithInterpolation_Lelieveld(params, visitors, exposureHours);
             lelieveldVisitorResults[i] = calculatedRisk;
+
+            // DEBUG
+            System.out.println("      Riesgo calculado: " + calculatedRisk + "%");
         }
     }
     
@@ -249,31 +390,24 @@ public class TestGraficas {
         System.out.println("    Testing variation by duration...");
         
         LelieveldParameters params = model.getLelieveldParameters();
-        int standardVisitors = 40;
-        int infectiousCount = Math.max(1, (int) Math.round(standardVisitors * INFECTIOUS_PROBABILITY));
+        int standardVisitors = currentScenario.standardVisitorCount;
+        int infectiousCount = Math.max(1, (int) Math.round(standardVisitors * currentScenario.infectiousProbability));
         
         params.setPeopleCount(standardVisitors, infectiousCount);
         
-        List<Double> calculatedRisks = new ArrayList<>();
-        List<Double> expectedRisks = new ArrayList<>();
-        
-        for (int i = 0; i < DURATION_MINUTES.length; i++) {
-            int durationMinutes = DURATION_MINUTES[i];
-            double expectedRisk = DURATION_RISKS_MODEL[i];
+        for (int i = 0; i < currentScenario.durationMinutes.length; i++) {
+            int durationMinutes = currentScenario.durationMinutes[i];
             
             if (durationMinutes == 0) {
-                calculatedRisks.add(0.0);
-                expectedRisks.add(expectedRisk);
                 lelieveldDurationResults[i] = 0.0;
                 continue;
             }
             
             double exposureHours = durationMinutes / 60.0;
+            double maskInhalationProtection = 1.0 - (params.getMaskEfficiencyInh() * currentScenario.maskFraction);
             double calculatedRisk = params.calculateInfectionProbability(
-                exposureHours, params.getViralLoadHighCm3(), 1.0 - MASK_FRACTION) * 100;
+                exposureHours, params.getViralLoadHighCm3(), maskInhalationProtection) * 100;
             
-            calculatedRisks.add(calculatedRisk);
-            expectedRisks.add(expectedRisk);
             lelieveldDurationResults[i] = calculatedRisk;
         }
     }
@@ -292,9 +426,9 @@ public class TestGraficas {
             Configuration.setPixelsPerMeter(6.6);
             
             SimpleProximityModel model = new SimpleProximityModel();
-            model.configureSimpleModel(5.0, 0.02, 10); // 5m max, 2% base, 10s min
-            
-            System.out.println("   ✓ Simple Proximity model configured");
+            model.configureSimpleModel(5.0, currentScenario.infectiousProbability, 10);
+        
+            System.out.println("   ✓ Simple Proximity model configured for scenario: " + currentScenario.name);
             
             // Test 1: Variation by number of visitors
             runTest("Simple Proximity: Room occupancy simulation by visitors", 
@@ -315,17 +449,17 @@ public class TestGraficas {
      * Tests variation by number of visitors using fixed room occupancy simulation
      */
     private static void testRoomOccupancyVariation_SimpleProximity(SimpleProximityModel model) {        
-        double exposureHours = 0.33;
+        double exposureHours = currentScenario.standardExposureHours;
         
-        for (int i = 0; i < VISITOR_COUNTS.length; i++) {
-            int visitors = VISITOR_COUNTS[i];
+        for (int i = 0; i < currentScenario.visitorCounts.length; i++) {
+            int visitors = currentScenario.visitorCounts[i];
             
             if (visitors == 0) {
                 proximityVisitorResults[i] = 0.0;
                 continue;
             }
             
-            double exactInfectious = visitors * INFECTIOUS_PROBABILITY;
+            double exactInfectious = visitors * currentScenario.infectiousProbability;
             double calculatedRisk;
             
             if (exactInfectious < 1.0) {
@@ -344,11 +478,12 @@ public class TestGraficas {
      * Tests variation by exposure duration using fixed room occupancy simulation
      */
     private static void testExposureDurationVariation_SimpleProximity(SimpleProximityModel model) { 
-        int standardVisitors = 40;
-        int infectiousCount = Math.max(1, (int) Math.round(standardVisitors * INFECTIOUS_PROBABILITY));
+        int standardVisitors = currentScenario.standardVisitorCount;
+        int infectiousCount = Math.max(1, (int) Math.round(standardVisitors * currentScenario.infectiousProbability));
+    
         
-        for (int i = 0; i < DURATION_MINUTES.length; i++) {
-            int durationMinutes = DURATION_MINUTES[i];
+        for (int i = 0; i < currentScenario.durationMinutes.length; i++) {
+            int durationMinutes = currentScenario.durationMinutes[i];
             
             if (durationMinutes == 0) {
                 proximityDurationResults[i] = 0.0;
@@ -495,11 +630,11 @@ public class TestGraficas {
         double maxDistance = 0;
         
         for (int i = 0; i < samples; i++) {
-            double x1 = Math.random() * ROOM_LENGTH;
-            double y1 = Math.random() * ROOM_WIDTH;
-            double x2 = Math.random() * ROOM_LENGTH;
-            double y2 = Math.random() * ROOM_WIDTH;
-            
+            double x1 = Math.random() * currentScenario.roomLength;
+            double y1 = Math.random() * currentScenario.roomWidth;
+            double x2 = Math.random() * currentScenario.roomLength;
+            double y2 = Math.random() * currentScenario.roomWidth;
+          
             double distance = Math.sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1));
             
             minDistance = Math.min(minDistance, distance);
@@ -521,8 +656,9 @@ public class TestGraficas {
             throw new RuntimeException("Error creando usuario: " + e.getMessage(), e);
         }
         
-        double xMeters = Math.random() * ROOM_LENGTH;
-        double yMeters = Math.random() * ROOM_WIDTH;
+        double xMeters = Math.random() * currentScenario.roomLength;
+        double yMeters = Math.random() * currentScenario.roomWidth;
+    
         
         double pixelsPerMeter = Configuration.getPixelsPerMeter();
         
@@ -532,7 +668,7 @@ public class TestGraficas {
         
         UserEpidemicExtension extension = new UserEpidemicExtension();
         extension.setHealthStatus(status);
-        extension.setMaskWearing(Math.random() < MASK_FRACTION);
+        extension.setMaskWearing(Math.random() < currentScenario.maskFraction);
         extension.setIncubationPeriod(120);
         extension.setInfectiousPeriod(240);
         user.setEpidemicExtension(extension);
@@ -573,11 +709,24 @@ public class TestGraficas {
             return 0.0;
         }
         
-        double exactInfectious = visitors * INFECTIOUS_PROBABILITY;
+        double exactInfectious = visitors * currentScenario.infectiousProbability;
         
+        // DEBUG
+        System.out.println("         Visitantes totales: " + visitors);
+        System.out.println("         Infectivos exactos: " + exactInfectious);
+
         if (exactInfectious < 1.0) {
             params.setPeopleCount(visitors, 1);
+
+            // DEBUG
+            System.out.println("         Configurado: " + visitors + " personas, 1 infectivo");
+            System.out.println("         Factor protección máscaras: " + (1.0 - currentScenario.maskFraction));
+            
             double baseRisk = params.calculateInfectionProbability(exposureHours, 1) * 100;
+            
+            // DEBUG
+            System.out.println("         Riesgo base (1 infectivo): " + baseRisk + "%");
+
             return baseRisk * exactInfectious;
         } 
         else {
@@ -586,6 +735,7 @@ public class TestGraficas {
             
             if (lowerInfectious == upperInfectious) {
                 params.setPeopleCount(visitors, lowerInfectious);
+
                 return params.calculateInfectionProbability(exposureHours, lowerInfectious) * 100;
             } else {
                 double fraction = exactInfectious - lowerInfectious;
@@ -596,6 +746,10 @@ public class TestGraficas {
                 params.setPeopleCount(visitors, upperInfectious);
                 double upperRisk = params.calculateInfectionProbability(exposureHours, upperInfectious) * 100;
                 
+                // DEBUG
+                double interpolatedRisk = lowerRisk + fraction * (upperRisk - lowerRisk);
+                System.out.println("         Riesgo interpolado: " + interpolatedRisk + "%");
+            
                 return lowerRisk + fraction * (upperRisk - lowerRisk);
             }
         }
@@ -609,12 +763,12 @@ public class TestGraficas {
             return 0.0;
         }
         
-        double exactInfectious = visitors * INFECTIOUS_PROBABILITY;
+       double exactInfectious = visitors * currentScenario.infectiousProbability;
         
         if (exactInfectious < 1.0) {
             params.setPeopleCount(visitors, 1);
             double baseRisk = params.calculateInfectionProbability(
-                exposureHours, params.getViralLoadHighCm3(), 1.0 - MASK_FRACTION) * 100;
+                exposureHours, params.getViralLoadHighCm3(), 1.0) * 100;
             return baseRisk * exactInfectious;
         } 
         else {
@@ -623,18 +777,27 @@ public class TestGraficas {
             
             if (lowerInfectious == upperInfectious) {
                 params.setPeopleCount(visitors, lowerInfectious);
+
                 return params.calculateInfectionProbability(
-                    exposureHours, params.getViralLoadHighCm3(), 1.0 - MASK_FRACTION) * 100;
+                    exposureHours, params.getViralLoadHighCm3(), 1.0) * 100;
+                // return params.calculateInfectionProbability(
+                //     exposureHours, params.getViralLoadHighCm3(), 1.0 - currentScenario.maskFraction) * 100;
             } else {
                 double fraction = exactInfectious - lowerInfectious;
                 
                 params.setPeopleCount(visitors, lowerInfectious);
+                // double lowerRisk = params.calculateInfectionProbability(
+                //     exposureHours, params.getViralLoadHighCm3(), 1.0 - currentScenario.maskFraction) * 100;
+
                 double lowerRisk = params.calculateInfectionProbability(
-                    exposureHours, params.getViralLoadHighCm3(), 1.0 - MASK_FRACTION) * 100;
+                    exposureHours, params.getViralLoadHighCm3(), 1.0) * 100;
                 
                 params.setPeopleCount(visitors, upperInfectious);
+                // double upperRisk = params.calculateInfectionProbability(
+                //     exposureHours, params.getViralLoadHighCm3(), 1.0 - currentScenario.maskFraction) * 100;
+
                 double upperRisk = params.calculateInfectionProbability(
-                    exposureHours, params.getViralLoadHighCm3(), 1.0 - MASK_FRACTION) * 100;
+                    exposureHours, params.getViralLoadHighCm3(), 1.0) * 100;
                 
                 return lowerRisk + fraction * (upperRisk - lowerRisk);
             }
@@ -675,66 +838,10 @@ public class TestGraficas {
      */
     private static void printComparisonTables() {
         System.out.println("\n📊 === TABLA COMPARATIVA: VARIACIÓN POR VISITANTES ===");
-        printVisitorComparisonTable();
+        printScenarioVisitorComparisonTable();
         
         System.out.println("\n📊 === TABLA COMPARATIVA: VARIACIÓN POR DURACIÓN ===");
-        printDurationComparisonTable();
-    }
-
-    /**
-     * Prints comparative table for variation by visitors
-     */
-    private static void printVisitorComparisonTable() {
-        System.out.println("┌─────────────┬──────────────┬──────────────┬──────────────┬──────────────┬──────────────┬──────────────┐");
-        System.out.println("│ Visitantes  │  Referencia  │ Peng  │   Error WR   │  Lelieveld   │   Error L    │  Proximity   │");
-        System.out.println("│             │     (%)      │     (%)      │     (%)      │     (%)      │     (%)      │     (%)      │");
-        System.out.println("├─────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┤");
-        
-        for (int i = 0; i < VISITOR_COUNTS.length; i++) {
-            if (i % 3 == 0 || i < 5 || i >= VISITOR_COUNTS.length - 3) {
-                int visitors = VISITOR_COUNTS[i];
-                double reference = VISITOR_RISKS_MODEL[i];
-                double peng = pengVisitorResults[i];
-                double lelieveld = lelieveldVisitorResults[i];
-                double proximity = proximityVisitorResults[i];
-                
-                double errorWR = Math.abs(peng - reference);
-                double errorL = Math.abs(lelieveld - reference);
-                
-                System.out.printf("│ %11d │ %12.3f │ %12.3f │ %12.3f │ %12.3f │ %12.3f │ %12.3f │%n",
-                                visitors, reference, peng, errorWR, lelieveld, errorL, proximity);
-            }
-        }
-        
-        System.out.println("└─────────────┴──────────────┴──────────────┴──────────────┴──────────────┴──────────────┴──────────────┘");
-        
-    }
-
-    /**
-     * Prints comparative table for variation by duration
-     */
-    private static void printDurationComparisonTable() {
-        System.out.println("┌─────────────┬──────────────┬──────────────┬──────────────┬──────────────┬──────────────┬──────────────┐");
-        System.out.println("│ Duración    │  Referencia  │ Peng  │   Error WR   │  Lelieveld   │   Error L    │  Proximity   │");
-        System.out.println("│   (min)     │     (%)      │     (%)      │     (%)      │     (%)      │     (%)      │     (%)      │");
-        System.out.println("├─────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┤");
-        
-        for (int i = 0; i < DURATION_MINUTES.length; i++) {
-            int duration = DURATION_MINUTES[i];
-            double reference = DURATION_RISKS_MODEL[i];
-            double peng = pengDurationResults[i];
-            double lelieveld = lelieveldDurationResults[i];
-            double proximity = proximityDurationResults[i];
-            
-            double errorWR = Math.abs(peng - reference);
-            double errorL = Math.abs(lelieveld - reference);
-            
-            System.out.printf("│ %11d │ %12.3f │ %12.3f │ %12.3f │ %12.3f │ %12.3f │ %12.3f │%n",
-                            duration, reference, peng, errorWR, lelieveld, errorL, proximity);
-        }
-        
-        System.out.println("└─────────────┴──────────────┴──────────────┴──────────────┴──────────────┴──────────────┴──────────────┘");
-        
+        printScenarioDurationComparisonTable();
     }
 
     
@@ -754,6 +861,120 @@ public class TestGraficas {
     }
 
     // ==================== AUTOMATIC GRAPH GENERATION ====================
+
+    private static void printScenarioSummary() {
+        System.out.println("=".repeat(70));
+        System.out.println("🎯 RESUMEN DEL ESCENARIO: " + currentScenario.name);
+        System.out.println("=".repeat(70));
+
+        if (!currentScenario.name.equals("Original Reference")) {
+            printSpecificParametersResults(currentScenario);
+            System.out.println();
+        }
+        
+        printScenarioComparisonTables();
+    }
+
+    private static void printScenarioComparisonTables() {
+        System.out.println("\n📊 === TABLA COMPARATIVA: VARIACIÓN POR VISITANTES ===");
+        printScenarioVisitorComparisonTable();
+        
+        System.out.println("\n📊 === TABLA COMPARATIVA: VARIACIÓN POR DURACIÓN ===");
+        printScenarioDurationComparisonTable();
+    }
+
+    private static void printScenarioDurationComparisonTable() {
+        System.out.println("┌─────────────┬──────────────┬──────────────┬──────────────┬──────────────┬──────────────┬──────────────┐");
+        System.out.println("│ Duración    │  Referencia  │     Peng     │   Lelieveld  │   Proximity  │   Error P    │   Error L    │");
+        System.out.println("│   (min)     │     (%)      │     (%)      │     (%)      │     (%)      │     (%)      │     (%)      │");
+        System.out.println("├─────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┤");
+        
+        for (int i = 0; i < currentScenario.durationMinutes.length; i++) {
+            int duration = currentScenario.durationMinutes[i];
+            double reference = currentScenario.durationRisksModel[i];
+            double peng = pengDurationResults[i];
+            double lelieveld = lelieveldDurationResults[i];
+            double proximity = proximityDurationResults[i];
+            
+            double errorP = Math.abs(peng - reference);
+            double errorL = Math.abs(lelieveld - reference);
+            
+            System.out.printf("│ %11d │ %12.3f │ %12.3f │ %12.3f │ %12.3f │ %12.3f │ %12.3f │%n",
+                            duration, reference, peng, lelieveld, proximity, errorP, errorL);
+        }
+        
+        System.out.println("└─────────────┴──────────────┴──────────────┴──────────────┴──────────────┴──────────────┴──────────────┘");
+    }
+
+    private static void printScenarioVisitorComparisonTable() {
+        System.out.println("┌─────────────┬──────────────┬──────────────┬──────────────┬──────────────┬──────────────┬──────────────┐");
+        System.out.println("│ Visitantes  │  Referencia  │     Peng     │   Lelieveld  │   Proximity  │   Error P    │   Error L    │");
+        System.out.println("│             │     (%)      │     (%)      │     (%)      │     (%)      │     (%)      │     (%)      │");
+        System.out.println("├─────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┤");
+        
+        for (int i = 0; i < currentScenario.visitorCounts.length; i++) {
+            if (i % 3 == 0 || i < 5 || i >= currentScenario.visitorCounts.length - 3) {
+                int visitors = currentScenario.visitorCounts[i];
+                double reference = currentScenario.visitorRisksModel[i];
+                double peng = pengVisitorResults[i];
+                double lelieveld = lelieveldVisitorResults[i];
+                double proximity = proximityVisitorResults[i];
+                
+                double errorP = Math.abs(peng - reference);
+                double errorL = Math.abs(lelieveld - reference);
+                
+                System.out.printf("│ %11d │ %12.3f │ %12.3f │ %12.3f │ %12.3f │ %12.3f │ %12.3f │%n",
+                                visitors, reference, peng, lelieveld, proximity, errorP, errorL);
+            }
+        }
+        
+        System.out.println("└─────────────┴──────────────┴──────────────┴──────────────┴──────────────┴──────────────┴──────────────┘");
+    }
+
+    private static void generateScenarioGraphs(Scenarios.TestScenario scenario, int scenarioNumber) {
+        try {
+            File graphicsDir = new File("./graficas_validacion/scenario_" + scenarioNumber + "/");
+            if (!graphicsDir.exists()) {
+                graphicsDir.mkdirs();
+            }
+            System.out.println("✅ Gráficas del escenario '" + scenario.name + "' generadas en: " + graphicsDir.getAbsolutePath());
+        } catch (Exception e) {
+            System.err.println("Error generando gráficas del escenario: " + e.getMessage());
+        }
+    }
+
+    private static void generateScenarioComparison(List<Scenarios.TestScenario> scenarios) {
+        System.out.println("Generating cross-scenario comparison graphs...");
+    }
+
+    /**
+     * Prints results for specific scenario parameters
+     */
+    private static void printSpecificParametersResults(Scenarios.TestScenario scenario) {
+        System.out.println("\n📊 === RESULTADOS CON PARÁMETROS ESPECÍFICOS ===");
+        System.out.println("┌─────────────────┬──────────────┬──────────────┬──────────────┐");
+        System.out.println("│ Escenario       │     Peng     │   Lelieveld  │   Proximity  │");
+        System.out.println("│                 │     (%)      │     (%)      │     (%)      │");
+        System.out.println("├─────────────────┼──────────────┼──────────────┼──────────────┤");
+        
+        String scenarioName = scenario.name.length() > 15 ? scenario.name.substring(0, 15) : scenario.name;
+        
+        System.out.printf("│ %-15s │ %12.3f │ %12.3f │ %12.3f │%n",
+                        scenarioName, 
+                        pengSpecificResult >= 0 ? pengSpecificResult : 0.0,
+                        lelieveldSpecificResult >= 0 ? lelieveldSpecificResult : 0.0,
+                        proximitySpecificResult >= 0 ? proximitySpecificResult : 0.0);
+        
+        System.out.println("└─────────────────┴──────────────┴──────────────┴──────────────┘");
+        
+        System.out.println("\n📈 Configuración utilizada:");
+        System.out.println("   • " + scenario.standardVisitorCount + " personas (" + 
+                        Math.max(1, (int) Math.round(scenario.standardVisitorCount * scenario.infectiousProbability)) + 
+                        " infectivos)");
+        System.out.println("   • " + scenario.standardExposureHours + " horas de exposición");
+        System.out.println("   • Volumen: " + String.format("%.1f", scenario.roomLength * scenario.roomWidth * scenario.roomHeight) + " m³");
+        System.out.println("   • Ventilación: " + scenario.ventilationRate + " h⁻¹");
+    }
 
     /**
      * Generates all validation graphs automatically
@@ -833,14 +1054,14 @@ public class TestGraficas {
             g2dRotated.drawString("Riesgo de Infección (%)", 25 - fm.stringWidth("Riesgo de Infección (%)") / 2, graphY + graphHeight / 2);
             g2dRotated.dispose();
             
-            double maxX = Arrays.stream(VISITOR_COUNTS).max().orElse(200);
+            double maxX = Arrays.stream(currentScenario.visitorCounts).max().orElse(200);
             double maxY = Math.max(
                 Math.max(
-                    Math.max(Arrays.stream(VISITOR_RISKS_MODEL).max().orElse(2.0),
+                    Math.max(Arrays.stream(currentScenario.visitorRisksModel).max().orElse(2.0),
                             Arrays.stream(pengVisitorResults).max().orElse(2.0)),
                     Arrays.stream(lelieveldVisitorResults).max().orElse(2.0)),
                 Arrays.stream(proximityVisitorResults).max().orElse(2.0)
-            ) * 1.15; 
+            ) * 1.15;
             
             g2d.setColor(new Color(245, 245, 245));
             g2d.setStroke(new BasicStroke(1));
@@ -852,19 +1073,19 @@ public class TestGraficas {
             }
             
             // Referencia
-            drawDataLine(g2d, VISITOR_COUNTS, VISITOR_RISKS_MODEL, graphX, graphY, graphWidth, graphHeight, 
+            drawDataLine(g2d,  currentScenario.visitorCounts, currentScenario.visitorRisksModel, graphX, graphY, graphWidth, graphHeight, 
                         maxX, maxY, Color.BLACK, new BasicStroke(5), "Referencia");
             
             // Peng
-            drawDataLine(g2d, VISITOR_COUNTS, pengVisitorResults, graphX, graphY, graphWidth, graphHeight, 
+            drawDataLine(g2d,  currentScenario.visitorCounts, pengVisitorResults, graphX, graphY, graphWidth, graphHeight, 
                         maxX, maxY, new Color(30, 144, 255), new BasicStroke(4), "Peng");
             
             // Lelieveld
-            drawDataLine(g2d, VISITOR_COUNTS, lelieveldVisitorResults, graphX, graphY, graphWidth, graphHeight, 
+            drawDataLine(g2d,  currentScenario.visitorCounts, lelieveldVisitorResults, graphX, graphY, graphWidth, graphHeight, 
                         maxX, maxY, new Color(220, 20, 60), new BasicStroke(4), "Lelieveld");
 
             // SimpleProximity
-            drawDataLine(g2d, VISITOR_COUNTS, proximityVisitorResults, graphX, graphY, graphWidth, graphHeight, 
+            drawDataLine(g2d,  currentScenario.visitorCounts, proximityVisitorResults, graphX, graphY, graphWidth, graphHeight, 
                         maxX, maxY, new Color(34, 139, 34), new BasicStroke(4), "SimpleProximity");
 
             drawAllModelsLegend(g2d, width - 350, graphY + 20); 
@@ -933,10 +1154,10 @@ public class TestGraficas {
             g2dRotated.drawString("Riesgo de Infección (%)", 25 - fm.stringWidth("Riesgo de Infección (%)") / 2, graphY + graphHeight / 2);
             g2dRotated.dispose();
             
-            double maxX = Arrays.stream(DURATION_MINUTES).max().orElse(60);
+            double maxX = Arrays.stream(currentScenario.durationMinutes).max().orElse(60);
             double maxY = Math.max(
                 Math.max(
-                    Math.max(Arrays.stream(DURATION_RISKS_MODEL).max().orElse(2.0),
+                    Math.max(Arrays.stream(currentScenario.durationRisksModel).max().orElse(2.0),
                             Arrays.stream(pengDurationResults).max().orElse(2.0)),
                     Arrays.stream(lelieveldDurationResults).max().orElse(2.0)),
                 Arrays.stream(proximityDurationResults).max().orElse(2.0)
@@ -952,19 +1173,19 @@ public class TestGraficas {
             }
             
             // Referencia
-            drawDataLine(g2d, DURATION_MINUTES, DURATION_RISKS_MODEL, graphX, graphY, graphWidth, graphHeight, 
+            drawDataLine(g2d, currentScenario.durationMinutes, currentScenario.durationRisksModel, graphX, graphY, graphWidth, graphHeight, 
                         maxX, maxY, Color.BLACK, new BasicStroke(5), "Referencia");
             
             // Peng
-            drawDataLine(g2d, DURATION_MINUTES, pengDurationResults, graphX, graphY, graphWidth, graphHeight, 
+            drawDataLine(g2d, currentScenario.durationMinutes, pengDurationResults, graphX, graphY, graphWidth, graphHeight, 
                         maxX, maxY, new Color(30, 144, 255), new BasicStroke(4), "Peng");
             
             // Lelieveld 
-            drawDataLine(g2d, DURATION_MINUTES, lelieveldDurationResults, graphX, graphY, graphWidth, graphHeight, 
+            drawDataLine(g2d, currentScenario.durationMinutes, lelieveldDurationResults, graphX, graphY, graphWidth, graphHeight, 
                         maxX, maxY, new Color(220, 20, 60), new BasicStroke(4), "Lelieveld");
             
             // SimpleProximity
-            drawDataLine(g2d, DURATION_MINUTES, proximityDurationResults, graphX, graphY, graphWidth, graphHeight, 
+            drawDataLine(g2d, currentScenario.durationMinutes, proximityDurationResults, graphX, graphY, graphWidth, graphHeight, 
                         maxX, maxY, new Color(34, 139, 34), new BasicStroke(4), "SimpleProximity");
             
             drawAllModelsLegend(g2d, width - 350, graphY + 20);

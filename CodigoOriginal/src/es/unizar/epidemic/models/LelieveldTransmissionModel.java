@@ -2,6 +2,7 @@ package es.unizar.epidemic.models;
 
 import es.unizar.access.DataAccessRoomFile;
 import es.unizar.epidemic.ContactRecord;
+import es.unizar.epidemic.EpidemicConfiguration;
 import es.unizar.epidemic.HealthStatus;
 import es.unizar.epidemic.UserEpidemicExtension;
 import es.unizar.epidemic.statistics.EpidemicStatistics;
@@ -42,9 +43,10 @@ public class LelieveldTransmissionModel implements EpidemicModel {
      * Calculates the airborne transmission probability for a susceptible user
      */
     public double calculateAirborneTransmissionProbability(User susceptible, int roomId, double timeInRoomHours) {
+        configureModelForRoom(roomId);    
         List<User> usersInRoom = getUsersInRoom(roomId);
         int infectiousPeopleCount = countInfectiousPeople(usersInRoom);
-        
+
         if (infectiousPeopleCount == 0) {
             return 0.0;
         }
@@ -54,20 +56,16 @@ public class LelieveldTransmissionModel implements EpidemicModel {
             return 0.0;
         }
 
+        // Añadido por Nacho Palacio 2025-09-21
+        extension = susceptible.getEpidemicExtension();
+        if (extension != null && extension.isImmune()) {
+            return 0.0;
+        }
+
         double maskProtectionFactor = extension.isMaskWearing() ? 
                                     (1.0 - parameters.getMaskEfficiencyInh()) : 1.0;
-        
-        boolean hasSuperSpreaders = false;
-        for (User user : usersInRoom) {
-            UserEpidemicExtension ext = user.getEpidemicExtension();
-            if (ext != null && ext.getHealthStatus() == HealthStatus.SUPER_SPREADER) {
-                hasSuperSpreaders = true;
-            }
-        }
-        
-        double viralLoad = hasSuperSpreaders ? 
-                        parameters.getViralLoadSuperCm3() : 
-                        parameters.getViralLoadHighCm3();
+
+        double viralLoad = parameters.getViralLoadHighCm3();
         
         double infectionProb = parameters.calculateInfectionProbability(
                             timeInRoomHours, viralLoad, maskProtectionFactor);
@@ -84,23 +82,40 @@ public class LelieveldTransmissionModel implements EpidemicModel {
                         
         return Math.min(1.0, Math.max(0.0, infectionProb));
     }
+
+    public double calculateCombinedInfectionRiskForUser(User user) {
+        Map<Integer, Double> exposureByRoom = userRoomExposureTime.get(user.userID);
+        if (exposureByRoom == null || exposureByRoom.isEmpty()) return 0.0;
+
+        double pNoInfect = 1.0;
+        for (Map.Entry<Integer, Double> entry : exposureByRoom.entrySet()) {
+            int roomId = entry.getKey();
+            double exposureTime = entry.getValue();
+            if (exposureTime <= 0) continue;
+
+            double pRoom = calculateAirborneTransmissionProbability(user, roomId, exposureTime);
+            pNoInfect *= (1.0 - pRoom);
+        }
+        return 1.0 - pNoInfect;
+    }
     
     /**
      * Calculates the airborne transmission probability for a susceptible user
      */
     @Override
     public double calculateTransmissionProbability(User infectious, User susceptible, ContactRecord contact) {
-        double exposureTimeHours = contact.getDuration() / 3600.0;
-        int roomId = contact.getRoomId();
+        // Modificado por Nacho Palacio 2025-09-23
+        int roomId = susceptible.room;
+        double exposureTimeHours = getUserRoomExposureTime(susceptible.userID, roomId);
 
-        if (roomId < 0) {
+        if (roomId < 0 || exposureTimeHours <= 0) {
             return 0.0;
         }
 
         if (autoConfigureRooms) {
             configureModelForRoom(roomId);
         }
-        
+
         return calculateAirborneTransmissionProbability(susceptible, roomId, exposureTimeHours);
     }
     
@@ -148,41 +163,32 @@ public class LelieveldTransmissionModel implements EpidemicModel {
      * Configures the model parameters for a specific room
      */
     public void configureModelForRoom(int roomId) {
-        List<User> usersInRoom = getUsersInRoom(roomId);
-        if (usersInRoom.isEmpty()) {
-            return;
-        }
-        
-        roomId += 1; // Correction
-        
-        double roomWidthPixels = getRoomWidth(roomId);
-        double roomLengthPixels = getRoomLength(roomId);
+        roomId += 1; 
+        double roomWidth = getRoomWidth(roomId);
+        double roomLength = getRoomLength(roomId);
         double roomHeight = 3.0;
         
-        double widthMeters = LelieveldParameters.pixelsToMeters(roomWidthPixels);
-        double lengthMeters = LelieveldParameters.pixelsToMeters(roomLengthPixels);     
-             
-        int infectiousCount = countInfectiousPeople(usersInRoom);
-
-        double currentImmunity = parameters.getFractionImmune();
-        
-        parameters.setPeopleCount(usersInRoom.size(), infectiousCount);
-
-        if (currentImmunity > 0) {
-            parameters.setFractionImmune(currentImmunity);
-        }
+        double widthMeters = PengParameters.pixelsToMeters(roomWidth);
+        double lengthMeters = PengParameters.pixelsToMeters(roomLength);
 
         parameters.setRoomDimensions(lengthMeters, widthMeters, roomHeight);
-        
-        double currentVentilation = parameters.getTotalVentilationRateH();
-        
-        if (currentVentilation <= 2.5) {
-            parameters.setVentilationRates(0.35, 2.0, false);
+
+        EpidemicConfiguration config = EpidemicConfiguration.getInstance();
+        if (config != null) {
+            parameters.setVentilationRates(config.getDefaultVentilationRate(), 0.0, false);
+            parameters.setFractionImmune(config.getImmunePopulationFraction());
+            parameters.setDepositionProbability(config.getDepositionProbability());
+            parameters.setInfectiveDoseD50(config.getInfectiousDose());
         }
-        
+
+        List<User> usersInRoom = getUsersInRoom(roomId);
+
+        parameters.setPeopleCount(usersInRoom.size(), countInfectiousPeople(usersInRoom));
+
         double fractionWithMasks = calculateFractionWithMasks(usersInRoom);
-        
-        parameters.setMaskParameters(0.3, 0.4, fractionWithMasks);
+        double exhalationEff = config != null ? config.getMaskExhalationEfficiency() : 0.5;
+        double inhalationEff = config != null ? config.getMaskInhalationEfficiency() : 0.3;
+        parameters.setMaskParameters(inhalationEff, exhalationEff, fractionWithMasks);
     }
     
     /**
@@ -245,47 +251,21 @@ public class LelieveldTransmissionModel implements EpidemicModel {
     /**
      * Counts the number of infectious users in a list
      */
-    private int countInfectiousPeople(List<User> users) {  
+    private int countInfectiousPeople(List<User> users) {
         int count = 0;
-        
-        Set<Integer> userIds = new HashSet<>();
-
-        for (int i = 0; i < users.size(); i++) {
-            User user = users.get(i);
-            
-            if (userIds.contains(user.userID)) {
-            } else {
-                userIds.add(user.userID);
-            }
-            
+        for (User user : users) {
             UserEpidemicExtension extension = getUserEpidemicExtension(user);
-            
-            if (extension == null) {
-                continue;
-            }
-            
-            HealthStatus status = extension.getHealthStatus();
-
-            switch (status) {
-                case SUSCEPTIBLE:
-                    break;
-                case EXPOSED:
-                    break;
-                case INFECTIOUS_ASYMPTOMATIC:
-                    count++;
-                    break;
-                case INFECTIOUS_SYMPTOMATIC:
-                    count++;
-                    break;
-                case SUPER_SPREADER:
-                    count++;
-                    break;
-                default:
-                    break;
+            if (extension != null && isInfectious(extension)) {
+                count++;
             }
         }
- 
         return count;
+    }
+
+    public boolean isInfectious(UserEpidemicExtension extension) {
+        return extension.getHealthStatus().equals(HealthStatus.INFECTIOUS_ASYMPTOMATIC) ||
+            extension.getHealthStatus().equals(HealthStatus.INFECTIOUS_SYMPTOMATIC) ||
+            extension.getHealthStatus().equals(HealthStatus.SUPER_SPREADER);
     }
     
     /**
@@ -293,7 +273,6 @@ public class LelieveldTransmissionModel implements EpidemicModel {
      */
     private double calculateFractionWithMasks(List<User> usersInRoom) {
         if (usersInRoom.isEmpty()) {
-            System.out.println("   ⚠️ Lista vacía - retornando 0.0");
             return 0.0;
         }
         

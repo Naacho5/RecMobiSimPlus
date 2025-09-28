@@ -44,10 +44,14 @@ public class EpidemicStatistics {
     public void endSimulation() {
         this.simulationEndTime = System.currentTimeMillis();
     }
+
+    public static void resetInstance() {
+        instance = new EpidemicStatistics();
+    }
     
     public void recordInfection(int userId, String transmissionSource) {
         totalInfections++;
-        System.out.println("🦠 Nueva infección registrada - Usuario " + userId + " (Total: " + totalInfections + ")");
+        //System.out.println("🦠 Nueva infección registrada - Usuario " + userId + " (Total: " + totalInfections + ")");
     }
     
     public void recordRecovery(int userId) {
@@ -144,7 +148,7 @@ public class EpidemicStatistics {
     public static class RoomStatistics {
         private int roomId;
         private int totalContacts = 0;
-        private List<Double> aerosolConcentrations = new ArrayList<>();
+        protected List<Double> aerosolConcentrations = new ArrayList<>();
         
         public RoomStatistics(int roomId) {
             this.roomId = roomId;
@@ -192,5 +196,60 @@ public class EpidemicStatistics {
     public int getTotalContacts() { return totalContacts; }
     public double getSimulationDurationSeconds() { 
         return (simulationEndTime - simulationStartTime) / 1000.0; 
+    }
+
+   
+    /**
+     * Calculates the average aerosol concentration across all rooms
+     */
+    public double getAverageAerosolConcentration() {
+        if (roomStats.isEmpty()) {
+            return 0.0;
+        }
+        
+        double totalConcentration = 0.0;
+        int totalMeasurements = 0;
+        
+        for (RoomStatistics roomStat : roomStats.values()) {
+            if (!roomStat.aerosolConcentrations.isEmpty()) {
+                for (Double concentration : roomStat.aerosolConcentrations) {
+                    totalConcentration += concentration;
+                    totalMeasurements++;
+                }
+            }
+        }
+        
+        return totalMeasurements > 0 ? totalConcentration / totalMeasurements : 0.0;
+    }
+
+    /**
+     * Calculates the maximum aerosol concentration recorded in any room
+     */
+    public double getMaxAerosolConcentration() {
+        double maxConcentration = 0.0;
+        
+        for (RoomStatistics roomStat : roomStats.values()) {
+            if (!roomStat.aerosolConcentrations.isEmpty()) {
+                for (Double concentration : roomStat.aerosolConcentrations) {
+                    if (concentration > maxConcentration) {
+                        maxConcentration = concentration;
+                    }
+                }
+            }
+        }
+        
+        return maxConcentration;
+    }
+
+    public int getInfectiousContacts() {
+        return infectiousContacts;
+    }
+
+    public RoomStatistics getRoomStatistics(int roomId) {
+        return roomStats.get(roomId);
+    }
+
+    public Map<Integer, RoomStatistics> getAllRoomStatistics() {
+        return new HashMap<>(roomStats);
     }
 }

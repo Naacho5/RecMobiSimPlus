@@ -4,6 +4,7 @@ import es.unizar.gui.MainSimulator;
 import es.unizar.gui.simulation.User;
 import es.unizar.epidemic.models.EpidemicModel;
 import es.unizar.epidemic.models.SimpleProximityModel;
+import es.unizar.epidemic.statistics.EpidemicStatistics;
 import es.unizar.epidemic.models.PengTransmissionModel;
 import es.unizar.epidemic.models.LelieveldTransmissionModel;
 
@@ -30,17 +31,19 @@ public class EpidemicSimulationManager {
         this.config = EpidemicConfiguration.getInstance();
         this.stateManager = new EpidemicStateManager();
         this.contactTracker = new ContactTracker();
+
+        this.config.printCurrentConfiguration();
         
         if ("SIMPLE_PROXIMITY".equals(config.getSelectedModel())) {
-            SimpleProximityModel simpleModel = new SimpleProximityModel();
+            double maxDist = config.getMaxTransmissionDistance();
+            double baseProb = config.getBaseTransmissionProbability();
+            int minDuration = config.getMinContactDuration();                 
+            SimpleProximityModel simpleModel = new SimpleProximityModel(maxDist, baseProb, minDuration);
             this.epidemicModel = simpleModel;
-            System.out.println("Using SimpleProximityModel with permissive parameters");
-        } else if ("AEROSOL_LELIEVELD_2020".equals(config.getSelectedModel())) {
+        } else if ("AEROSOL_LELIEVELD".equals(config.getSelectedModel())) {
             this.epidemicModel = new LelieveldTransmissionModel();
-            System.out.println("Using LelieveldTransmissionModel");
         } else {
             this.epidemicModel = new PengTransmissionModel();
-            System.out.println("Using AerosolTransmissionModel");
         }
         
         this.contactTracker.setEpidemicModel(this.epidemicModel);
@@ -51,17 +54,85 @@ public class EpidemicSimulationManager {
      * Initializes epidemic system for all users
      */
     public void initializeEpidemicSystem(List<User> users) {
-        // Configure mask wearing based on compliance rate
+        EpidemicConfiguration config = EpidemicConfiguration.getInstance();
+        double immuneFraction = config.getImmunePopulationFraction();
+        double superSpreaderProb = config.getSuperSpreaderProbability();
+          
+        int targetImmuneUsers = (int) Math.round(users.size() * immuneFraction);
+        
+        List<User> shuffledUsers = new ArrayList<>(users);
+        java.util.Collections.shuffle(shuffledUsers);
+        
+        for (int i = 0; i < shuffledUsers.size(); i++) {
+            User user = shuffledUsers.get(i);
+            
+            if (user.getEpidemicExtension() == null) {
+                user.setEpidemicExtension(new UserEpidemicExtension());
+            }
+            
+            UserEpidemicExtension extension = user.getEpidemicExtension();
+            
+            if (i < targetImmuneUsers) {
+                extension.setImmune(true);
+            } else {
+                extension.setImmune(false);
+            }
+        }
+
+        int targetSuperSpreaders = (int) Math.round(users.size() * superSpreaderProb);
+        
+        int actualSuperSpreaders = 0;
+        
+        for (User user : users) {
+            UserEpidemicExtension extension = user.getEpidemicExtension();
+            if (extension != null && !extension.isImmune()) {
+                if (actualSuperSpreaders < targetSuperSpreaders && Math.random() < superSpreaderProb) {
+                    extension.setSuperSpreader(true);
+                    actualSuperSpreaders++;
+                }
+            }
+        }
+        
         configureMaskWearing(users);
         
-        // Infect initial users
         stateManager.infectInitialUsers(users, config.getInitialInfectedUsers());
 
         if (epidemicModel instanceof PengTransmissionModel) {
             ((PengTransmissionModel) epidemicModel).initializeExposureTracking(users);
+        } else if (epidemicModel instanceof LelieveldTransmissionModel) {
+            ((LelieveldTransmissionModel) epidemicModel).initializeExposureTracking(users);
+        }
+
+        int immuneCount = 0;
+        int susceptibleCount = 0;
+        int infectedCount = 0;
+        
+        for (User user : users) {
+            UserEpidemicExtension extension = user.getEpidemicExtension();
+            if (extension != null) {
+                if (extension.isImmune()) {
+                    immuneCount++;
+                } else {
+                    switch (extension.getHealthStatus()) {
+                        case SUSCEPTIBLE:
+                            susceptibleCount++;
+                            break;
+                        case INFECTIOUS_ASYMPTOMATIC:
+                        case INFECTIOUS_SYMPTOMATIC:
+                        case SUPER_SPREADER:
+                            infectedCount++;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
         }
         
-        System.out.println("Epidemic system initialized for " + users.size() + " users");
+        System.out.printf(" Estado inicial usuarios:\n");
+        System.out.printf("   - Inmunes: %d (%.1f%%)\n", immuneCount, (double)immuneCount/users.size()*100);
+        System.out.printf("   - Susceptibles: %d (%.1f%%)\n", susceptibleCount, (double)susceptibleCount/users.size()*100);
+        System.out.printf("   - Infectados: %d (%.1f%%)\n", infectedCount, (double)infectedCount/users.size()*100);
     }
     
     /**
@@ -70,17 +141,72 @@ public class EpidemicSimulationManager {
     public void updateEpidemicState(List<User> users, int currentIteration) {
         contactTracker.trackContacts(users, currentIteration);
         
-        contactTracker.evaluateTransmissions(users);
+        // Añadido por Nacho Palacio 2025-09-23
+        if (epidemicModel instanceof PengTransmissionModel) {
+            ((PengTransmissionModel) epidemicModel).updateRoomExposure(users, getDeltaTimeHours());
+        } else if (epidemicModel instanceof LelieveldTransmissionModel) {
+            ((LelieveldTransmissionModel) epidemicModel).updateRoomExposure(users, getDeltaTimeHours());
+        }
+
+        // Modificado por Nacho Palacio 2025-09-23
+        if (epidemicModel instanceof SimpleProximityModel) {
+            if (currentIteration % 10 == 0) {
+                contactTracker.evaluateTransmissions(users);
+            }
+        }
         
         stateManager.updateHealthStates(users, currentIteration);
 
         if (epidemicModel != null) {
             epidemicModel.updateHealthStates(users, currentIteration);
         }
-        
-        // Update user visual appearance based on health status
+
         updateUserVisualStatus(users);
 
+    }
+
+    /**
+     * Evaluates final aerosol transmissions at the end of the simulation step
+     */
+    public void evaluateFinalAerosolTransmissions(List<User> users) {
+        boolean isPeng = epidemicModel instanceof es.unizar.epidemic.models.PengTransmissionModel;
+        boolean isLelieveld = epidemicModel instanceof es.unizar.epidemic.models.LelieveldTransmissionModel;
+
+        if (!isPeng && !isLelieveld) {
+            return;
+        }
+
+        int nuevosInfectados = 0;
+        for (User user : users) {
+            UserEpidemicExtension ext = user.getEpidemicExtension();
+            if (ext == null || ext.isImmune() || ext.getHealthStatus() != HealthStatus.SUSCEPTIBLE)
+                continue;
+
+            double combinedRisk = 0.0;
+            if (isPeng) {
+                combinedRisk = ((es.unizar.epidemic.models.PengTransmissionModel)epidemicModel)
+                    .calculateCombinedInfectionRiskForUser(user);
+            } else if (isLelieveld) {
+                combinedRisk = ((es.unizar.epidemic.models.LelieveldTransmissionModel)epidemicModel)
+                    .calculateCombinedInfectionRiskForUser(user);
+            }
+
+            double randomValue = Math.random();
+           
+            if (randomValue < combinedRisk) {
+                stateManager.infectUser(user);
+                EpidemicStatistics.getInstance().recordInfection(user.userID, "Aerosol transmission (final)");
+                nuevosInfectados++;
+            }
+        }
+    }
+
+    public double getDeltaTimeHours() {
+        if (es.unizar.gui.Configuration.simulation == null) {
+            return 1.0 / 3600.0;
+        }
+        double secondsPerIteration = es.unizar.gui.Configuration.simulation.getTimeForIterationInSecond();
+        return secondsPerIteration / 3600.0;
     }
     
     /**
@@ -88,7 +214,6 @@ public class EpidemicSimulationManager {
      */
     private void configureMaskWearing(List<User> users) {
         double maskCompliance = config.getMaskComplianceRate();
-        
         for (User user : users) {
             boolean wearsMask = Math.random() < maskCompliance;
             user.getEpidemicExtension().setMaskWearing(wearsMask);
@@ -179,7 +304,7 @@ public class EpidemicSimulationManager {
     }
     
     
-    // Getters para acceso a componentes
+    // Getters
     public EpidemicStateManager getStateManager() { return stateManager; }
     public ContactTracker getContactTracker() { return contactTracker; }
     public EpidemicModel getEpidemicModel() { return epidemicModel; }

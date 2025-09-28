@@ -2,6 +2,7 @@ package es.unizar.epidemic.models;
 
 import es.unizar.access.DataAccessRoomFile;
 import es.unizar.epidemic.ContactRecord;
+import es.unizar.epidemic.EpidemicConfiguration;
 import es.unizar.epidemic.HealthStatus;
 import es.unizar.epidemic.UserEpidemicExtension;
 import es.unizar.epidemic.statistics.EpidemicStatistics;
@@ -39,21 +40,27 @@ public class PengTransmissionModel implements EpidemicModel {
      */
     public double calculateAirborneTransmissionProbability(User susceptible, int roomId, double timeInRoomHours) {
         configureModelForRoom(roomId);
+
+        // Añadido por Nacho Palacio 2025-09-21
+        UserEpidemicExtension extension = susceptible.getEpidemicExtension();
+        if (extension != null && extension.isImmune()) {
+            return 0.0;
+        }
         
         List<User> usersInRoom = getUsersInRoom(roomId);
         int infectiousPeopleCount = countInfectiousPeople(usersInRoom);
         
         double quantaConcentration = calculateRoomQuantaConcentration(roomId, infectiousPeopleCount);
     
-        UserEpidemicExtension extension = susceptible.getEpidemicExtension();
+        extension = susceptible.getEpidemicExtension();
         double maskProtectionFactor = extension.isMaskWearing() ? 
                                     (1.0 - parameters.getInhalationMaskEfficiency()) : 1.0;
+
        
         double breathingRate = parameters.getBreathingRateSusceptibles();
         double quantaInhaled = quantaConcentration * breathingRate * timeInRoomHours * maskProtectionFactor;
         
         double infectionProb = 1.0 - Math.exp(-quantaInhaled);
-
 
         // Statistics
         double concentration = calculateRoomQuantaConcentration(roomId, infectiousPeopleCount);
@@ -71,8 +78,13 @@ public class PengTransmissionModel implements EpidemicModel {
      */
     @Override
     public double calculateTransmissionProbability(User infectious, User susceptible, ContactRecord contact) {
-        double exposureTimeHours = contact.getDuration() / 3600.0;
-        int roomId = contact.getRoomId();
+        // Modificado por Nacho Palacio 2025-09-23
+        int roomId = susceptible.room;
+        double exposureTimeHours = getUserRoomExposureTime(susceptible.userID, roomId);
+
+        if (roomId < 0 || exposureTimeHours <= 0) {
+            return 0.0;
+        }
         
         return calculateAirborneTransmissionProbability(susceptible, roomId, exposureTimeHours);
     }
@@ -106,6 +118,11 @@ public class PengTransmissionModel implements EpidemicModel {
                 double symptomaticRate = parameters.getBasicQuantaExhalationRate() * 1.5;
                 extension.setViralEmissionRate(symptomaticRate);
                 break;
+
+            case SUPER_SPREADER:
+                double superRate = parameters.getBasicQuantaExhalationRate() * 10.0;
+                extension.setViralEmissionRate(superRate);
+                break;
                 
             default:
                 extension.setViralEmissionRate(0.0);
@@ -117,7 +134,6 @@ public class PengTransmissionModel implements EpidemicModel {
      * Calculates the risk of infection in a room based on the number of infectious users and time spent
      */
     public double calculateRoomInfectionRisk(int roomId, List<User> usersInRoom, double timeInRoomHours) {
-        
         int infectiousCount = 0;
         for (User user : usersInRoom) {
             UserEpidemicExtension extension = getUserEpidemicExtension(user);
@@ -157,10 +173,11 @@ public class PengTransmissionModel implements EpidemicModel {
      */
     private double calculateRoomQuantaConcentration(int roomId, int infectiousPeopleCount) {
         configureModelForRoom(roomId);
-        
+
         double ventilationRate = parameters.getVentilationRate();
         
         List<User> usersInRoom = getUsersInRoom(roomId);
+
         double co2Concentration = parameters.calculateCO2Concentration(usersInRoom.size());
         
         double effectiveVentilation = ventilationRate * (parameters.getBackgroundCO2() / co2Concentration);
@@ -173,9 +190,10 @@ public class PengTransmissionModel implements EpidemicModel {
             
             double maskReductionFactor = extension.isMaskWearing() ? 
                                     parameters.getExhalationMaskEfficiency() : 0.0;
+
             
             double userEmission = extension.getViralEmissionRate() * (1.0 - maskReductionFactor);
-                                
+                            
             totalEmissionRate += userEmission;
         }
         double totalLossRate = effectiveVentilation + parameters.getVirusDecayRate() + 
@@ -200,10 +218,10 @@ public class PengTransmissionModel implements EpidemicModel {
      * Updates the exposure time for users in a room
      */
     public void updateRoomExposure(List<User> users, double deltaTimeHours) { 
-        for (User user : users) {
+       for (User user : users) {
             int roomId = user.room;
             Map<Integer, Double> roomExposure = userRoomExposureTime.get(user.userID);
-            
+           
             if (roomExposure != null) {
                 double oldExposure = roomExposure.getOrDefault(roomId, 0.0);
                 double newExposure = oldExposure + deltaTimeHours;
@@ -223,16 +241,27 @@ public class PengTransmissionModel implements EpidemicModel {
         
         double widthMeters = PengParameters.pixelsToMeters(roomWidth);
         double lengthMeters = PengParameters.pixelsToMeters(roomLength);
-        
+
         parameters.setRoomDimensions(lengthMeters, widthMeters, roomHeight);
 
-        parameters.setVentilationRate(3.0);
-        
+        EpidemicConfiguration config = EpidemicConfiguration.getInstance();
+        if (config != null) {
+            parameters.setVentilationRate(config.getDefaultVentilationRate());
+            parameters.setFractionImmune(config.getImmunePopulationFraction());
+            parameters.setVirusDecayRate(config.getVirusDecayRate());
+            parameters.setBasicQuantaExhalationRate(config.getQuantaEmissionRate());
+            parameters.setBreathingRateSusceptibles(config.getBreathingRate());
+            parameters.setDepositionRate(config.getDepositionRate());
+        }
+
         List<User> usersInRoom = getUsersInRoom(roomId);
+        
         parameters.setPeopleCount(usersInRoom.size(), countInfectiousPeople(usersInRoom));
         
         double fractionWithMasks = calculateFractionWithMasks(usersInRoom);
-        parameters.setMaskParameters(0.5, 0.3, fractionWithMasks);
+        double exhalationEff = config != null ? config.getMaskExhalationEfficiency() : 0.5;
+        double inhalationEff = config != null ? config.getMaskInhalationEfficiency() : 0.3;
+        parameters.setMaskParameters(exhalationEff, inhalationEff, fractionWithMasks);
     }
 
     /**
@@ -293,9 +322,10 @@ public class PengTransmissionModel implements EpidemicModel {
         return roomExposure != null ? roomExposure.getOrDefault(roomId, 0.0) : 0.0;
     }
     
-    private boolean isInfectious(UserEpidemicExtension extension) {
+    public boolean isInfectious(UserEpidemicExtension extension) {
         return extension.getHealthStatus().equals(HealthStatus.INFECTIOUS_ASYMPTOMATIC) ||
-            extension.getHealthStatus().equals(HealthStatus.INFECTIOUS_SYMPTOMATIC);
+            extension.getHealthStatus().equals(HealthStatus.INFECTIOUS_SYMPTOMATIC) ||
+            extension.getHealthStatus().equals(HealthStatus.SUPER_SPREADER);
     }
     
     private UserEpidemicExtension getUserEpidemicExtension(User user) {
@@ -393,16 +423,47 @@ public class PengTransmissionModel implements EpidemicModel {
      * Calculates the fraction of users wearing masks in a room
      */
     private double calculateFractionWithMasks(List<User> usersInRoom) {
-        if (usersInRoom.isEmpty()) return 0.0;
+        if (usersInRoom.isEmpty()) {
+            return 0.0;
+        }
         
         int usersWithMasks = 0;
+        int totalUsers = usersInRoom.size();
+        
         for (User user : usersInRoom) {
             UserEpidemicExtension extension = user.getEpidemicExtension();
-            if (extension != null && extension.isMaskWearing()) {
+            boolean hasMask = false;
+        
+            if (extension != null) {
+                hasMask = extension.isMaskWearing();
+            }
+            
+            if (hasMask) {
                 usersWithMasks++;
             }
         }
         
-        return (double) usersWithMasks / usersInRoom.size();
+        double fraction = (double) usersWithMasks / totalUsers;
+        
+        return fraction;
+    }
+
+    /**
+     * Calculates the combined infection risk for a user across all rooms
+     */
+    public double calculateCombinedInfectionRiskForUser(User user) {
+        Map<Integer, Double> exposureByRoom = userRoomExposureTime.get(user.userID);
+        if (exposureByRoom == null || exposureByRoom.isEmpty()) return 0.0;
+
+        double pNoInfect = 1.0;
+        for (Map.Entry<Integer, Double> entry : exposureByRoom.entrySet()) {
+            int roomId = entry.getKey();
+            double exposureTime = entry.getValue();
+            if (exposureTime <= 0) continue;
+
+            double pRoom = calculateAirborneTransmissionProbability(user, roomId, exposureTime);
+            pNoInfect *= (1.0 - pRoom);
+        }
+        return 1.0 - pNoInfect;
     }
 }

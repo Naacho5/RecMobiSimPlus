@@ -8,7 +8,7 @@ public class SimulationShutdownHandler {
             
             EpidemicStatistics stats = EpidemicStatistics.getInstance();
             stats.endSimulation();
-            stats.printFinalStatistics();
+            // stats.printFinalStatistics();
             
             System.out.println("Simulación finalizada correctamente.");
         }));

@@ -804,6 +804,18 @@ public class MainSimulator {
 		testModelMenuItem4.setFont(new Font("SansSerif", Font.PLAIN, 16));
 		simulationMenu.add(testModelMenuItem4);
 
+		JMenuItem simulationValidatorMenuItem = new JMenuItem("Test Simulación Completa");
+		simulationValidatorMenuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				new Thread(() -> {
+					MainSimulator.printConsole("Ejecutando validador de simulaciones completas...", Level.WARNING);
+					es.unizar.epidemic.tests.SimulationEpidemicValidator.main(new String[]{});
+				}).start();
+			}
+		});
+		simulationValidatorMenuItem.setFont(new Font("SansSerif", Font.PLAIN, 16));
+		simulationMenu.add(simulationValidatorMenuItem);
+
 		// JMenuItem testModelMenuItem5 = new JMenuItem("Test Escenarios");
 		// testModelMenuItem5.addActionListener(new ActionListener() {
 		// 	public void actionPerformed(ActionEvent arg0) {

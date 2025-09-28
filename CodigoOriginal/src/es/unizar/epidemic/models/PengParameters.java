@@ -50,7 +50,7 @@ public class PengParameters {
     
     // PARÁMETROS DE MASCARILLAS 
     private double exhalationMaskEfficiency = 0.50;   // 50%
-    private double fractionPeopleWithMasks = 1.0;     // 100%
+    private double fractionPeopleWithMasks = 0.1;     // 100%
     private double inhalationMaskEfficiency = 0.30;   // 30%
     
     // PARÁMETROS DE ENFERMEDAD 
@@ -86,7 +86,10 @@ public class PengParameters {
      */
     public double calculateQuantaConcentration(int infectiousPeople) {
         double netEmission = quantaExhalationInfected * infectiousPeople * (1.0 - exhalationMaskEfficiency * fractionPeopleWithMasks);
-        return netEmission / (roomVolume * totalFirstOrderLossRate);
+        double denominatorFactor = roomVolume * totalFirstOrderLossRate;
+        double concentration = netEmission / denominatorFactor;
+        
+        return concentration;
     }
     
     /**
@@ -97,8 +100,13 @@ public class PengParameters {
         double quantaInhaled = quantaConcentration * breathingRateSusceptibles * exposureTimeHours;
         
         quantaInhaled *= (1.0 - inhalationMaskEfficiency * fractionPeopleWithMasks);
+    
+        double baseInfectionProb = 1.0 - Math.exp(-quantaInhaled);
+
+        double immunityReduction = 1.0 - (fractionImmune * 0.7);
+        double finalInfectionProb = baseInfectionProb * immunityReduction;
         
-        return 1.0 - Math.exp(-quantaInhaled);
+        return Math.min(1.0, Math.max(0.0, finalInfectionProb));
     }
 
     /**
@@ -119,12 +127,12 @@ public class PengParameters {
     public double calculateCO2Concentration(int totalPeople) {
         if (totalPeople <= 0) return backgroundCO2;
 
-        double totalCO2Emission = co2EmissionRatePerPerson * totalPeople; // L/s
-        double ventilationVolumeRate = ventilationRate * roomVolume / 3600.0; // m³/s
+        double totalCO2Emission = co2EmissionRatePerPerson * totalPeople;
+        double ventilationVolumeRate = ventilationRate * roomVolume / 3600.0;
 
-        double co2EmissionM3s = totalCO2Emission / 1000.0; // m³/s
+        double co2EmissionM3s = totalCO2Emission / 1000.0;
     
-        double co2Addition = (co2EmissionM3s / ventilationVolumeRate) * 1000000; // ppm
+        double co2Addition = (co2EmissionM3s / ventilationVolumeRate) * 1000000;
         
         return backgroundCO2 + co2Addition;
     }
@@ -259,5 +267,13 @@ public class PengParameters {
     
     private void updateTotalFirstOrderLossRate() {
         this.totalFirstOrderLossRate = ventilationRate + virusDecayRate + depositionRate + additionalControlMeasures;
+    }
+
+    public void setBreathingRateSusceptibles(double breathingRate) {
+        this.breathingRateSusceptibles = breathingRate;
+    }
+
+    public void setDepositionRate(double depositionRate2) {
+        this.depositionRate = depositionRate2;
     }
 }

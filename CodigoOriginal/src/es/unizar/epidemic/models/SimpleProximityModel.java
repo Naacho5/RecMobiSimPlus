@@ -1,6 +1,7 @@
 package es.unizar.epidemic.models;
 
 import es.unizar.epidemic.ContactRecord;
+import es.unizar.epidemic.EpidemicConfiguration;
 import es.unizar.epidemic.HealthStatus;
 import es.unizar.epidemic.UserEpidemicExtension;
 import es.unizar.epidemic.statistics.EpidemicStatistics;
@@ -18,16 +19,29 @@ public class SimpleProximityModel implements EpidemicModel {
     private String modelName = "Simple Proximity Model";
     
     // Simple model parameters
-    private double maxTransmissionDistance = 2.0;    // meters
-    private double baseTransmissionProbability = 0.05; // 5% base probability
-    private int minContactDuration = 15;             // seconds
+    private double maxTransmissionDistance = 1.5;    // meters
+    private double baseTransmissionProbability = 0.01; // 5% base probability
+    private int minContactDuration = 200;             // seconds
     
     public SimpleProximityModel() {
         this.parameters = new PengParameters();
-    
-        this.maxTransmissionDistance = 3.0;
-        this.baseTransmissionProbability = 0.15;
-        this.minContactDuration = 5;
+    }
+
+    public SimpleProximityModel(double maxTransmissionDistance, double baseTransmissionProbability, int minContactDuration) {
+        this.parameters = new PengParameters();
+        this.maxTransmissionDistance = maxTransmissionDistance;
+        this.baseTransmissionProbability = baseTransmissionProbability;
+        this.minContactDuration = minContactDuration;
+
+        // DEBUG
+        System.out.println("=== SIMPLE PROXIMITY MODEL INICIALIZADO ===");
+        System.out.println("Distancia máxima por defecto: " + maxTransmissionDistance);
+        System.out.println("Probabilidad base por defecto: " + baseTransmissionProbability);
+        System.out.println("Duración mínima por defecto: " + minContactDuration);
+
+        // System.out.println("\n=== SIMPLE PROXIMITY MODEL CREADO ===");
+        // EpidemicConfiguration config = EpidemicConfiguration.getInstance();
+        // config.printCurrentConfiguration();
     }
     
     @Override
@@ -108,11 +122,11 @@ public class SimpleProximityModel implements EpidemicModel {
         double factor;
 
         if (distanceMeters <= 0.5) {
-            factor = 3.0;  // Very close contact
+            factor = 2.0;  // Very close contact
         } else if (distanceMeters <= 1.0) {
-            factor = 2.0;  // Close contact
+            factor = 1.5;  // Close contact
         } else if (distanceMeters <= 1.5) {
-            factor = 1.5;  // Moderate distance
+            factor = 1.25;  // Moderate distance
         } else if (distanceMeters <= maxTransmissionDistance) {
             factor = 1.0;  // Far distance
         } else {
@@ -167,14 +181,17 @@ public class SimpleProximityModel implements EpidemicModel {
     private double getMaskFactor(UserEpidemicExtension infectious, UserEpidemicExtension susceptible) {
         boolean infMask = infectious.isMaskWearing();
         boolean susMask = susceptible.isMaskWearing();
-        
+
+        double factor;
         if (infMask && susMask) {
-            return 0.25;
+            factor = 0.25;
         } else if (infMask || susMask) {
-            return 0.5;
+            factor = 0.5; 
         } else {
-            return 1.0; // No masks
+            factor = 1.0;
         }
+
+        return factor;
     }
     
     @Override
