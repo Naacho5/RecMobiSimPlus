@@ -17,9 +17,12 @@ public class UserEpidemicExtension {
     private int age;
     private boolean isVaccinated = false;
 
+    private boolean isImmune = false;
+    private boolean isSuperSpreader = false;
+
     // REVISAR ESTOS VALORES
     private int incubationPeriodHours = 0;
-    private int infectiousPeriodHours = 10;
+    private int infectiousPeriodHours = Integer.MAX_VALUE;
 
     private double viralEmissionRate = 0.0;
     
@@ -64,6 +67,14 @@ public class UserEpidemicExtension {
         return viralEmissionRate;
     }
 
+    public boolean isImmune() {
+        return isImmune;
+    }
+
+    public boolean isSuperSpreader() {
+        return isSuperSpreader;
+    }
+
 
     // SETTERS
     public void setHealthStatus(HealthStatus healthStatus) {
@@ -102,5 +113,15 @@ public class UserEpidemicExtension {
         this.viralEmissionRate = viralEmissionRate;
     }
 
+    public void setImmune(boolean isImmune) {
+        this.isImmune = isImmune;
+    }
+
+    public void setSuperSpreader(boolean isSuperSpreader) {
+        this.isSuperSpreader = isSuperSpreader;
+        if (isSuperSpreader) {
+            this.healthStatus = HealthStatus.SUPER_SPREADER;
+        }
+    }
 
 }

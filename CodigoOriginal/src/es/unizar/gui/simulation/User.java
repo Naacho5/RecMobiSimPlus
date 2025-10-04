@@ -178,7 +178,9 @@ public class User {
 			};
 			
 		}*/
+		// System.out.println("DEBUG: Getting room for user " + this.userID + " at position (" + this.x + "," + this.y + ")");
 		this.room = MainSimulator.floor.getRoomFromPosition((int) x, (int) y);
+		// System.out.println("DEBUG: User " + this.userID + " moves to room " + this.room);
 	}
 	
 	/**

@@ -1,10 +1,10 @@
 package es.unizar.epidemic.models;
 
 /**
- * Parameters based on the aerosol model from modelExample.txt (Supermkt: https://docs.google.com/spreadsheets/d/16K1OQkLD4BjgBdO8ePj6ytf-RpPMlJ6aXFg3PrIQBbQ/edit?gid=519189277#gid=519189277)
+ * Parameters based on the aerosol model described in Supermkt: https://docs.google.com/spreadsheets/d/16K1OQkLD4BjgBdO8ePj6ytf-RpPMlJ6aXFg3PrIQBbQ/edit?gid=519189277#gid=519189277
  * Añadido por Nacho Palacio 2025-07-11
  */
-public class ModelParameters1 {
+public class PengParameters {
     // Some parameters are modified depending on the map
     
     // PARÁMETROS AMBIENTALES 
@@ -42,7 +42,7 @@ public class ModelParameters1 {
     private double relativeBreathingRateFactor = 2.50;
     private double co2EmissionRatePerPerson = 0.00675; // L/s
     
-    // PARÁMETROS DE QUANTA/VIRUS 
+    // PARÁMETROS DE QUANTA
     private double basicQuantaExhalationRate = 18.6;  // quanta/h
     private double quantaEnhancementVariant = 2.5;
     private double quantaEnhancementActivity = 5.0;
@@ -50,23 +50,21 @@ public class ModelParameters1 {
     
     // PARÁMETROS DE MASCARILLAS 
     private double exhalationMaskEfficiency = 0.50;   // 50%
-    private double fractionPeopleWithMasks = 1.0;     // 100%
+    private double fractionPeopleWithMasks = 0.1;     // 100%
     private double inhalationMaskEfficiency = 0.30;   // 30%
     
     // PARÁMETROS DE ENFERMEDAD 
     private double probabilityBeingInfective = 0.001; // 0.10%
     private double hospitalizationRate = 0.10;        // 10%
     private double deathRate = 0.01;                   // 1%
-    
-    // RESULTADOS CALCULADOS (del ejemplo) 
+
+    // PARÁMETROS DERIVADOS DEL MODELO
     private double netEmissionRate = 116.25;          // quanta/h
     private double avgQuantaConcentration = 0.01;     // quanta/m³
     private double quantaInhaledPerPerson = 0.06;
     
     // Riesgo individual
     private double infectionProbability = 0.055;      // 5.5%
-    private double hospitalizationProbability = 0.006; // 0.6%
-    private double deathProbability = 0.001;          // 0.1%
     
     // PARÁMETROS ORIGINALES 
     private double baseTransmissionProbability = 0.055;
@@ -75,7 +73,7 @@ public class ModelParameters1 {
     private int infectiousPeriod = 10;                 // días
     
 
-    public ModelParameters1() {
+    public PengParameters() {
         this.roomVolume = roomLength * roomWidth * roomHeight;
         this.roomArea = roomLength * roomWidth;
         this.totalFirstOrderLossRate = ventilationRate + virusDecayRate + depositionRate + additionalControlMeasures;
@@ -88,7 +86,10 @@ public class ModelParameters1 {
      */
     public double calculateQuantaConcentration(int infectiousPeople) {
         double netEmission = quantaExhalationInfected * infectiousPeople * (1.0 - exhalationMaskEfficiency * fractionPeopleWithMasks);
-        return netEmission / (roomVolume * totalFirstOrderLossRate);
+        double denominatorFactor = roomVolume * totalFirstOrderLossRate;
+        double concentration = netEmission / denominatorFactor;
+        
+        return concentration;
     }
     
     /**
@@ -99,8 +100,13 @@ public class ModelParameters1 {
         double quantaInhaled = quantaConcentration * breathingRateSusceptibles * exposureTimeHours;
         
         quantaInhaled *= (1.0 - inhalationMaskEfficiency * fractionPeopleWithMasks);
+    
+        double baseInfectionProb = 1.0 - Math.exp(-quantaInhaled);
+
+        double immunityReduction = 1.0 - (fractionImmune * 0.7);
+        double finalInfectionProb = baseInfectionProb * immunityReduction;
         
-        return 1.0 - Math.exp(-quantaInhaled);
+        return Math.min(1.0, Math.max(0.0, finalInfectionProb));
     }
 
     /**
@@ -121,12 +127,12 @@ public class ModelParameters1 {
     public double calculateCO2Concentration(int totalPeople) {
         if (totalPeople <= 0) return backgroundCO2;
 
-        double totalCO2Emission = co2EmissionRatePerPerson * totalPeople; // L/s
-        double ventilationVolumeRate = ventilationRate * roomVolume / 3600.0; // m³/s (convertir de m³/h)
+        double totalCO2Emission = co2EmissionRatePerPerson * totalPeople;
+        double ventilationVolumeRate = ventilationRate * roomVolume / 3600.0;
 
-        double co2EmissionM3s = totalCO2Emission / 1000.0; // m³/s
+        double co2EmissionM3s = totalCO2Emission / 1000.0;
     
-        double co2Addition = (co2EmissionM3s / ventilationVolumeRate) * 1000000; // ppm
+        double co2Addition = (co2EmissionM3s / ventilationVolumeRate) * 1000000;
         
         return backgroundCO2 + co2Addition;
     }
@@ -247,8 +253,27 @@ public class ModelParameters1 {
         this.densityPeoplePerM2 = totalPeople / roomArea;
         this.densityVolumePerPerson = roomVolume / totalPeople;
     }
+
+    public void setFractionImmune(double fractionImmune) {
+        this.fractionImmune = fractionImmune;
+        if (this.totalPeople > 0) {
+            this.susceptiblePeople = totalPeople * (1.0 - fractionImmune) - infectivePeople;
+        }
+    }
+
+    public void setBasicQuantaExhalationRate(double basicQuantaExhalationRate) {
+        this.basicQuantaExhalationRate = basicQuantaExhalationRate;
+    }
     
     private void updateTotalFirstOrderLossRate() {
         this.totalFirstOrderLossRate = ventilationRate + virusDecayRate + depositionRate + additionalControlMeasures;
+    }
+
+    public void setBreathingRateSusceptibles(double breathingRate) {
+        this.breathingRateSusceptibles = breathingRate;
+    }
+
+    public void setDepositionRate(double depositionRate2) {
+        this.depositionRate = depositionRate2;
     }
 }

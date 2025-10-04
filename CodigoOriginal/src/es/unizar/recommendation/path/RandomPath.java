@@ -25,7 +25,6 @@ public class RandomPath extends Path {
 	@SuppressWarnings("unchecked")
 	@Override
 	public String generatePath(long startVertex) {
-
 		// Añadido por Nacho Palacio 2025-04-23.
 		startVertex = ensureInternalId(startVertex, ElementIdMapper.CATEGORY_ITEM);
 

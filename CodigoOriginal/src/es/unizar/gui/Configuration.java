@@ -16,7 +16,7 @@ import java.sql.SQLException;
 import java.util.logging.Level;
 import java.awt.Image;
 import javax.swing.ImageIcon;
-
+import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
@@ -37,6 +37,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import es.unizar.access.DataAccessRecommendersFile;
 import es.unizar.access.DataAccessRoomFile;
+import es.unizar.epidemic.EpidemicConfiguration;
 import es.unizar.gui.simulation.Simulation;
 import es.unizar.recommendation.path.ExhaustivePath;
 import es.unizar.recommendation.path.NearestPath;
@@ -46,6 +47,7 @@ import es.unizar.util.EditorLiterals;
 import es.unizar.util.Literals;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingUtilities;
 
 /**
  * Parameter settings.
@@ -63,6 +65,10 @@ public class Configuration extends javax.swing.JDialog {
 	//public static final int Y_CONFIG = 830;
 	
 	DataAccessRecommendersFile recommenders;
+
+	public JTextField simulationDurationTextField;
+	public JTextField immunePopulationTextField;
+	public JTextField superSpreaderProbabilityTextField;	
 
 	/**
 	 * Creates new form Configuration
@@ -109,7 +115,8 @@ public class Configuration extends javax.swing.JDialog {
 			double kmToPixel, int ttl, int timeOnStairs, int minimumTimeToUpdateRecommendation, int communicationRange, int maxKnowledgeBaseSize, int communicationBandwidth, 
 			int latencyOfTransmission, int timeToChangeMood, boolean useFixedSeed, long seed,
 			int numberOfSpecialUser, int numberOfNonSpecialUser, String nonSpecialUserPaths, String pathStrategy, String recommendationAlgorithm, float thresholdRecommendation, 
-			double thresholdSimilarity, int howMany, String networkType, String propagationStrategy, double probabilityUserDisobedience, int numberVoteReceived, boolean generateUserPaths) {
+			double thresholdSimilarity, int howMany, String networkType, String propagationStrategy, double probabilityUserDisobedience, int numberVoteReceived, boolean generateUserPaths,
+			double simulationDurationMinutes) {
 
 		try {
 			
@@ -118,13 +125,16 @@ public class Configuration extends javax.swing.JDialog {
 			// Validation of fields:
 			if ( checkParametersForSimulation(timeAvailableUser, delayObservingPainting, timeForIteration, screenRefreshTime, timeForThePaths, 
 					userVelocity, kmToPixel, ttl, timeOnStairs, minimumTimeToUpdateRecommendation, communicationRange, maxKnowledgeBaseSize,
-					communicationBandwidth, latencyOfTransmission, timeToChangeMood)
+					communicationBandwidth, latencyOfTransmission, timeToChangeMood, simulationDurationMinutes)
 					&& 
 					checkUsersInfo(numberOfSpecialUser, numberOfNonSpecialUser, nonSpecialUserPaths, pathStrategy)
 					&& 
 					checkAlgorithmAndNetworkParams(recommendationAlgorithm, thresholdRecommendation, thresholdSimilarity, howMany, networkType, 
 							propagationStrategy, probabilityUserDisobedience, numberVoteReceived)) {
 				
+				es.unizar.epidemic.EpidemicConfiguration epidemicConfig = es.unizar.epidemic.EpidemicConfiguration.getInstance();
+            	epidemicConfig.setSimulationDuration((int) simulationDurationMinutes);
+
 				// Build a floor panel but including the users.
 				MainSimulator.floorPanelCombined = new FloorPanelCombined(MainSimulator.DRAWING_WIDTH, MainSimulator.DRAWING_HEIGHT);
 				MainSimulator.frmSimulator.getContentPane().add(MainSimulator.floorPanelCombined);
@@ -259,24 +269,118 @@ public class Configuration extends javax.swing.JDialog {
 			int initialInfected = Integer.valueOf(initialInfectedTextField.getText()).intValue();
 			double maskCompliance = Double.valueOf(maskComplianceTextField.getText()).doubleValue();
 
+			double simulationDurationMinutes = Double.valueOf(simulationDurationTextField.getText()).doubleValue();
+
 			es.unizar.epidemic.EpidemicConfiguration epidemicConfig = es.unizar.epidemic.EpidemicConfiguration.getInstance();
 			epidemicConfig.setSelectedModel(epidemicModel);
 			epidemicConfig.setInitialInfectedUsers(initialInfected);
 			epidemicConfig.setMaskComplianceRate(maskCompliance);
+
+			epidemicConfig.setSimulationDuration((int) simulationDurationMinutes);
+
+			// Añadido por Nacho Palacio 2025-09-14
+			try {
+				double defaultVentRate = Double.parseDouble(defaultVentilationRateTextField.getText());
+				double virusDecay = Double.parseDouble(virusDecayRateTextField.getText());
+				double maskExhEff = Double.parseDouble(maskExhalationEffTextField.getText());
+				double maskInhEff = Double.parseDouble(maskInhalationEffTextField.getText());
+				
+				epidemicConfig.setDefaultVentilationRate(defaultVentRate);
+				epidemicConfig.setVirusDecayRate(virusDecay);
+				epidemicConfig.setMaskExhalationEfficiency(maskExhEff);
+				epidemicConfig.setMaskInhalationEfficiency(maskInhEff);
+
+				try {
+					double immunePopulationFraction = Double.parseDouble(immunePopulationTextField.getText());
+					double superSpreaderProbability = Double.parseDouble(superSpreaderProbabilityTextField.getText());
+					
+					epidemicConfig.setImmunePopulationFraction(immunePopulationFraction);
+					epidemicConfig.setSuperSpreaderProbability(superSpreaderProbability);
+
+					System.out.printf("🔧 Configuration.java: Parámetros super-spreader configurados:\n");
+					System.out.printf("   - Probabilidad super-spreader enviada: %.1f%%\n", superSpreaderProbability * 100);
+					
+					EpidemicConfiguration verify = EpidemicConfiguration.getInstance();
+					System.out.printf("   - Probabilidad almacenada en EpidemicConfiguration: %.1f%%\n", 
+                     verify.getSuperSpreaderProbability() * 100);
+					 
+				} catch (NumberFormatException e) {
+					System.err.println("Error parsing immunity/superspreader parameters, using defaults: " + e.getMessage());
+				}
+
+				String selectedModel = (String) epidemicModelComboBox.getSelectedItem();
+
+				switch (selectedModel) {
+					case "SIMPLE_PROXIMITY":
+						if (maxTransmissionDistanceTextField != null && 
+							baseTransmissionProbTextField != null && 
+							minContactDurationTextField != null) {
+							
+							double maxDist = Double.parseDouble(maxTransmissionDistanceTextField.getText());
+							double baseProb = Double.parseDouble(baseTransmissionProbTextField.getText());
+							int minDuration = Integer.parseInt(minContactDurationTextField.getText());
+							
+							epidemicConfig.setMaxTransmissionDistance(maxDist);
+							epidemicConfig.setBaseTransmissionProbability(baseProb);
+							epidemicConfig.setMinContactDuration(minDuration);
+						}
+						break;
+					case "AEROSOL_PENG":
+						if (quantaEmissionRateTextField != null && 
+							breathingRateTextField != null && 
+							depositionRateTextField != null) {
+							
+							double quantaRate = Double.parseDouble(quantaEmissionRateTextField.getText());
+							double breathRate = Double.parseDouble(breathingRateTextField.getText());
+							double depRate = Double.parseDouble(depositionRateTextField.getText());
+							
+							epidemicConfig.setQuantaEmissionRate(quantaRate);
+							epidemicConfig.setBreathingRate(breathRate);
+							epidemicConfig.setDepositionRate(depRate);
+						}
+						break;
+					case "AEROSOL_LELIEVELD":
+						System.out.println("Selected model: AEROSOL_LELIEVELD");
+						if (viralLoadHighTextField != null && 
+							viralLoadSuperTextField != null && 
+							infectiousDoseTextField != null && 
+							depositionProbabilityTextField != null) {
+							
+							double viralHigh = Double.parseDouble(viralLoadHighTextField.getText());
+							double viralSuper = Double.parseDouble(viralLoadSuperTextField.getText());
+							double infDose = Double.parseDouble(infectiousDoseTextField.getText());
+							double depProb = Double.parseDouble(depositionProbabilityTextField.getText());
+							
+							epidemicConfig.setViralLoadHigh(viralHigh);
+							epidemicConfig.setViralLoadSuper(viralSuper);
+							epidemicConfig.setInfectiousDose(infDose);
+							epidemicConfig.setDepositionProbability(depProb);
+						}
+						break;
+				}
+			} catch (NumberFormatException e) {
+				System.err.println("Error parsing epidemic parameters, using defaults: " + e.getMessage());
+			}
 	
 			// Validation of fields:
 			if ( checkParametersForSimulation(timeAvailableUser, delayObservingItem, timeForIteration, screenRefreshTime, timeForThePaths, 
 					userSpeed, kmToPixel, ttl, timeOnStairs, minimumTimeToUpdateRecommendation, communicationRange, maxKnowledgeBaseSize,
-					communicationBandwidth, latencyOfTransmission, timeToChangeMood)
+					communicationBandwidth, latencyOfTransmission, timeToChangeMood, simulationDurationMinutes)
 					&& 
 					checkUsersInfo(numberOfSpecialUser, numberOfNonSpecialUser, nonSpecialUserPaths, pathStrategy)
 					&& 
 					checkAlgorithmAndNetworkParams(recommendationAlgorithm, thresholdRecommendation, thresholdSimilarity, howMany, networkType, 
 							propagationStrategy, probabilityUserDisobedience, numberVoteReceived)
 					&& // Añadido por Nacho Palacio 2025-07-16
-        			checkEpidemicParameters(epidemicModel, initialInfected, maskCompliance)) {
+        			checkEpidemicParameters(epidemicModel, initialInfected, maskCompliance, 
+						Double.parseDouble(immunePopulationTextField.getText()), 
+						Double.parseDouble(superSpreaderProbabilityTextField.getText()))) {
 				
 				MainSimulator.configureElementIdMapperStatically(); // Añadido por Nacho Palacio 2025-07-10
+
+				// DEBUG
+				// System.out.println("\n=== VERIFICANDO CONFIGURACIÓN GUARDADA ===");
+    			// epidemicConfig.printCurrentConfiguration();
 				
 				// Build a floor panel but including the users.
 //				MainSimulator.floorPanelCombined = new FloorPanelCombined(MainSimulator.DRAWING_WIDTH, MainSimulator.DRAWING_HEIGHT);				
@@ -314,7 +418,7 @@ public class Configuration extends javax.swing.JDialog {
 				simulation = new Simulation(timeAvailableUser, delayObservingItem, timeForIteration, screenRefreshTime, timeForThePaths, userSpeed, kmToPixel, ttl, timeOnStairs,
 						minimumTimeToUpdateRecommendation, communicationRange, maxKnowledgeBaseSize, communicationBandwidth, latencyOfTransmission, numberOfSpecialUser, numberOfNonSpecialUser,
 						nonSpecialUserPaths, pathStrategy, recommendationAlgorithm, thresholdRecommendation, howMany, propagationStrategy, probabilityUserDisobedience, numberVoteReceived,
-						thresholdSimilarity, networkType, timeToChangeMood, useFixedSeed, seed);
+						thresholdSimilarity, networkType, timeToChangeMood, useFixedSeed, seed, true);
 	
 				/*
 				 *  FROM PREVIOUS VERSION -> We think the message printed isn't necessary (or compulsory)
@@ -354,8 +458,6 @@ public class Configuration extends javax.swing.JDialog {
 					}
 				}
 				
-				// MainSimulator.configureElementIdMapperStatically(); // Añadido por Nacho Palacio 2025-07-10
-
 				System.out.println("end");
 				this.dispose();
 			} else {
@@ -700,8 +802,8 @@ public class Configuration extends javax.swing.JDialog {
 		epidemicModelComboBox.setFont(new Font("SansSerif", Font.PLAIN, 14));
 		epidemicModelComboBox.setModel(new DefaultComboBoxModel(new String[] { 
 			"SIMPLE_PROXIMITY", 
-			"AEROSOL_WELLS_RILEY",
-			"AEROSOL_LELIEVELD_2020"
+			"AEROSOL_PENG",
+			"AEROSOL_LELIEVELD"
 		}));
 
 		JLabel lblInitialInfected = new JLabel("Initial infected users");
@@ -722,21 +824,116 @@ public class Configuration extends javax.swing.JDialog {
 
 		// Layout del panel epidemiológico
 		GroupLayout gl_epidemicPanel = new GroupLayout(epidemicPanel);
+
+		JLabel lblDefaultVentRate = new JLabel("Default ventilation rate [h⁻¹]");
+		lblDefaultVentRate.setFont(new Font("SansSerif", Font.PLAIN, 14));
+
+		defaultVentilationRateTextField = new JTextField();
+		defaultVentilationRateTextField.setFont(new Font("SansSerif", Font.PLAIN, 14));
+		defaultVentilationRateTextField.setText("3.0");
+		defaultVentilationRateTextField.setColumns(10);
+
+		JLabel lblVirusDecayRate = new JLabel("Virus decay rate [h⁻¹]");
+		lblVirusDecayRate.setFont(new Font("SansSerif", Font.PLAIN, 14));
+
+		virusDecayRateTextField = new JTextField();
+		virusDecayRateTextField.setFont(new Font("SansSerif", Font.PLAIN, 14));
+		virusDecayRateTextField.setText("0.62");
+		virusDecayRateTextField.setColumns(10);
+
+		JLabel lblMaskExhEff = new JLabel("Mask exhalation efficiency [0-1]");
+		lblMaskExhEff.setFont(new Font("SansSerif", Font.PLAIN, 14));
+
+		maskExhalationEffTextField = new JTextField();
+		maskExhalationEffTextField.setFont(new Font("SansSerif", Font.PLAIN, 14));
+		maskExhalationEffTextField.setText("0.5");
+		maskExhalationEffTextField.setColumns(10);
+
+		JLabel lblMaskInhEff = new JLabel("Mask inhalation efficiency [0-1]");
+		lblMaskInhEff.setFont(new Font("SansSerif", Font.PLAIN, 14));
+
+		maskInhalationEffTextField = new JTextField();
+		maskInhalationEffTextField.setFont(new Font("SansSerif", Font.PLAIN, 14));
+		maskInhalationEffTextField.setText("0.3");
+		maskInhalationEffTextField.setColumns(10);
+
+		JLabel lblSimulationDuration = new JLabel("Simulation duration [minutes]");
+		lblSimulationDuration.setFont(new Font("SansSerif", Font.PLAIN, 14));
+
+		simulationDurationTextField = new JTextField();
+		simulationDurationTextField.setFont(new Font("SansSerif", Font.PLAIN, 14));
+		simulationDurationTextField.setText("7"); // 7 minutos por defecto
+		simulationDurationTextField.setColumns(10);
+
+		JLabel lblImmunePopulation = new JLabel("Immune population fraction [0-1]");
+		lblImmunePopulation.setFont(new Font("SansSerif", Font.PLAIN, 14));
+
+		immunePopulationTextField = new JTextField();
+		immunePopulationTextField.setFont(new Font("SansSerif", Font.PLAIN, 14));
+		immunePopulationTextField.setText("0.0");
+		immunePopulationTextField.setColumns(10);
+
+		JLabel lblSuperSpreaderProb = new JLabel("Super-spreader probability [0-1]");
+		lblSuperSpreaderProb.setFont(new Font("SansSerif", Font.PLAIN, 14));
+
+		superSpreaderProbabilityTextField = new JTextField();
+		superSpreaderProbabilityTextField.setFont(new Font("SansSerif", Font.PLAIN, 14));
+		superSpreaderProbabilityTextField.setText("0.05");
+		superSpreaderProbabilityTextField.setColumns(10);
+
+		// Panel para parámetros específicos del modelo
+		modelSpecificPanel = new JPanel();
+		modelSpecificPanel.setBorder(BorderFactory.createTitledBorder("Model-specific parameters"));
+
 		gl_epidemicPanel.setHorizontalGroup(
 			gl_epidemicPanel.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_epidemicPanel.createSequentialGroup()
 					.addContainerGap()
 					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.LEADING)
-						.addComponent(lblEpidemicModel)
-						.addComponent(lblInitialInfected)
-						.addComponent(lblMaskCompliance))
-					.addGap(18)
-					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.LEADING, false)
-						.addComponent(epidemicModelComboBox, 0, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-						.addComponent(initialInfectedTextField)
-						.addComponent(maskComplianceTextField, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE))
-					.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+						.addGroup(gl_epidemicPanel.createSequentialGroup()
+							.addComponent(lblEpidemicModel)
+							.addGap(18)
+							.addComponent(epidemicModelComboBox, 0, 200, Short.MAX_VALUE))
+						.addGroup(gl_epidemicPanel.createSequentialGroup()
+							.addComponent(lblInitialInfected)
+							.addGap(18)
+							.addComponent(initialInfectedTextField, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE))
+						.addGroup(gl_epidemicPanel.createSequentialGroup()
+							.addComponent(lblMaskCompliance)
+							.addGap(18)
+							.addComponent(maskComplianceTextField, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE))
+						.addGroup(gl_epidemicPanel.createSequentialGroup()
+							.addComponent(lblDefaultVentRate)
+							.addGap(18)
+							.addComponent(defaultVentilationRateTextField, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE))
+						.addGroup(gl_epidemicPanel.createSequentialGroup()
+							.addComponent(lblVirusDecayRate)
+							.addGap(18)
+							.addComponent(virusDecayRateTextField, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE))
+						.addGroup(gl_epidemicPanel.createSequentialGroup()
+							.addComponent(lblMaskExhEff)
+							.addGap(18)
+							.addComponent(maskExhalationEffTextField, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE))
+						.addGroup(gl_epidemicPanel.createSequentialGroup()
+							.addComponent(lblMaskInhEff)
+							.addGap(18)
+							.addComponent(maskInhalationEffTextField, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE))
+						.addGroup(gl_epidemicPanel.createSequentialGroup()
+							.addComponent(lblSimulationDuration)
+							.addGap(18)
+							.addComponent(simulationDurationTextField, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE))
+						.addGroup(gl_epidemicPanel.createSequentialGroup()
+							.addComponent(lblImmunePopulation)
+							.addGap(18)
+							.addComponent(immunePopulationTextField, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE))
+						.addGroup(gl_epidemicPanel.createSequentialGroup()
+							.addComponent(lblSuperSpreaderProb)
+							.addGap(18)
+							.addComponent(superSpreaderProbabilityTextField, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE))
+						.addComponent(modelSpecificPanel, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+					.addContainerGap())
 		);
+
 		gl_epidemicPanel.setVerticalGroup(
 			gl_epidemicPanel.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_epidemicPanel.createSequentialGroup()
@@ -744,17 +941,50 @@ public class Configuration extends javax.swing.JDialog {
 					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
 						.addComponent(lblEpidemicModel)
 						.addComponent(epidemicModelComboBox, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-					.addGap(18)
+					.addGap(10)
 					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
 						.addComponent(lblInitialInfected)
 						.addComponent(initialInfectedTextField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-					.addGap(18)
+					.addGap(10)
 					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
 						.addComponent(lblMaskCompliance)
 						.addComponent(maskComplianceTextField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-					.addContainerGap(20, Short.MAX_VALUE))
+					.addGap(10)
+					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
+						.addComponent(lblDefaultVentRate)
+						.addComponent(defaultVentilationRateTextField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addGap(10)
+					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
+						.addComponent(lblVirusDecayRate)
+						.addComponent(virusDecayRateTextField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addGap(10)
+					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
+						.addComponent(lblMaskExhEff)
+						.addComponent(maskExhalationEffTextField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addGap(10)
+					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
+						.addComponent(lblMaskInhEff)
+						.addComponent(maskInhalationEffTextField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addGap(10)
+					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
+						.addComponent(lblSimulationDuration)
+						.addComponent(simulationDurationTextField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addGap(10)
+					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
+						.addComponent(lblImmunePopulation)
+						.addComponent(immunePopulationTextField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addGap(10)
+					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
+						.addComponent(lblSuperSpreaderProb)
+						.addComponent(superSpreaderProbabilityTextField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addGap(10)
+					.addComponent(modelSpecificPanel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+					.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
 		);
 		epidemicPanel.setLayout(gl_epidemicPanel);
+
+		// Añadido por Nacho Palacio 2025-09-14
+		epidemicModelComboBox.addActionListener(e -> updateModelSpecificParameters());
 		
 		javax.swing.GroupLayout gl_simulationPanel = new javax.swing.GroupLayout(simulationPanel);
 		gl_simulationPanel.setHorizontalGroup(
@@ -1442,7 +1672,7 @@ public class Configuration extends javax.swing.JDialog {
 							.addComponent(experimentPanel, GroupLayout.PREFERRED_SIZE, 715, GroupLayout.PREFERRED_SIZE)
 							.addGap(18)
 							.addComponent(saveButton))
-						.addComponent(epidemicPanel, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE))  // MOVER aquí
+						.addComponent(epidemicPanel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
 					.addGap(25))
 		);
 		panel.setLayout(gl_panel);
@@ -1458,6 +1688,9 @@ public class Configuration extends javax.swing.JDialog {
 		getContentPane().setLayout(groupLayout);
 
 		pack();
+
+		epidemicModelComboBox.setSelectedItem("SIMPLE_PROXIMITY");
+		updateModelSpecificParameters();
 	}
 	
 	/**
@@ -1495,6 +1728,12 @@ public class Configuration extends javax.swing.JDialog {
         int y = 0;
         this.setLocation(x, y); // x centered, y top
 	}
+
+	public static void setPixelsPerMeter(double pixelsPerMeter) {
+		if (simulation != null) {
+			simulation.kmToPixel = pixelsPerMeter * 1000.0;
+		}
+	}
 	
 	/**
 	 * Checks if the simulation parameters are valid.
@@ -1519,12 +1758,13 @@ public class Configuration extends javax.swing.JDialog {
 	private boolean checkParametersForSimulation(int timeAvailableUser, int delayObservingPainting, double timeForIteration,
 			double screenRefreshTime, double timeForThePaths, double userVelocity, double kmToPixel, int ttl, int timeOnStairs,
 			int minimumTimeToUpdateRecommendation, int communicationRange, int maxKnowledgeBaseSize, int communicationBandwidth,
-			int latencyOfTransmission, int timeToChangeMood) {
+			int latencyOfTransmission, int timeToChangeMood, double simulationDuration) { // ← NUEVO PARÁMETRO
 		
 		return (timeAvailableUser != 0 && delayObservingPainting != 0 && timeForIteration != 0 && screenRefreshTime != 0
 				&& timeForThePaths != 0 && userVelocity != 0 && kmToPixel != 0 && ttl != 0 & timeOnStairs != 0 
 				&& minimumTimeToUpdateRecommendation != 0 && communicationRange != 0 && maxKnowledgeBaseSize != 0 
-				&& communicationBandwidth != 0 && latencyOfTransmission != 0 && timeToChangeMood != 0);
+				&& communicationBandwidth != 0 && latencyOfTransmission != 0 && timeToChangeMood != 0
+				&& simulationDuration > 0);
 	}
 
 	/**
@@ -1598,13 +1838,242 @@ public class Configuration extends javax.swing.JDialog {
 	 * Añadido por Nacho Palacio 2022-07-16.
 	 * Validates epidemic parameters
 	 */
-	private boolean checkEpidemicParameters(String epidemicModel, int initialInfected, double maskCompliance) {
+	private boolean checkEpidemicParameters(String epidemicModel, int initialInfected, double maskCompliance, 
+                                      double immunePopulation, double superSpreaderProb) {
 		return epidemicModel != null && 
 			initialInfected > 0 && 
-			maskCompliance >= 0.0 && maskCompliance <= 1.0;
+			maskCompliance >= 0.0 && maskCompliance <= 1.0 &&
+			immunePopulation >= 0.0 && immunePopulation <= 1.0 &&
+			superSpreaderProb >= 0.0 && superSpreaderProb <= 1.0;
 	}
 	
-	
+
+	/**
+	 * Añadido por Nacho Palacio 2025-09-14
+	 * Updates the model-specific parameters panel based on the selected epidemic model.
+	 */
+	private void updateModelSpecificParameters() {
+		modelSpecificPanel.removeAll();
+		
+		String selectedModel = (String) epidemicModelComboBox.getSelectedItem();
+		
+		switch (selectedModel) {
+			case "SIMPLE_PROXIMITY":
+				addSimpleProximityParameters();
+				break;
+			case "AEROSOL_PENG":
+				addPengParameters();
+				break;
+			case "AEROSOL_LELIEVELD":
+				addLelieveldParameters();
+				break;
+		}
+    		
+		modelSpecificPanel.revalidate();
+		modelSpecificPanel.repaint();
+		
+		if (modelSpecificPanel.getParent() != null) {
+			modelSpecificPanel.getParent().revalidate();
+			modelSpecificPanel.getParent().repaint();
+		}
+	}
+
+	private void addSimpleProximityParameters() {
+		JLabel lblMaxDistance = new JLabel("Max transmission distance [m]");
+		lblMaxDistance.setFont(new Font("SansSerif", Font.PLAIN, 12));
+		
+		maxTransmissionDistanceTextField = new JTextField("1.5");
+		maxTransmissionDistanceTextField.setFont(new Font("SansSerif", Font.PLAIN, 12));
+		
+		JLabel lblBaseProb = new JLabel("Base transmission probability [0-1]");
+		lblBaseProb.setFont(new Font("SansSerif", Font.PLAIN, 12));
+		
+		baseTransmissionProbTextField = new JTextField("0.01");
+		baseTransmissionProbTextField.setFont(new Font("SansSerif", Font.PLAIN, 12));
+		
+		JLabel lblMinDuration = new JLabel("Min contact duration [s]");
+		lblMinDuration.setFont(new Font("SansSerif", Font.PLAIN, 12));
+		
+		minContactDurationTextField = new JTextField("200");
+		minContactDurationTextField.setFont(new Font("SansSerif", Font.PLAIN, 12));
+    
+		GroupLayout layout = new GroupLayout(modelSpecificPanel);
+		layout.setHorizontalGroup(
+			layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+				.addGroup(layout.createSequentialGroup()
+					.addContainerGap()
+					.addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+						.addGroup(layout.createSequentialGroup()
+							.addComponent(lblMaxDistance)
+							.addGap(10)
+							.addComponent(maxTransmissionDistanceTextField, GroupLayout.PREFERRED_SIZE, 80, GroupLayout.PREFERRED_SIZE))
+						.addGroup(layout.createSequentialGroup()
+							.addComponent(lblBaseProb)
+							.addGap(10)
+							.addComponent(baseTransmissionProbTextField, GroupLayout.PREFERRED_SIZE, 80, GroupLayout.PREFERRED_SIZE))
+						.addGroup(layout.createSequentialGroup()
+							.addComponent(lblMinDuration)
+							.addGap(10)
+							.addComponent(minContactDurationTextField, GroupLayout.PREFERRED_SIZE, 80, GroupLayout.PREFERRED_SIZE)))
+					.addContainerGap())
+		);
+		layout.setVerticalGroup(
+			layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+				.addGroup(layout.createSequentialGroup()
+					.addContainerGap()
+					.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+						.addComponent(lblMaxDistance)
+						.addComponent(maxTransmissionDistanceTextField))
+					.addGap(10)
+					.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+						.addComponent(lblBaseProb)
+						.addComponent(baseTransmissionProbTextField))
+					.addGap(10)
+					.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+						.addComponent(lblMinDuration)
+						.addComponent(minContactDurationTextField))
+					.addContainerGap())
+		);
+		modelSpecificPanel.setLayout(layout);
+		modelSpecificPanel.setPreferredSize(new Dimension(400, 200));
+    	modelSpecificPanel.setMinimumSize(new Dimension(400, 150));
+	}
+
+	private void addPengParameters() {
+		JLabel lblQuantaEmission = new JLabel("Quanta emission rate [quanta/h]");
+		lblQuantaEmission.setFont(new Font("SansSerif", Font.PLAIN, 12));
+		
+		quantaEmissionRateTextField = new JTextField("232.5");
+		quantaEmissionRateTextField.setFont(new Font("SansSerif", Font.PLAIN, 12));
+		
+		JLabel lblBreathingRate = new JLabel("Breathing rate [m³/h]");
+		lblBreathingRate.setFont(new Font("SansSerif", Font.PLAIN, 12));
+		
+		breathingRateTextField = new JTextField("0.72");
+		breathingRateTextField.setFont(new Font("SansSerif", Font.PLAIN, 12));
+		
+		JLabel lblDepositionRate = new JLabel("Deposition rate [h⁻¹]");
+		lblDepositionRate.setFont(new Font("SansSerif", Font.PLAIN, 12));
+		
+		depositionRateTextField = new JTextField("0.3");
+		depositionRateTextField.setFont(new Font("SansSerif", Font.PLAIN, 12));
+		
+		GroupLayout layout = new GroupLayout(modelSpecificPanel);
+		layout.setHorizontalGroup(
+			layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+				.addGroup(layout.createSequentialGroup()
+					.addContainerGap()
+					.addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+						.addGroup(layout.createSequentialGroup()
+							.addComponent(lblQuantaEmission)
+							.addGap(10)
+							.addComponent(quantaEmissionRateTextField, GroupLayout.PREFERRED_SIZE, 80, GroupLayout.PREFERRED_SIZE))
+						.addGroup(layout.createSequentialGroup()
+							.addComponent(lblBreathingRate)
+							.addGap(10)
+							.addComponent(breathingRateTextField, GroupLayout.PREFERRED_SIZE, 80, GroupLayout.PREFERRED_SIZE))
+						.addGroup(layout.createSequentialGroup()
+							.addComponent(lblDepositionRate)
+							.addGap(10)
+							.addComponent(depositionRateTextField, GroupLayout.PREFERRED_SIZE, 80, GroupLayout.PREFERRED_SIZE)))
+					.addContainerGap())
+		);
+		layout.setVerticalGroup(
+			layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+				.addGroup(layout.createSequentialGroup()
+					.addContainerGap()
+					.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+						.addComponent(lblQuantaEmission)
+						.addComponent(quantaEmissionRateTextField))
+					.addGap(10)
+					.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+						.addComponent(lblBreathingRate)
+						.addComponent(breathingRateTextField))
+					.addGap(10)
+					.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+						.addComponent(lblDepositionRate)
+						.addComponent(depositionRateTextField))
+					.addContainerGap())
+		);
+		modelSpecificPanel.setLayout(layout);
+		modelSpecificPanel.setPreferredSize(new Dimension(400, 200));
+		modelSpecificPanel.setMinimumSize(new Dimension(400, 150));
+	}
+
+	private void addLelieveldParameters() {
+		JLabel lblViralLoadHigh = new JLabel("Viral load high [copies/cm³]");
+		lblViralLoadHigh.setFont(new Font("SansSerif", Font.PLAIN, 12));
+		
+		viralLoadHighTextField = new JTextField("1.5E7");
+		viralLoadHighTextField.setFont(new Font("SansSerif", Font.PLAIN, 12));
+		
+		JLabel lblViralLoadSuper = new JLabel("Viral load superspreader [copies/cm³]");
+		lblViralLoadSuper.setFont(new Font("SansSerif", Font.PLAIN, 12));
+		
+		viralLoadSuperTextField = new JTextField("5E9");
+		viralLoadSuperTextField.setFont(new Font("SansSerif", Font.PLAIN, 12));
+		
+		JLabel lblInfectiousDose = new JLabel("Infectious dose D50 [copies]");
+		lblInfectiousDose.setFont(new Font("SansSerif", Font.PLAIN, 12));
+		
+		infectiousDoseTextField = new JTextField("100");
+		infectiousDoseTextField.setFont(new Font("SansSerif", Font.PLAIN, 12));
+		
+		JLabel lblDepositionProb = new JLabel("Deposition probability [0-1]");
+		lblDepositionProb.setFont(new Font("SansSerif", Font.PLAIN, 12));
+		
+		depositionProbabilityTextField = new JTextField("0.5");
+		depositionProbabilityTextField.setFont(new Font("SansSerif", Font.PLAIN, 12));
+		
+		GroupLayout layout = new GroupLayout(modelSpecificPanel);
+		layout.setHorizontalGroup(
+			layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+				.addGroup(layout.createSequentialGroup()
+					.addContainerGap()
+					.addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+						.addGroup(layout.createSequentialGroup()
+							.addComponent(lblViralLoadHigh)
+							.addGap(10)
+							.addComponent(viralLoadHighTextField, GroupLayout.PREFERRED_SIZE, 80, GroupLayout.PREFERRED_SIZE))
+						.addGroup(layout.createSequentialGroup()
+							.addComponent(lblViralLoadSuper)
+							.addGap(10)
+							.addComponent(viralLoadSuperTextField, GroupLayout.PREFERRED_SIZE, 80, GroupLayout.PREFERRED_SIZE))
+						.addGroup(layout.createSequentialGroup()
+							.addComponent(lblInfectiousDose)
+							.addGap(10)
+							.addComponent(infectiousDoseTextField, GroupLayout.PREFERRED_SIZE, 80, GroupLayout.PREFERRED_SIZE))
+						.addGroup(layout.createSequentialGroup()
+							.addComponent(lblDepositionProb)
+							.addGap(10)
+							.addComponent(depositionProbabilityTextField, GroupLayout.PREFERRED_SIZE, 80, GroupLayout.PREFERRED_SIZE)))
+					.addContainerGap())
+		);
+		layout.setVerticalGroup(
+			layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+				.addGroup(layout.createSequentialGroup()
+					.addContainerGap()
+					.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+						.addComponent(lblViralLoadHigh)
+						.addComponent(viralLoadHighTextField))
+					.addGap(8)
+					.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+						.addComponent(lblViralLoadSuper)
+						.addComponent(viralLoadSuperTextField))
+					.addGap(8)
+					.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+						.addComponent(lblInfectiousDose)
+						.addComponent(infectiousDoseTextField))
+					.addGap(8)
+					.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+						.addComponent(lblDepositionProb)
+						.addComponent(depositionProbabilityTextField))
+					.addContainerGap())
+		);
+		modelSpecificPanel.setLayout(layout);
+		modelSpecificPanel.setPreferredSize(new Dimension(400, 200));
+    	modelSpecificPanel.setMinimumSize(new Dimension(400, 150));
+	}
 	
 	
 	/**
@@ -1681,4 +2150,25 @@ public class Configuration extends javax.swing.JDialog {
 	public JComboBox epidemicModelComboBox;
 	public JTextField initialInfectedTextField;
 	public JTextField maskComplianceTextField;
+
+	// Añadido por Nacho Palacio 2025-09-14
+	public JTextField defaultVentilationRateTextField;
+	public JTextField virusDecayRateTextField;
+	public JTextField maskExhalationEffTextField;
+	public JTextField maskInhalationEffTextField;
+
+	public JTextField maxTransmissionDistanceTextField;
+	public JTextField baseTransmissionProbTextField;
+	public JTextField minContactDurationTextField;
+
+	public JTextField quantaEmissionRateTextField;
+	public JTextField breathingRateTextField;
+	public JTextField depositionRateTextField;
+
+	public JTextField viralLoadHighTextField;
+	public JTextField viralLoadSuperTextField;
+	public JTextField infectiousDoseTextField;
+	public JTextField depositionProbabilityTextField;
+
+	private JPanel modelSpecificPanel;
 }

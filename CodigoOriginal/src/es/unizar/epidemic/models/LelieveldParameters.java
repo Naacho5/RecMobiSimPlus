@@ -5,27 +5,26 @@ package es.unizar.epidemic.models;
  * Implementado a partir de modelAerosol2.txt
  * Añadido por Nacho Palacio 2025-07-27
  */
-public class ModelParameters2 {
-    // PARÁMETROS DEL VIRUS/EPISODIO INFECCIOSO
-    private double infectiousEpisodeDays = 2.0;        // días
+public class LelieveldParameters {
+    // PARÁMETROS DEL VIRUS
     private double virusLifetimeHours = 1.7;           // h
     private double virusDecayRateHour = 0.59;          // h⁻¹ (1/lifetime)
-    private double aerosolDiameterUm = 5.0;            // μm
 
-    // PARÁMETROS DE GENERACIÓN DE AEROSOLES/VIRUS
+    // PARÁMETROS DE GENERACIÓN DE AEROSOLES
     private double concentrationBreathingCm3 = 0.1;    // partículas/cm³
-    private double concentrationSpeakingCm3 = 1.1;     // partículas/cm³
+    private double concentrationSpeakingCm3 = 1.1;     // partículas/cm³ (antes 1.1 -> 0.11)
     private double speakingBreathingRatio = 0.10;      // fracción de tiempo hablando
     private double respiratoryRateLmin = 10.0;         // L/min
     private double respiratoryRateM3h = 0.6;           // m³/h (calculado)
 
     // CARGA VIRAL
-    private double viralLoadHighCm3 = 5e8;             // copias RNA/cm³
+    // Modificado porque 5e8 es el momento de máxima carga viral, no la carga típica
+    private double viralLoadHighCm3 = 1.5e7;             // copias RNA/cm³ (antes 5e8 -> 1.5e6, 1.5e7)
     private double viralLoadSuperCm3 = 5e9;            // copias RNA/cm³
 
     // PARÁMETROS DE DEPOSICIÓN E INFECCIÓN
     private double depositionProbability = 0.5;        // probabilidad
-    private double infectiveDoseD50 = 316;             // copias RNA
+    private double infectiveDoseD50 = 100;             // copias RNA (antes 316)
 
     // PARÁMETROS DEL ENTORNO
     private double roomAreaM2 = 60.0;                  // m²
@@ -33,8 +32,6 @@ public class ModelParameters2 {
     private double roomVolumeM3 = 180.0;               // m³
     private double roomLengthM = 10.0;                 // m
     private double roomWidthM = 6.0;                   // m
-    private double temperatureC = 20.0;                // °C
-    private double relativeHumidityPct = 50;           // %
     private double backgroundCo2Ppm = 415;             // ppm
 
     // VENTILACIÓN
@@ -53,38 +50,24 @@ public class ModelParameters2 {
     private double maskEfficiencyInh = 0.3;            // fracción
     private double maskEfficiencyExh = 0.4;            // fracción
     private double maskEfficiencyTotal = 0.7;          // fracción
-    private String maskType = "surgical";              // tipo
+    private double fractionPeopleWithMasks = 0.1;     // 10%
 
-    // EVENTO / TIEMPO DE EXPOSICIÓN
-    private double exposureDurationHours = 6.0;        // horas/día
-    private int numExposureDays = 2;                   // días
 
     // CAMPOS AVANZADOS
-    private boolean hepaFilterOn = false;              // activado/desactivado
-    private String scenarioLabel = "clase";            // etiqueta
+    private boolean hepaFilterOn = false;
 
-    public ModelParameters2() {
+    public LelieveldParameters() {
         updateDerivedParameters();
-
-        // Añadido para debug
-        System.out.println("🔬 PARÁMETROS MODELO LELIEVELD:");
-        System.out.println(String.format("   Carga viral alta: %.2e", viralLoadHighCm3));
-        System.out.println(String.format("   Carga viral SUPER: %.2e (%.0fx mayor)", 
-                        viralLoadSuperCm3, viralLoadSuperCm3 / viralLoadHighCm3));
     }
 
     /**
      * Updates derived parameters based on the current settings.
      */
-    private void updateDerivedParameters() {
+    private void updateDerivedParameters() {     
         this.roomVolumeM3 = roomLengthM * roomWidthM * roomHeightM;
-        this.roomAreaM2 = roomLengthM * roomWidthM;
+        this.roomAreaM2 = roomLengthM * roomWidthM;  
         this.susceptiblePeople = subjectsInRoom - infectivePeople;
-        this.respiratoryRateM3h = respiratoryRateLmin * 60 / 1000;  // L/min → m³/h
-
-        // Añadido para debug
-        System.out.println(String.format("🔧 updateDerivedParameters: infectivePeople=%d, susceptiblePeople=%d", 
-                      this.infectivePeople, this.susceptiblePeople));
+        this.respiratoryRateM3h = respiratoryRateLmin * 60 / 1000;
         
         this.totalVentilationRateH = ventilationRatePassiveH + ventilationRateActiveH;
         if (hepaFilterOn) {
@@ -100,51 +83,54 @@ public class ModelParameters2 {
      * Calculates the viral concentration in the air (RNA copies/m³)
      */
     public double calculateViralConcentration(double viralLoadCm3, double fractionWithMasks) {
-        // Añadido para debug
-        System.out.println(String.format("🔧 === CÁLCULO CONCENTRACIÓN VIRAL ==="));
-        System.out.println(String.format("🔧 INPUT: viralLoad=%.2e, fractionMasks=%.2f", viralLoadCm3, fractionWithMasks));
-        System.out.println(String.format("🔧 PARÁMETROS: infectivePeople=%d, subjectsInRoom=%d, roomVolume=%.1f", 
-                        infectivePeople, subjectsInRoom, roomVolumeM3));
-
         double avgEmissionConcentration = concentrationBreathingCm3 * (1 - speakingBreathingRatio) + 
-                                          concentrationSpeakingCm3 * speakingBreathingRatio;
-        
+                                        concentrationSpeakingCm3 * speakingBreathingRatio;
         double viralEmission = avgEmissionConcentration * viralLoadCm3;
-        
         double maskFactor = 1.0 - (maskEfficiencyExh * fractionWithMasks);
+    
+        if (maskFactor <= 0) {
+            System.out.println("   ❌ ERROR: Factor mascarilla <= 0, devolviendo 0");
+            return 0.0;
+        }
         
         double totalEmission = viralEmission * respiratoryRateM3h * infectivePeople * maskFactor;
-        
-        double lossRate = totalVentilationRateH + virusDecayRateHour;
 
-        double finalConcentration = totalEmission / (roomVolumeM3 * lossRate);
+        double lossRate = totalVentilationRateH + virusDecayRateHour;
         
-        // Añadido para debug
-        System.out.println(String.format("🔧 CÁLCULO: emission=%.2e, totalEmission=%.2e, finalConc=%.2e", 
-                      viralEmission, totalEmission, finalConcentration));
-    
-        System.out.println(String.format("🧮 CÁLCULO CONCENTRACIÓN: input=%.2e → emisión=%.2e → final=%.2e (vol=%.1f, pérdidas=%.2f)",
-                        viralLoadCm3, totalEmission, finalConcentration, roomVolumeM3, lossRate));
+        double denominatorFactor = roomVolumeM3 * lossRate;
         
-        return totalEmission / (roomVolumeM3 * lossRate);
+        double finalConcentration = totalEmission / denominatorFactor;
+        
+        return finalConcentration;
     }
 
     /**
      * Calculates the probability of infection using dose-response model
      */
     public double calculateInfectionProbability(double timeHours, double viralLoadCm3, double maskProtectionFactor) {
-        double concentration = calculateViralConcentration(viralLoadCm3, 
-                            subjectsInRoom > 0 ? (subjectsInRoom - infectivePeople) / (double)subjectsInRoom : 0);
+        if (timeHours <= 0) {
+            return 0.0;
+        }
+        if (viralLoadCm3 <= 0) {
+            return 0.0;
+        }
 
-        System.out.println(String.format("🎯 PROB INFECCIÓN: conc=%.2e, tiempo=%.4f h, dosis=%.2e",
-                      concentration, timeHours, concentration * respiratoryRateM3h * timeHours * maskProtectionFactor * depositionProbability));
+        // Modificado por Nacho Palacio 2025-09-25
+        // double fractionMasks = subjectsInRoom > 0 ? (subjectsInRoom - infectivePeople) / (double)subjectsInRoom : 0;
+        // double concentration = calculateViralConcentration(viralLoadCm3, fractionMasks);
         
-        double inhalaedDose = concentration * respiratoryRateM3h * timeHours * 
-                            maskProtectionFactor * depositionProbability;
+        double concentration = calculateViralConcentration(viralLoadCm3, fractionPeopleWithMasks);
         
+        double inhalaedDose = concentration * respiratoryRateM3h * timeHours * maskProtectionFactor * depositionProbability;
+
         double PRNA = calculateSingleVirusProbability();
         
-        return 1.0 - Math.pow(1.0 - PRNA, inhalaedDose);
+        double infectionProb = 1.0 - Math.pow(1.0 - PRNA, inhalaedDose);
+
+        double immunityReduction = 1.0 - (fractionImmune * 0.7); // Inmunidad reduce 70% la transmisión
+        double finalInfectionProb = infectionProb * immunityReduction;
+        
+        return Math.min(1.0, Math.max(0.0, finalInfectionProb));
     }
 
     /**
@@ -152,24 +138,29 @@ public class ModelParameters2 {
      */
     public double calculateGroupInfectionProbability(double timeHours, double viralLoadCm3, 
                                                 double maskProtectionFactor, int susceptibleCount) {
-        double concentration = calculateViralConcentration(viralLoadCm3, 
-                            subjectsInRoom > 0 ? (subjectsInRoom - infectivePeople) / (double)subjectsInRoom : 0);
+        double fractionMasks = subjectsInRoom > 0 ? (subjectsInRoom - infectivePeople) / (double)subjectsInRoom : 0;
+        double concentration = calculateViralConcentration(viralLoadCm3, fractionMasks);
         
-        double inhalaedDose = concentration * respiratoryRateM3h * timeHours * 
-                            maskProtectionFactor * depositionProbability;
+        double inhalaedDoseIndividual = concentration * respiratoryRateM3h * timeHours * 
+                                    maskProtectionFactor * depositionProbability;
+
+        double inhalaedDoseGroup = inhalaedDoseIndividual * susceptibleCount;
         
         double PRNA = calculateSingleVirusProbability();
+        double groupInfectionProb = 1.0 - Math.pow(1.0 - PRNA, inhalaedDoseGroup);
         
-        return 1.0 - Math.pow(1.0 - PRNA, inhalaedDose * susceptibleCount);
+        if (groupInfectionProb > 1) {
+            groupInfectionProb = 1.0;
+        }
+        
+        return groupInfectionProb;
     }
 
     /**
-     * Calcula la concentración de CO2 como indicador de riesgo
+     * Calculate concentration of CO2 in ppm
      */
     public double calculateCO2Concentration() {
-        // Tasa de emisión CO2: ~0.004 L/s/persona = 0.014 m³/h/persona
         double co2EmissionRateM3h = 0.014 * subjectsInRoom;
-        
         return backgroundCo2Ppm + (co2EmissionRateM3h * 1000000) / (totalVentilationRateH * roomVolumeM3);
     }
 
@@ -193,41 +184,88 @@ public class ModelParameters2 {
     public double getMaskEfficiencyInh() { return maskEfficiencyInh; }
     public double getMaskEfficiencyExh() { return maskEfficiencyExh; }
     public int getInfectivePeople() { return infectivePeople; }
+    public double getFractionPeopleWithMasks() { return fractionPeopleWithMasks; }
+    public double getFractionImmune() { return fractionImmune; }
+    public int getImmunePeople() { return (int) Math.round(subjectsInRoom * fractionImmune); }
+
 
     // SETTERS
     public void setRoomDimensions(double length, double width, double height) {
+        if (length <= 0 || width <= 0 || height <= 0) {
+            System.out.println(" ERROR: Dimensiones <= 0!");
+            return;
+        }
+        
         this.roomLengthM = length;
         this.roomWidthM = width;
         this.roomHeightM = height;
+
         updateDerivedParameters();
     }
 
     public void setVentilationRates(double passive, double active, boolean useHepa) {
+        if (passive < 0 || active < 0) {
+            System.out.println(" ERROR: Tasas de ventilación negativas!");
+            return;
+        }
+
         this.ventilationRatePassiveH = passive;
         this.ventilationRateActiveH = active;
         this.hepaFilterOn = useHepa;
+        
         updateDerivedParameters();
     }
 
     public void setMaskParameters(double inhEff, double exhEff, double fraction) {
+        if (inhEff < 0 || inhEff > 1 || exhEff < 0 || exhEff > 1) {
+            System.out.println(" ERROR: Eficiencias de mascarilla fuera de rango [0,1]!");
+            return;
+        }
+        
         this.maskEfficiencyInh = inhEff;
         this.maskEfficiencyExh = exhEff;
         this.maskEfficiencyTotal = inhEff + exhEff;
+        this.fractionPeopleWithMasks = fraction;
+        
         updateDerivedParameters();
     }
-    
-    public void setPeopleCount(int total, int infective) {
-        // Añadido para debug
-        System.out.println(String.format("🔧 ANTES setPeopleCount: infectivePeople=%d, subjectsInRoom=%d", 
-                      this.infectivePeople, this.subjectsInRoom));
 
+    public void setPeopleCount(int total, int infective) {   
+        if (total < 0 || infective < 0) {
+            System.out.println(" ERROR: Número de personas negativo!");
+            return;
+        }
+        if (infective > total) {
+            System.out.println(" ERROR: Más infectivos que el total!");
+            return;
+        }
+        
         this.subjectsInRoom = total;
         this.infectivePeople = infective;
 
-        // Añadido para debug
-        System.out.println(String.format("🔧 DESPUÉS setPeopleCount: infectivePeople=%d, subjectsInRoom=%d", 
-                      this.infectivePeople, this.subjectsInRoom));
+        int immunePeople = (int) Math.round(total * fractionImmune);
+        this.susceptiblePeople = total - infective - immunePeople;
 
+        if (this.susceptiblePeople < 0) {
+            this.susceptiblePeople = Math.max(0, total - infective);
+        }
+        
+        updateDerivedParameters();
+    }
+
+    public void setFractionImmune(double fractionImmune) {
+        if (fractionImmune < 0 || fractionImmune > 1) {
+            System.out.println(" ERROR: Fracción inmune fuera de rango [0,1]!");
+            return;
+        }
+        
+        this.fractionImmune = fractionImmune;
+        
+        if (this.subjectsInRoom > 0) {
+            int immunePeople = (int) Math.round(subjectsInRoom * fractionImmune);
+            this.susceptiblePeople = subjectsInRoom - infectivePeople - immunePeople;
+        }
+        
         updateDerivedParameters();
     }
     
@@ -237,5 +275,13 @@ public class ModelParameters2 {
     
     public static double metersToPixels(double meters) {
         return meters * es.unizar.gui.Configuration.getPixelsPerMeter();
+    }
+
+    public void setDepositionProbability(double depositionProbability2) {
+        this.depositionProbability = depositionProbability2;
+    }
+
+    public void setInfectiveDoseD50(double infectiousDose) {
+        this.infectiveDoseD50 = infectiousDose;
     }
 }

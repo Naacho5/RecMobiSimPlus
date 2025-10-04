@@ -1,8 +1,11 @@
 package es.unizar.epidemic;
 
 import es.unizar.gui.simulation.User;
+
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 /**
  * Añadido por Nacho Palacio 2025-07-09
@@ -11,11 +14,13 @@ public class EpidemicStateManager {
     
     private Random random = new Random();
     private double asymptomaticProbability = 0.3;
-    private double superSpreaderProbability = 0.075; // Between 5-10% chance of being a super-spreader
+    private double superSpreaderProbability = 0.075;
 
     // AJUSTAR ESTOS VALORES
     private int minIncubationHours = 0;
     private int maxIncubationHours = 0;
+
+    // Don't used now since infected users don't recover.
     private int minInfectiousHours = 120;
     private int maxInfectiousHours = 240;
     
@@ -33,7 +38,6 @@ public class EpidemicStateManager {
 
     /**
      * Updates health state of an individual user
-     * REVISAR: Quiza si estas infectado, no recuperarse.
      */
     private void updateIndividualHealthState(UserEpidemicExtension extension, int currentHour) {
         // Increment time since infection
@@ -65,27 +69,25 @@ public class EpidemicStateManager {
         int incubationPeriod = extension.getIncubationPeriodHours();
         
         // Check if incubation period is complete
-        if (hoursSinceInfection >= incubationPeriod) {
+        // if (hoursSinceInfection >= incubationPeriod) {
         double randomValue = random.nextDouble();
         
-            if (randomValue < superSpreaderProbability) {
-                extension.setHealthStatus(HealthStatus.SUPER_SPREADER);
-                double superRate = 18.6 * 10.0; // 10x mayor que normal
-                extension.setViralEmissionRate(superRate);
-            } 
-            else if (randomValue < superSpreaderProbability + asymptomaticProbability) {
-                extension.setHealthStatus(HealthStatus.INFECTIOUS_ASYMPTOMATIC);  
-                double asymptomaticRate = 18.6 * 0.8;
-                extension.setViralEmissionRate(asymptomaticRate);
-            } else {
-                extension.setHealthStatus(HealthStatus.INFECTIOUS_SYMPTOMATIC);
-                double symptomaticRate = 18.6 * 1.5;
-                extension.setViralEmissionRate(symptomaticRate);
-            }
-            
-            int infectiousPeriod = minInfectiousHours + random.nextInt(maxInfectiousHours - minInfectiousHours);
-            extension.setInfectiousPeriod(infectiousPeriod);
+        if (randomValue < superSpreaderProbability) {
+            extension.setHealthStatus(HealthStatus.SUPER_SPREADER);
+            double superRate = 18.6 * 10.0; // 10x mayor que normal
+            extension.setViralEmissionRate(superRate);
+        } 
+        else if (randomValue < superSpreaderProbability + asymptomaticProbability) {
+            extension.setHealthStatus(HealthStatus.INFECTIOUS_ASYMPTOMATIC);  
+            double asymptomaticRate = 18.6 * 0.8;
+            extension.setViralEmissionRate(asymptomaticRate);
+        } else {
+            extension.setHealthStatus(HealthStatus.INFECTIOUS_SYMPTOMATIC);
+            double symptomaticRate = 18.6 * 1.5;
+            extension.setViralEmissionRate(symptomaticRate);
         }
+
+        // }
     }
 
     /**
@@ -111,12 +113,13 @@ public class EpidemicStateManager {
         UserEpidemicExtension extension = getUserEpidemicExtension(user);
         
         if (extension != null && extension.getHealthStatus() == HealthStatus.SUSCEPTIBLE) {
-            extension.setHealthStatus(HealthStatus.EXPOSED);
+            // extension.setHealthStatus(HealthStatus.EXPOSED);
+            // extension.setViralEmissionRate(0.0); // Añadido por Nacho Palacio 2025-07-23
 
-            extension.setViralEmissionRate(0.0); // Añadido por Nacho Palacio 2025-07-23
-
+            // Cambiado para pasar directamente a Infectado
+            handleExposedState(extension);
             extension.setHoursSinceInfection(0);
-            
+
             int incubationPeriod;
             if (maxIncubationHours <= minIncubationHours) {
                 incubationPeriod = minIncubationHours;
@@ -129,22 +132,28 @@ public class EpidemicStateManager {
     }
 
     /**
-     * Infects multiple users at simulation start
+     * Infects a given number of initial users randomly from the susceptible population
      */
     public void infectInitialUsers(List<User> userList, int numberOfInitialInfected) {
-        int infected = 0;
+        if (userList.isEmpty() || numberOfInitialInfected <= 0) return;
         
-        while (infected < numberOfInitialInfected && infected < userList.size()) {
-            User randomUser = userList.get(random.nextInt(userList.size()));
-            UserEpidemicExtension extension = getUserEpidemicExtension(randomUser);
-            
-            if (extension != null && extension.getHealthStatus() == HealthStatus.SUSCEPTIBLE) {
-                infectUser(randomUser);
-                infected++;
-            }
+        List<User> susceptibleUsers = userList.stream()
+            .filter(user -> {
+                UserEpidemicExtension ext = getUserEpidemicExtension(user);
+                return ext != null && ext.getHealthStatus() == HealthStatus.SUSCEPTIBLE;
+            })
+            .collect(Collectors.toList());
+
+        Collections.shuffle(susceptibleUsers, random);
+        
+        int toInfect = Math.min(numberOfInitialInfected, susceptibleUsers.size());
+        
+        for (int i = 0; i < toInfect; i++) {
+            User user = susceptibleUsers.get(i);
+            infectUser(user);
         }
         
-        System.out.println("Initially infected: " + infected + " users");
+        System.out.println("Initially infected: " + toInfect + " users");
     }
     
     /**

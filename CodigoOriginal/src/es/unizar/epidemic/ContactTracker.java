@@ -34,11 +34,10 @@ public class ContactTracker {
     }
     
     public void trackContacts(List<User> userList, int currentIteration) {
-        this.currentUserList = userList; // Actual list
+        this.currentUserList = userList;
 
         LocalDateTime currentTime = LocalDateTime.now().plusSeconds(currentIteration);
         
-        // Verificar todos los pares de usuarios
         for (int i = 0; i < userList.size(); i++) {
             for (int j = i + 1; j < userList.size(); j++) {
                 User user1 = userList.get(i);
@@ -48,10 +47,8 @@ public class ContactTracker {
                 String contactKey = generateContactKey(user1.userID, user2.userID);
                 
                 if (distance <= proximityThresholdPixels) {
-                    // Los usuarios están en contacto
                     handleActiveContact(user1, user2, distance, currentTime, contactKey);
                 } else {
-                    // Los usuarios ya no están en contacto
                     handleContactEnd(contactKey, currentTime);
                 }
             }
@@ -64,12 +61,11 @@ public class ContactTracker {
     private void handleActiveContact(User user1, User user2, double distance, 
                                    LocalDateTime currentTime, String contactKey) {
         if (activeContacts.containsKey(contactKey)) {
-            // Contacto existente - actualizar duración
             ContactRecord contact = activeContacts.get(contactKey);
-            contact.setDuration(contact.getDuration() + 1); // +1 segundo por iteración
+            contact.setDuration(contact.getDuration() + 1);
         } else {
             ContactType contactType = determineContactType(user1, user2);
-            int roomId = getCurrentRoomId(user1); // Asumiendo mismo room
+            int roomId = getCurrentRoomId(user1);
             
             ContactRecord newContact = new ContactRecord(
                 user1.userID, 
@@ -91,8 +87,7 @@ public class ContactTracker {
     private void handleContactEnd(String contactKey, LocalDateTime currentTime) {
         if (activeContacts.containsKey(contactKey)) {
             ContactRecord contact = activeContacts.remove(contactKey);
-            
-            // Solo guardar si supera el tiempo mínimo
+
             if (contact.getDuration() >= minContactDurationSeconds) {
                 allContacts.add(contact);
             }
@@ -138,7 +133,7 @@ public class ContactTracker {
                                UserEpidemicExtension susceptible, 
                                ContactRecord contact) {
         if (epidemicModel == null) {
-            if (Math.random() < 0.1) { // 10%
+            if (Math.random() < 0.1) {
                 infectUserWithStateManager(susceptible);
             }
             return;
@@ -148,7 +143,6 @@ public class ContactTracker {
         User susceptibleUser = findUserByExtension(susceptible);
         
         if (infectiousUser == null || susceptibleUser == null) {
-            System.out.println("⚠️ Could not find users for transmission calculation");
             return;
         }
         
@@ -157,7 +151,6 @@ public class ContactTracker {
             
         double randomValue = Math.random();
         if (randomValue < transmissionProb) {
-
             // Statistics
             infectUserWithStateManager(susceptible);
             User susceptibleUser1 = findUserByExtension(susceptible);
@@ -182,37 +175,6 @@ public class ContactTracker {
         } else {
             System.out.println("⚠️ Could not find user for infection");
         }
-    }
-
-    /**
-     * Calculates transmission probability based on contact characteristics
-     */
-    private double calculateTransmissionProbability(UserEpidemicExtension infectious, 
-                                                  UserEpidemicExtension susceptible, 
-                                                  ContactRecord contact) {
-        double baseProb = contact.getContactType().getBaseProbability();
-        
-        // Más probable si es sintomático
-        if (infectious.getHealthStatus() == HealthStatus.INFECTIOUS_SYMPTOMATIC) {
-            baseProb *= 1.5;
-        } else if (infectious.getHealthStatus() == HealthStatus.INFECTIOUS_ASYMPTOMATIC) {
-            baseProb *= 0.8;
-        }
-        
-        double durationFactor = Math.min(2.0, contact.getDuration() / 60.0);
-        baseProb *= durationFactor;
-        
-        double distanceFactor = calculateDistanceFactor(contact.getDistance());
-        baseProb *= distanceFactor;
-        
-        // Less probability if wearing masks
-        if (infectious.isMaskWearing() && susceptible.isMaskWearing()) {
-            baseProb *= 0.25;
-        } else if (infectious.isMaskWearing() || susceptible.isMaskWearing()) {
-            baseProb *= 0.5;
-        }
-        
-        return Math.min(1.0, baseProb);
     }
     
     /**
