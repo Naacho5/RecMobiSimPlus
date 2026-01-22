@@ -45,7 +45,11 @@ public class DrawFloorGraph {
 
 	public Map<Long, String> diccionaryItemLocation = new HashMap<>();
 	
-	private DataAccessItemFile itemFile;
+	public DataAccessItemFile itemFile;
+	// Added by Nacho Palacio 2025-11-27
+	public es.unizar.access.DataAccessGraphFile accessGraphFile;
+    public es.unizar.access.DataAccessRoomFile dataAccessRoomFile;
+    
 	
 	public List<Polygon> rooms = new LinkedList<Polygon>();
 	public List<Integer> roomLabels = new ArrayList<Integer>();
@@ -97,6 +101,8 @@ public class DrawFloorGraph {
 		DataAccessRoomFile dataAccessRoomFile = new DataAccessRoomFile(roomFile); // Every drawFloor call can require different files, so it has to be created everytime
 		DataAccessItemFile dataAccessItemFile = new DataAccessItemFile(itemFile); // Every drawFloor call can require different files, so it has to be created everytime
 		
+		this.itemFile = dataAccessItemFile; // Added by Nacho Palacio 2025-10-13
+
 		int numberOfRooms = dataAccessRoomFile.getNumberOfRoom();
 		int numberOfItems = dataAccessItemFile.getNumberOfItems();
 
@@ -157,7 +163,7 @@ public class DrawFloorGraph {
 			
 			rooms.add(polygon);
 			roomLabels.add(Integer.parseInt(room));
-			
+
 			vertex = (mxCell) graph.insertVertex(parent, null, room, polygon.getBounds().getCenterX(), polygon.getBounds().getCenterY(), WITDH, HEIGHT,"shape=image");
 			graph.addCell(vertex, parent);
 
@@ -306,6 +312,8 @@ public class DrawFloorGraph {
 				}
 			}
 		}
+
+
 		// Stairs
 		int numberOfStairs = dataAccessRoomFile.getNumberStairs();
 		for (int j = 1; j <= numberOfStairs; j++) {
@@ -410,13 +418,15 @@ public class DrawFloorGraph {
 
 	public void loadDiccionaryItemLocation() {
 		itemFile = new DataAccessItemFile(new File(Literals.ITEM_FLOOR_COMBINED));
-		long doorID = itemFile.getNumberOfItems();
+		long doorID = itemFile.getNumberOfItems() + 1;
 		long itemID = 0;
 		long stairsID = 0;
 		long invisibleDoorID = 0;
 		String room = "";
+		System.out.println("loadDiccionaryItemLocation(). doorID starts at: " + doorID);
 
-		// System.out.println("type;item;room;location");
+		System.out.println("Loading diccionaryItemLocation...");
+
 		for (int i = 0; i < vertices.length; i++) {
 			mxCell cell = vertices[i];
 			String vertex = (String) cell.getValue();
@@ -428,19 +438,27 @@ public class DrawFloorGraph {
 				itemID = Long.valueOf(array[2]).longValue();
 				room = array[1];
 				diccionaryItemLocation.put(itemID, location);
-				//System.out.println(type + ";" + itemID + ";" + room + ";" + location);
+
+				long internalId = es.unizar.util.ElementIdMapper.convertToRangeId(itemID, es.unizar.util.ElementIdMapper.CATEGORY_ITEM);
+				diccionaryItemLocation.put(internalId, location);
+
+				System.out.println("Añadidos item: " + itemID + " -> " + internalId + " ; location: " + location);
 			} else {
 				if (type.equalsIgnoreCase("door")) {
 					doorID++;
 					room = array[1];
 					diccionaryItemLocation.put(doorID, location);
-					//System.out.println(type + ";" + doorID + ";" + room + ";" + location);
+					long internalId = es.unizar.util.ElementIdMapper.convertToRangeId(doorID, es.unizar.util.ElementIdMapper.CATEGORY_DOOR);
+					diccionaryItemLocation.put(internalId, location);
+
+					System.out.println("Añadidos door: " + doorID + " -> " + internalId + " ; location: " + location);
 				} else {
 					if (type.equalsIgnoreCase("stairs")) {
 						doorID++;
 						stairsID = doorID;
 						diccionaryItemLocation.put(stairsID, location);
 						//System.out.println(type + ";" + stairsID + ";" + "0" + ";" + location);
+						System.out.println("Añadidos stairs: " + stairsID + " ; location: " + location);
 					}
 					else {
 						if (type.equalsIgnoreCase("invisibleDoor")) {
@@ -454,6 +472,7 @@ public class DrawFloorGraph {
 							}
 							diccionaryItemLocation.put(invisibleDoorID, location);
 							//System.out.println(type + ";" + invisibleDoorID + ";" + "0" + ";" + location);
+							System.out.println("Añadidos invisibleDoor: " + invisibleDoorID + " ; location: " + location);
 							
 						}
 					}
@@ -670,24 +689,244 @@ public class DrawFloorGraph {
 	 * @param y
 	 * @return		CurrentRoom || -1 if error
 	 */
-	public int getRoomFromPosition(int x, int y) {
+	// public int getRoomFromPosition(int x, int y) {
+	// 	if (rooms == null) {
+	// 		System.out.println("[ERROR] rooms es null en DrawFloorGraph");
+	// 		return -1;
+	// 	}
 		
-		int room = -1; // Return variable
+	// 	int room = -1; // Return variable
 		
-		int NUMBER_ROOMS = rooms.size();
+	// 	int NUMBER_ROOMS = rooms.size();
 		
-		int r = 0;
-		boolean roomFound = false;
+	// 	int r = 0;
+	// 	boolean roomFound = false;
 		
-		while (r < NUMBER_ROOMS && !roomFound) {
-			if(rooms.get(r).contains(x, y)) { // Check coordinates for every polygon (room)
-				room = r;
-				roomFound = true;
-			};
+	// 	while (r < NUMBER_ROOMS && !roomFound) {
+	// 		if(rooms.get(r).contains(x, y)) { // Check coordinates for every polygon (room)
+	// 			// System.out.println("Room found: " + roomLabels.get(r));
+	// 			room = r;
+	// 			//room = roomLabels.get(r); // Modified by Nacho Palacio 2025-10-07
+	// 			roomFound = true;
+	// 		};
 			
-			r++;
+	// 		r++;
+	// 	}
+
+	// 	// if (!roomFound) {
+	// 	// 	System.out.println("Room not found");
+	// 	// }
+		
+	// 	return room;
+	// }
+
+
+	/**
+	 * Returns the room from the specified coordinates (x, y).
+	 * 
+	 * @param x X coordinate
+	 * @param y Y coordinate
+	 * @return Room ID (0-based) || -1 if not found
+	 */
+	// public int getRoomFromPosition(int x, int y) {
+	// 	if (rooms == null || rooms.isEmpty()) {
+	// 		System.err.println("   [ERROR] rooms es null o vacío en DrawFloorGraph");
+	// 		return -1;
+	// 	}
+		
+	// 	int NUMBER_ROOMS = rooms.size();
+		
+	// 	final int TOLERANCE = 20; // píxeles de tolerancia
+		
+	// 	for (int r = 0; r < NUMBER_ROOMS; r++) {
+	// 		Polygon polygon = rooms.get(r);
+			
+	// 		if (polygon == null) {
+	// 			continue;
+	// 		}
+			
+	// 		// Dentro de la habitación
+	// 		if (polygon.contains(x, y)) {
+	// 			int roomId = roomLabels.get(r);
+	// 			return r;
+	// 			// return roomId;
+	// 		}
+			
+	// 		// Casi dentro de la habitación
+	// 		if (isNearPolygonEdge(polygon, x, y, TOLERANCE)) {
+	// 			int roomId = roomLabels.get(r);
+	// 			return r;
+	// 			// return roomId;
+	// 		}
+	// 	}
+		
+	// 	// No se encontró habitación
+	// 	return -1;
+	// }
+
+	// Modificada por Nacho Palacio 2026-01-15
+	public int getRoomFromPosition(int x, int y) {
+		if (rooms == null || rooms.isEmpty()) {
+			System.err.println("   [ERROR] rooms es null o vacío en DrawFloorGraph");
+			return -1;
 		}
 		
-		return room;
+		int NUMBER_ROOMS = rooms.size();
+		final int TOLERANCE = 20; // píxeles de tolerancia
+		
+		int closestRoom = -1;
+		double closestDistance = Double.MAX_VALUE;
+		
+		// Se verifica si está dentro de alguna habitación
+		for (int r = 0; r < NUMBER_ROOMS; r++) {
+			Polygon polygon = rooms.get(r);
+			
+			if (polygon == null) {
+				continue;
+			}
+			
+			// Dentro de la habitación
+			if (polygon.contains(x, y)) {
+				return r;
+			}
+		}
+		
+		// Si no está exactamente dentro de ninguna, se busca la más cercana
+		for (int r = 0; r < NUMBER_ROOMS; r++) {
+			Polygon polygon = rooms.get(r);
+			
+			if (polygon == null) {
+				continue;
+			}
+			
+			double distance = getMinDistanceToPolygonEdge(polygon, x, y);
+			
+			if (distance <= TOLERANCE && distance < closestDistance) {
+				closestRoom = r;
+				closestDistance = distance;
+			}
+		}
+		
+		return closestRoom;
+	}
+
+	/**
+	 * Calcula la distancia mínima desde un punto (x, y) al borde más cercano del polígono.
+	 * 
+	 * Added by Nacho Palacio 2026-01-15
+	 */
+	private double getMinDistanceToPolygonEdge(Polygon polygon, int x, int y) {
+		double minDistance = Double.MAX_VALUE;
+		
+		int npoints = polygon.npoints;
+		int[] xpoints = polygon.xpoints;
+		int[] ypoints = polygon.ypoints;
+		
+		// Iterar sobre todos los bordes del polígono
+		for (int i = 0; i < npoints; i++) {
+			int x1 = xpoints[i];
+			int y1 = ypoints[i];
+			int x2 = xpoints[(i + 1) % npoints]; // Siguiente punto (circular)
+			int y2 = ypoints[(i + 1) % npoints];
+			
+			// Calcular distancia del punto a este segmento
+			double distance = distanceToLineSegment(x, y, x1, y1, x2, y2);
+			
+			// Actualizar mínima distancia
+			if (distance < minDistance) {
+				minDistance = distance;
+			}
+		}
+		
+		return minDistance;
+	}
+
+	/**
+	 * Checks if a point is near the edge of a polygon
+	 * Added by Nacho Palacio 2025-10-08
+	 */
+	private boolean isNearPolygonEdge(Polygon polygon, int x, int y, int tolerance) {
+		// Expandir el bounding box con la tolerancia
+		java.awt.Rectangle bounds = polygon.getBounds();
+		
+		// Verificar si está dentro del bounding box expandido
+		if (x >= bounds.x - tolerance && 
+			x <= bounds.x + bounds.width + tolerance &&
+			y >= bounds.y - tolerance && 
+			y <= bounds.y + bounds.height + tolerance) {
+			
+			// Verificar si está cerca de algún borde del polígono
+			int npoints = polygon.npoints;
+			int[] xpoints = polygon.xpoints;
+			int[] ypoints = polygon.ypoints;
+			
+			for (int i = 0; i < npoints; i++) {
+				int x1 = xpoints[i];
+				int y1 = ypoints[i];
+				int x2 = xpoints[(i + 1) % npoints]; // Siguiente punto (circular)
+				int y2 = ypoints[(i + 1) % npoints];
+				
+				// Calcular distancia del punto a la línea
+				double distance = distanceToLineSegment(x, y, x1, y1, x2, y2);
+				
+				if (distance <= tolerance) {
+					return true;
+				}
+			}
+		}
+		
+		return false;
+	}
+
+	/**
+	 * Calculates the distance from a point to a line segment
+	 * Added by Nacho Palacio 2025-10-08
+	 */
+	private double distanceToLineSegment(int px, int py, int x1, int y1, int x2, int y2) {
+		double A = px - x1;
+		double B = py - y1;
+		double C = x2 - x1;
+		double D = y2 - y1;
+		
+		double dot = A * C + B * D;
+		double lenSq = C * C + D * D;
+		double param = -1;
+		
+		if (lenSq != 0) { // Evitar división por cero
+			param = dot / lenSq;
+		}
+		
+		double xx, yy;
+		
+		if (param < 0) {
+			xx = x1;
+			yy = y1;
+		} else if (param > 1) {
+			xx = x2;
+			yy = y2;
+		} else {
+			xx = x1 + param * C;
+			yy = y1 + param * D;
+		}
+		
+		double dx = px - xx;
+		double dy = py - yy;
+		
+		return Math.sqrt(dx * dx + dy * dy);
+	}
+
+	
+
+
+	/**
+	 * Returns the number of rooms in the floor
+	 * 
+	 * @return int
+	 */
+	public int getRoomCount() {
+		if (rooms != null) {
+			return rooms.size();
+		}
+		return 0;
 	}
 }

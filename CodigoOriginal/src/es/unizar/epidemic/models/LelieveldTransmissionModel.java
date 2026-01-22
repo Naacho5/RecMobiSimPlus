@@ -1,51 +1,70 @@
 package es.unizar.epidemic.models;
 
-import es.unizar.access.DataAccessRoomFile;
-import es.unizar.epidemic.ContactRecord;
-import es.unizar.epidemic.EpidemicConfiguration;
-import es.unizar.epidemic.HealthStatus;
-import es.unizar.epidemic.UserEpidemicExtension;
-import es.unizar.epidemic.statistics.EpidemicStatistics;
-import es.unizar.gui.Configuration;
+import es.unizar.epidemic.contact.ContactRecord;
+import es.unizar.epidemic.general.EpidemicConfiguration;
+import es.unizar.epidemic.general.UserEpidemicExtension;
 import es.unizar.gui.simulation.User;
-import es.unizar.util.Literals;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
- * Modelo de transmisión por aerosoles basado en Lelieveld et al. (2020)
- * Añadido por Nacho Palacio 2025-07-27
+ * Transmission model based on Lelieveld et al. (2020)
+ * Adapted to store exposure iterations on disk for memory efficiency
+ * 
+ * @author Nacho Palacio
  */
-public class LelieveldTransmissionModel implements EpidemicModel {
+public class LelieveldTransmissionModel extends AbstractEpidemicModel {
     
     private LelieveldParameters parameters;
     private String modelName = "Lelieveld Aerosol Transmission Model";
-    private Map<Integer, Map<Integer, Double>> userRoomExposureTime;
 
     private boolean autoConfigureRooms = true;
     
     public LelieveldTransmissionModel() {
         this.parameters = new LelieveldParameters();
-        this.userRoomExposureTime = new HashMap<>();
     }
 
+    /**
+     * Sets whether the model should automatically configure room parameters.
+     * When enabled, room dimensions and parameters are set based on room data.
+     * 
+     * @param enable true to enable automatic room configuration, false otherwise
+     */
     public void setAutoConfigureRooms(boolean enable) {
         this.autoConfigureRooms = enable;
     }
     
     /**
-     * Calculates the airborne transmission probability for a susceptible user
+     * Calculates the airborne transmission probability for a susceptible user.
+     * Takes into account viral load from infectious people, room configuration,
+     * mask usage, and exposure time.
+     * 
+     * @param susceptible the susceptible user to calculate risk for
+     * @param roomId the ID of the room where exposure occurs
+     * @param timeInRoomHours exposure time in hours
+     * @return infection probability (0.0 to 1.0)
      */
     public double calculateAirborneTransmissionProbability(User susceptible, int roomId, double timeInRoomHours) {
+        if (roomId < 0 || timeInRoomHours <= 0) {
+            return 0.0;
+        }
         configureModelForRoom(roomId);    
         List<User> usersInRoom = getUsersInRoom(roomId);
         int infectiousPeopleCount = countInfectiousPeople(usersInRoom);
+
+        double totalViralLoad = 0.0;
+        for (User user : usersInRoom) {
+            UserEpidemicExtension ext = user.getEpidemicExtension();
+            if (ext != null && isInfectious(ext)) {
+                if (ext.isSuperSpreader()) {
+                    totalViralLoad += parameters.getViralLoadSuperCm3();
+                }
+                else {
+                    totalViralLoad += parameters.getViralLoadHighCm3();
+                }
+            }
+        }
 
         if (infectiousPeopleCount == 0) {
             return 0.0;
@@ -56,7 +75,7 @@ public class LelieveldTransmissionModel implements EpidemicModel {
             return 0.0;
         }
 
-        // Añadido por Nacho Palacio 2025-09-21
+        // Added by Nacho Palacio 2025-09-21
         extension = susceptible.getEpidemicExtension();
         if (extension != null && extension.isImmune()) {
             return 0.0;
@@ -65,46 +84,185 @@ public class LelieveldTransmissionModel implements EpidemicModel {
         double maskProtectionFactor = extension.isMaskWearing() ? 
                                     (1.0 - parameters.getMaskEfficiencyInh()) : 1.0;
 
-        double viralLoad = parameters.getViralLoadHighCm3();
-        
         double infectionProb = parameters.calculateInfectionProbability(
-                            timeInRoomHours, viralLoad, maskProtectionFactor);
+                            timeInRoomHours, totalViralLoad, maskProtectionFactor, infectiousPeopleCount);
  
-
+        // Without disk storage (original in-memory version)
         // Statistics
-        EpidemicStatistics stats = EpidemicStatistics.getInstance();
-        double realConcentration = parameters.calculateViralConcentration(viralLoad, calculateFractionWithMasks(usersInRoom));
-        stats.recordRoomAerosolConcentration(roomId, realConcentration);
+        // EpidemicStatistics stats = EpidemicStatistics.getInstance();
+        // double realConcentration = parameters.calculateViralConcentration(totalViralLoad, calculateFractionWithMasks(usersInRoom));
 
-        stats.setModelSpecificStat("Modelo utilizado", "Aerosol Transmission Model (Lelieveld et al., 2020)");
-        stats.setModelSpecificStat("Carga viral alta", parameters.getViralLoadHighCm3() + " copias/cm³");
-        stats.setModelSpecificStat("Ventilación total", parameters.getTotalVentilationRateH() + " h⁻¹");
-                        
+        // stats.recordRoomAerosolConcentration(roomId, realConcentration);
+
+        // stats.setModelSpecificStat("Modelo utilizado", "Aerosol Transmission Model (Lelieveld et al., 2020)");
+        // stats.setModelSpecificStat("Carga viral alta", parameters.getViralLoadHighCm3() + " copias/cm³");
+        // stats.setModelSpecificStat("Ventilación total", parameters.getTotalVentilationRateH() + " h⁻¹");
+              
         return Math.min(1.0, Math.max(0.0, infectionProb));
     }
 
+    /**
+     * Calculates the airborne transmission probability using historical data.
+     * This version uses pre-calculated infectious people count and viral load
+     * instead of querying current room state.
+     * 
+     * @param susceptible the susceptible user to calculate risk for
+     * @param roomId the ID of the room where exposure occurs
+     * @param timeInRoomHours exposure time in hours
+     * @param infectiousPeopleCount historical average count of infectious people
+     * @param totalViralLoad total viral load in the room
+     * @return infection probability (0.0 to 1.0)
+     */
+    public double calculateAirborneTransmissionProbability(User susceptible, int roomId, 
+                                                           double timeInRoomHours, 
+                                                           int infectiousPeopleCount,
+                                                           double totalViralLoad) {
+        if (roomId < 0 || timeInRoomHours <= 0) {
+            return 0.0;
+        }
+        
+        // Configurar parámetros de la habitación
+        configureModelForRoom(roomId);
+        
+        // Verificar inmunidad
+        UserEpidemicExtension extension = susceptible.getEpidemicExtension();
+        if (extension != null && extension.isImmune()) {
+            return 0.0;
+        }
+        
+        // Si no hay infectados históricos, no hay riesgo
+        if (infectiousPeopleCount <= 0) {
+            return 0.0;
+        }
+        
+        // Factor de protección por mascarilla del susceptible
+        double maskProtectionFactor = (extension != null && extension.isMaskWearing()) ? 
+                                    (1.0 - parameters.getMaskEfficiencyInh()) : 1.0;
+        
+        // Calcular probabilidad usando parámetros históricos
+        double infectionProb = parameters.calculateInfectionProbability(
+                            timeInRoomHours, totalViralLoad, maskProtectionFactor, infectiousPeopleCount);
+        
+        return Math.min(1.0, Math.max(0.0, infectionProb));
+    }
+
+
+
+    // Without disk storage (original in-memory version)
+    // public double calculateCombinedInfectionRiskForUser(User user) {
+    //     Map<Integer, Double> exposureByRoom = userRoomExposureTime.get(user.userID);
+    //     if (exposureByRoom == null || exposureByRoom.isEmpty()) {
+    //         return 0.0;
+    //     }
+        
+    //     // Obtener iteraciones de exposición por habitación
+    //     // Map<Integer, List<Integer>> exposureIterationsByRoom = userRoomExposureIterations.get(user.userID);
+    //     Map<Integer, List<Integer>> exposureIterationsByRoom = null; // SOLO DEBUG: PENDIENTE
+        
+    //     if (exposureIterationsByRoom == null) {
+    //         // Fallback: si no hay historial, usar método antiguo
+    //         System.err.println("Warning! Usuario " + user.userID + " sin historial de iteraciones, usando fallback");
+    //         return calculateCombinedInfectionRiskForUserFallback(user);
+    //     }
+        
+    //     double pNoInfect = 1.0;
+        
+    //     for (Map.Entry<Integer, Double> entry : exposureByRoom.entrySet()) {
+    //         int roomId = entry.getKey();
+    //         double exposureTime = entry.getValue();
+            
+    //         if (exposureTime <= 0) continue;
+            
+    //         List<Integer> roomIterations = exposureIterationsByRoom.get(roomId);
+            
+    //         int avgInfectious = getAverageInfectiousCount(roomId, roomIterations);
+
+    //         System.out.println("Usuario " + user.userID + 
+    //                            " - Habitación " + roomId + 
+    //                            " - Iteraciones exposición: " + 
+    //                            (roomIterations != null ? roomIterations.size() : 0));
+    //         System.out.println("   -> Promedio histórico de infectados en habitación " + 
+    //                            roomId + ": " + avgInfectious);
+            
+    //         // Usar carga viral alta como referencia
+    //         double avgViralLoad = avgInfectious * parameters.getViralLoadHighCm3();
+            
+    //         double pRoom = calculateAirborneTransmissionProbability(
+    //             user, roomId, exposureTime, avgInfectious, avgViralLoad);
+
+    //         System.out.println("   -> Probabilidad infección en habitación " + 
+    //                            roomId + ": " + pRoom);
+            
+    //         pNoInfect *= (1.0 - pRoom);
+    //     }
+        
+    //     return 1.0 - pNoInfect;
+    // }
+
     public double calculateCombinedInfectionRiskForUser(User user) {
         Map<Integer, Double> exposureByRoom = userRoomExposureTime.get(user.userID);
-        if (exposureByRoom == null || exposureByRoom.isEmpty()) return 0.0;
-
+        if (exposureByRoom == null || exposureByRoom.isEmpty()) {
+            return 0.0;
+        }
+        
         double pNoInfect = 1.0;
+        
         for (Map.Entry<Integer, Double> entry : exposureByRoom.entrySet()) {
             int roomId = entry.getKey();
             double exposureTime = entry.getValue();
+            
             if (exposureTime <= 0) continue;
 
-            double pRoom = calculateAirborneTransmissionProbability(user, roomId, exposureTime);
+            List<Integer> roomIterations = getUserRoomExposureIterationsFromDisk(user.userID, roomId);
+            
+            int avgInfectious = getAverageInfectiousCount(roomId, roomIterations);
+
+            double avgViralLoad = avgInfectious * parameters.getViralLoadHighCm3();
+            
+            double pRoom = calculateAirborneTransmissionProbability(
+                user, roomId, exposureTime, avgInfectious, avgViralLoad);
+
             pNoInfect *= (1.0 - pRoom);
         }
+        
         return 1.0 - pNoInfect;
     }
+
+    /**
+     * Fallback method to calculate combined infection risk without historical data.
+     * Uses current room state instead of historical averages.
+     * 
+     * @param user the user to calculate risk for
+     * @return combined infection probability (0.0 to 1.0)
+     */
+    // private double calculateCombinedInfectionRiskForUserFallback(User user) {
+    //     Map<Integer, Double> exposureByRoom = userRoomExposureTime.get(user.userID);
+    //     if (exposureByRoom == null || exposureByRoom.isEmpty()) return 0.0;
+
+    //     double pNoInfect = 1.0;
+    //     for (Map.Entry<Integer, Double> entry : exposureByRoom.entrySet()) {
+    //         int roomId = entry.getKey();
+    //         double exposureTime = entry.getValue();
+    //         if (exposureTime <= 0) continue;
+
+    //         double pRoom = calculateAirborneTransmissionProbability(user, roomId, exposureTime);
+    //         pNoInfect *= (1.0 - pRoom);
+    //     }
+    //     return 1.0 - pNoInfect;
+    // }
     
     /**
-     * Calculates the airborne transmission probability for a susceptible user
+     * Calculates the airborne transmission probability for a susceptible user.
+     * Overrides the base method to use Lelieveld aerosol transmission model.
+     * 
+     * @param infectious the infectious user (not used in aerosol model)
+     * @param susceptible the susceptible user at risk
+     * @param contact the contact record (not used in aerosol model)
+     * @return transmission probability (0.0 to 1.0)
      */
     @Override
     public double calculateTransmissionProbability(User infectious, User susceptible, ContactRecord contact) {
-        // Modificado por Nacho Palacio 2025-09-23
+        // Modified by Nacho Palacio 2025-09-23
         int roomId = susceptible.room;
         double exposureTimeHours = getUserRoomExposureTime(susceptible.userID, roomId);
 
@@ -120,7 +278,11 @@ public class LelieveldTransmissionModel implements EpidemicModel {
     }
     
     /**
-     * Updates health states of users based on their current health status
+     * Updates health states of users based on their current health status.
+     * Updates viral emission rates according to infection state.
+     * 
+     * @param users list of users to update
+     * @param currentDay current simulation day (used for viral load calculations)
      */
     @Override
     public void updateHealthStates(List<User> users, int currentDay) {    
@@ -133,18 +295,14 @@ public class LelieveldTransmissionModel implements EpidemicModel {
     }
     
     /**
-     * Updates viral load based on health status
+     * Updates viral load based on health status.
+     * Sets emission rate according to whether user is symptomatic, super spreader, or other.
+     * 
+     * @param extension the user's epidemic extension to update
+     * @param currentHour current simulation hour
      */
     private void updateViralLoadBasedOnState(UserEpidemicExtension extension, int currentHour) {     
         switch (extension.getHealthStatus()) {
-            case EXPOSED:
-                extension.setViralEmissionRate(0.0);
-                break;
-                
-            case INFECTIOUS_ASYMPTOMATIC:
-                extension.setViralEmissionRate(parameters.getViralLoadHighCm3() * 0.7);
-                break;
-                
             case INFECTIOUS_SYMPTOMATIC:
                 extension.setViralEmissionRate(parameters.getViralLoadHighCm3());
                 break;
@@ -160,14 +318,18 @@ public class LelieveldTransmissionModel implements EpidemicModel {
     }
     
     /**
-     * Configures the model parameters for a specific room
+     * Configures the model parameters for a specific room.
+     * Sets room dimensions, ventilation rates, immunity fraction, and mask parameters
+     * based on room data and configuration settings.
+     * 
+     * @param roomId the ID of the room to configure parameters for
      */
     public void configureModelForRoom(int roomId) {
         roomId += 1; 
         double roomWidth = getRoomWidth(roomId);
         double roomLength = getRoomLength(roomId);
         double roomHeight = 3.0;
-        
+
         double widthMeters = PengParameters.pixelsToMeters(roomWidth);
         double lengthMeters = PengParameters.pixelsToMeters(roomLength);
 
@@ -179,6 +341,7 @@ public class LelieveldTransmissionModel implements EpidemicModel {
             parameters.setFractionImmune(config.getImmunePopulationFraction());
             parameters.setDepositionProbability(config.getDepositionProbability());
             parameters.setInfectiveDoseD50(config.getInfectiousDose());
+            parameters.setVirusDecayRateHour(config.getVirusDecayRate());
         }
 
         List<User> usersInRoom = getUsersInRoom(roomId);
@@ -192,177 +355,21 @@ public class LelieveldTransmissionModel implements EpidemicModel {
     }
     
     /**
-     * Initializes exposure tracking for users in rooms
+     * Gets the name of this transmission model.
+     * 
+     * @return the model name
      */
-    public void initializeExposureTracking(List<User> users) {
-        userRoomExposureTime = new HashMap<>();
-        for (User user : users) {
-            userRoomExposureTime.put(user.userID, new HashMap<>());
-        }
-    }
-    
-    /**
-     * Updates exposure time for users in a room
-     */
-    public void updateRoomExposure(List<User> users, double deltaTimeHours) { 
-        for (User user : users) {
-            int roomId = user.room;
-            Map<Integer, Double> roomExposure = userRoomExposureTime.get(user.userID);
-            
-            if (roomExposure != null) {
-                double oldExposure = roomExposure.getOrDefault(roomId, 0.0);
-                double newExposure = oldExposure + deltaTimeHours;
-                roomExposure.put(roomId, newExposure);
-            }
-        }
-    }
-    
-    /**
-     * Gets the exposure time for a user in a specific room
-     */
-    public double getUserRoomExposureTime(int userId, int roomId) {
-        Map<Integer, Double> roomExposure = userRoomExposureTime.get(userId);
-        return roomExposure != null ? roomExposure.getOrDefault(roomId, 0.0) : 0.0;
-    }
-    
-    /**
-     * Gets the exposure time for a user in a specific room
-     */
-    protected List<User> getUsersInRoom(int roomId) {
-        List<User> usersInRoom = new ArrayList<>();
-        
-        try {
-            if (Configuration.simulation != null) {
-                List<User> allUsers = Configuration.simulation.getAllUsers();
-                
-                for (User user : allUsers) {
-                    
-                    if (user != null && user.room == roomId) {
-                        usersInRoom.add(user);
-                    }
-                }
-            }
-        } catch (Exception e) {
-        }
-        
-        return usersInRoom;
-    }
-    
-    /**
-     * Counts the number of infectious users in a list
-     */
-    private int countInfectiousPeople(List<User> users) {
-        int count = 0;
-        for (User user : users) {
-            UserEpidemicExtension extension = getUserEpidemicExtension(user);
-            if (extension != null && isInfectious(extension)) {
-                count++;
-            }
-        }
-        return count;
-    }
-
-    public boolean isInfectious(UserEpidemicExtension extension) {
-        return extension.getHealthStatus().equals(HealthStatus.INFECTIOUS_ASYMPTOMATIC) ||
-            extension.getHealthStatus().equals(HealthStatus.INFECTIOUS_SYMPTOMATIC) ||
-            extension.getHealthStatus().equals(HealthStatus.SUPER_SPREADER);
-    }
-    
-    /**
-     * Calculates the fraction of users wearing masks
-     */
-    private double calculateFractionWithMasks(List<User> usersInRoom) {
-        if (usersInRoom.isEmpty()) {
-            return 0.0;
-        }
-        
-        int usersWithMasks = 0;
-        
-        for (int i = 0; i < usersInRoom.size(); i++) {
-            User user = usersInRoom.get(i);
-            UserEpidemicExtension extension = user.getEpidemicExtension();
-            
-            if (extension == null) {
-                continue;
-            }
-            
-            boolean wearsMask = extension.isMaskWearing();
-            if (wearsMask) {
-                usersWithMasks++;
-            } 
-        }
-        
-        double fraction = (double) usersWithMasks / usersInRoom.size();
-        
-        return fraction;
-    }
-    
-    /**
-     * Gets the width of a room in meters
-     */
-    private double getRoomWidth(int roomId) {
-        try {
-            double minX = Double.MAX_VALUE;
-            double maxX = Double.MIN_VALUE;
-
-            DataAccessRoomFile roomFile = new DataAccessRoomFile(new File(Literals.ROOM_FLOOR_COMBINED));
-            
-            int cornerCount = Integer.parseInt(roomFile.getPropertyValue(Literals.NUMBER_CORNER + roomId));
-            
-            for (int i = 1; i <= cornerCount; i++) {
-                String cornerData = roomFile.getPropertyValue(Literals.CORNER + i + "_" + roomId);
-
-                if (cornerData != null) {
-                    double x = Double.parseDouble(cornerData.split(",")[0].trim());
-                    if (x < minX) minX = x;
-                    if (x > maxX) maxX = x;
-                }
-            }
-            
-            return maxX - minX;
-        } catch (Exception e) {
-            return 10.0 * Configuration.getPixelsPerMeter();
-        }
-    }
-    
-    /**
-     * Gets the length of a room in meters
-     */
-    private double getRoomLength(int roomId) {
-        try {
-            double minY = Double.MAX_VALUE;
-            double maxY = Double.MIN_VALUE;
-            
-            DataAccessRoomFile roomFile = new DataAccessRoomFile(new File(Literals.ROOM_FLOOR_COMBINED));
-            
-            int cornerCount = Integer.parseInt(roomFile.getPropertyValue(Literals.NUMBER_CORNER + roomId));
-
-            for (int i = 1; i <= cornerCount; i++) {
-                String cornerData = roomFile.getPropertyValue(Literals.CORNER + i + "_" + roomId);
-
-                if (cornerData != null) {
-                    double y = Double.parseDouble(cornerData.split(",")[1].trim());
-                    if (y < minY) minY = y;
-                    if (y > maxY) maxY = y;
-                }
-            }
-            
-            return maxY - minY;
-        } catch (Exception e) {
-            return 6.0 * Configuration.getPixelsPerMeter();
-        }
-    }
-    
-    
-    private UserEpidemicExtension getUserEpidemicExtension(User user) {
-        return user.getEpidemicExtension();
-    }
-    
     @Override
     public String getModelName() {
         return modelName;
     }
     
+    /**
+     * Gets parameters in Peng-compatible format.
+     * Converts Lelieveld parameters to PengParameters for compatibility.
+     * 
+     * @return compatible PengParameters object
+     */
     @Override
     public PengParameters getParameters() {
         PengParameters compatParams = new PengParameters();
@@ -377,25 +384,37 @@ public class LelieveldTransmissionModel implements EpidemicModel {
         return compatParams;
     }
     
+    /**
+     * Sets parameters from Peng format.
+     * Not implemented as this model uses LelieveldParameters.
+     * 
+     * @param parameters Peng parameters (ignored)
+     */
     @Override
     public void setParameters(PengParameters parameters) {}
 
     /**
-     * Gets the parameters specific to the Lelieveld model
+     * Gets the parameters specific to the Lelieveld model.
+     * 
+     * @return the LelieveldParameters object
      */
     public LelieveldParameters getLelieveldParameters() {
         return parameters;
     }
     
     /**
-     * Sets the parameters specific to the Lelieveld model
+     * Sets the parameters specific to the Lelieveld model.
+     * 
+     * @param parameters the LelieveldParameters object to set
      */
     public void setLelieveldParameters(LelieveldParameters parameters) {
         this.parameters = parameters;
     }
 
     /**
-     * Configures the immune fraction for the model
+     * Configures the immune fraction for the model.
+     * 
+     * @param fractionImmune the fraction of immune people (0.0 to 1.0)
      */
     public void configureImmunity(double fractionImmune) {
         parameters.setFractionImmune(fractionImmune);

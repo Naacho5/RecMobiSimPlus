@@ -47,7 +47,7 @@ public class Item extends Drawable{
 	 * @param vertex_xy
 	 */
 	public Item(Room room, long vertex_label, Point vertex_xy) {
-		/* Añadido por Nacho Palacio 2025-04-17. */
+		/* Added by Nacho Palacio 2025-04-17. */
 		super(room, ElementIdMapper.convertToRangeId(vertex_label, ElementIdMapper.CATEGORY_ITEM), vertex_xy);
 		this.setUrlIcon(Literals.IMAGES_PATH + "museum_logo.png");
 	}
@@ -61,7 +61,7 @@ public class Item extends Drawable{
 	 * @param url
 	 */
 	public Item(Room room, long vertex_label, Point vertex_xy, String url) {
-		/* Añadido por Nacho Palacio 2025-04-17. */
+		/* Added by Nacho Palacio 2025-04-17. */
 		super(room, ElementIdMapper.convertToRangeId(vertex_label, ElementIdMapper.CATEGORY_ITEM), vertex_xy);
 		this.setUrlIcon(url);
 	}

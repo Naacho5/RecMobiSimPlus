@@ -230,7 +230,7 @@ public class DataAccess {
 
     /**
      * Prints all the properties loaded.
-     * Añadido por Nacho Palacio 2025-04-13.
+     * Added by Nacho Palacio 2025-04-13.
      */
     public void printAllProperties() {
         for (String key : properties.stringPropertyNames()) {

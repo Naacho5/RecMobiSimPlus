@@ -37,7 +37,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import es.unizar.access.DataAccessRecommendersFile;
 import es.unizar.access.DataAccessRoomFile;
-import es.unizar.epidemic.EpidemicConfiguration;
+import es.unizar.epidemic.general.EpidemicConfiguration;
 import es.unizar.gui.simulation.Simulation;
 import es.unizar.recommendation.path.ExhaustivePath;
 import es.unizar.recommendation.path.NearestPath;
@@ -49,6 +49,7 @@ import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
 
+
 /**
  * Parameter settings.
  * 
@@ -58,6 +59,9 @@ public class Configuration extends javax.swing.JDialog {
 
 	private static final long serialVersionUID = 1L;
 	public static Simulation simulation;
+	public static Configuration instance;
+
+	private boolean isUpdatingFromContactCheckbox = false;
 	
 	public static final int X_CONFIG = 1080; /* silarri, 2022-07-13. */
 	//public static final int X_CONFIG = 1070;
@@ -68,7 +72,15 @@ public class Configuration extends javax.swing.JDialog {
 
 	public JTextField simulationDurationTextField;
 	public JTextField immunePopulationTextField;
-	public JTextField superSpreaderProbabilityTextField;	
+	public JTextField superSpreaderProbabilityTextField;
+	
+	// public JCheckBox useContactTrajectoriesCheckBox;
+
+	private ContactTrajectoryMode contactTrajectoryMode = ContactTrajectoryMode.DISABLED;
+	@SuppressWarnings("rawtypes")
+	public JComboBox contactTrajectoryModeComboBox;
+	private JLabel lblContactTrajectoryMode;
+
 
 	/**
 	 * Creates new form Configuration
@@ -76,6 +88,7 @@ public class Configuration extends javax.swing.JDialog {
 	 */
 	public Configuration(java.awt.Frame parent, boolean modal) {
 		super(parent, modal);
+		Configuration.instance = this; // Added by Nacho Palacio 2025-10-05
 		setAlwaysOnTop(true);
 		// Parameter configuration form.
 		setConfigurationPreferredSize();
@@ -132,7 +145,7 @@ public class Configuration extends javax.swing.JDialog {
 					checkAlgorithmAndNetworkParams(recommendationAlgorithm, thresholdRecommendation, thresholdSimilarity, howMany, networkType, 
 							propagationStrategy, probabilityUserDisobedience, numberVoteReceived)) {
 				
-				es.unizar.epidemic.EpidemicConfiguration epidemicConfig = es.unizar.epidemic.EpidemicConfiguration.getInstance();
+				es.unizar.epidemic.general.EpidemicConfiguration epidemicConfig = es.unizar.epidemic.general.EpidemicConfiguration.getInstance();
             	epidemicConfig.setSimulationDuration((int) simulationDurationMinutes);
 
 				// Build a floor panel but including the users.
@@ -264,21 +277,21 @@ public class Configuration extends javax.swing.JDialog {
 			int numberVoteReceived = Integer.valueOf(numberVoteReceivedTextField.getText()).intValue(); // Propagation of
 																										// items
 
-			// Añadido por Nacho Palacio 2025-07-16
+			// Added by Nacho Palacio 2025-07-16
 			String epidemicModel = (String) epidemicModelComboBox.getSelectedItem();
 			int initialInfected = Integer.valueOf(initialInfectedTextField.getText()).intValue();
 			double maskCompliance = Double.valueOf(maskComplianceTextField.getText()).doubleValue();
 
 			double simulationDurationMinutes = Double.valueOf(simulationDurationTextField.getText()).doubleValue();
 
-			es.unizar.epidemic.EpidemicConfiguration epidemicConfig = es.unizar.epidemic.EpidemicConfiguration.getInstance();
+			es.unizar.epidemic.general.EpidemicConfiguration epidemicConfig = es.unizar.epidemic.general.EpidemicConfiguration.getInstance();
 			epidemicConfig.setSelectedModel(epidemicModel);
 			epidemicConfig.setInitialInfectedUsers(initialInfected);
 			epidemicConfig.setMaskComplianceRate(maskCompliance);
 
 			epidemicConfig.setSimulationDuration((int) simulationDurationMinutes);
 
-			// Añadido por Nacho Palacio 2025-09-14
+			// Added by Nacho Palacio 2025-09-14
 			try {
 				double defaultVentRate = Double.parseDouble(defaultVentilationRateTextField.getText());
 				double virusDecay = Double.parseDouble(virusDecayRateTextField.getText());
@@ -297,7 +310,7 @@ public class Configuration extends javax.swing.JDialog {
 					epidemicConfig.setImmunePopulationFraction(immunePopulationFraction);
 					epidemicConfig.setSuperSpreaderProbability(superSpreaderProbability);
 
-					System.out.printf("🔧 Configuration.java: Parámetros super-spreader configurados:\n");
+					System.out.printf(" Configuration.java: Parámetros super-spreader configurados:\n");
 					System.out.printf("   - Probabilidad super-spreader enviada: %.1f%%\n", superSpreaderProbability * 100);
 					
 					EpidemicConfiguration verify = EpidemicConfiguration.getInstance();
@@ -371,17 +384,13 @@ public class Configuration extends javax.swing.JDialog {
 					&& 
 					checkAlgorithmAndNetworkParams(recommendationAlgorithm, thresholdRecommendation, thresholdSimilarity, howMany, networkType, 
 							propagationStrategy, probabilityUserDisobedience, numberVoteReceived)
-					&& // Añadido por Nacho Palacio 2025-07-16
+					&& // Added by Nacho Palacio 2025-07-16
         			checkEpidemicParameters(epidemicModel, initialInfected, maskCompliance, 
 						Double.parseDouble(immunePopulationTextField.getText()), 
 						Double.parseDouble(superSpreaderProbabilityTextField.getText()))) {
 				
-				MainSimulator.configureElementIdMapperStatically(); // Añadido por Nacho Palacio 2025-07-10
+				MainSimulator.configureElementIdMapperStatically(); // Added by Nacho Palacio 2025-07-10
 
-				// DEBUG
-				// System.out.println("\n=== VERIFICANDO CONFIGURACIÓN GUARDADA ===");
-    			// epidemicConfig.printCurrentConfiguration();
-				
 				// Build a floor panel but including the users.
 //				MainSimulator.floorPanelCombined = new FloorPanelCombined(MainSimulator.DRAWING_WIDTH, MainSimulator.DRAWING_HEIGHT);				
 //				MainSimulator.frmSimulator.getContentPane().add(MainSimulator.floorPanelCombined);
@@ -418,7 +427,7 @@ public class Configuration extends javax.swing.JDialog {
 				simulation = new Simulation(timeAvailableUser, delayObservingItem, timeForIteration, screenRefreshTime, timeForThePaths, userSpeed, kmToPixel, ttl, timeOnStairs,
 						minimumTimeToUpdateRecommendation, communicationRange, maxKnowledgeBaseSize, communicationBandwidth, latencyOfTransmission, numberOfSpecialUser, numberOfNonSpecialUser,
 						nonSpecialUserPaths, pathStrategy, recommendationAlgorithm, thresholdRecommendation, howMany, propagationStrategy, probabilityUserDisobedience, numberVoteReceived,
-						thresholdSimilarity, networkType, timeToChangeMood, useFixedSeed, seed, true);
+						thresholdSimilarity, networkType, timeToChangeMood, useFixedSeed, seed, true, false, 0.0);
 	
 				/*
 				 *  FROM PREVIOUS VERSION -> We think the message printed isn't necessary (or compulsory)
@@ -428,7 +437,7 @@ public class Configuration extends javax.swing.JDialog {
 				System.out.println("end simulation");
 				// Generate a path for each non-RS user.
 
-				/* Añadido por Nacho Palacio 2025-04-13. */
+				/* Added by Nacho Palacio 2025-04-13. */
 				if (ifGenerateuserPathCheckBox.isSelected()) {
 					Path strategy = null;
 					// Apply the specified path strategy in the Configuration form.
@@ -503,6 +512,9 @@ public class Configuration extends javax.swing.JDialog {
 
 			@Override
 			public void stateChanged(ChangeEvent e) {
+				if (isUpdatingFromContactCheckbox) {
+					return; // No hacer nada, dejar que el checkbox controle los valores
+				}
 				
 				// Number of RS users - NEW VALUE PROVIDED BY THE USER
 				int numberOfSpecialUser = Integer.valueOf(numberOfSpecialUsersTextField.getText()).intValue();
@@ -519,14 +531,47 @@ public class Configuration extends javax.swing.JDialog {
 					numberOfSpecialUsersTextField.selectAll();
 				}
 				// If number introduced is lower than minimum
-				else if (numberOfSpecialUser <= 0) {
-					numberOfSpecialUser = 1;
-					numberOfNonSpecialUser = Literals.TOTAL_USERS - 1;
+				// else if (numberOfSpecialUser <= 0) {
+				// 	numberOfSpecialUser = 1;
+				// 	numberOfNonSpecialUser = Literals.TOTAL_USERS - 1;
+					
+				// 	numberOfSpecialUsersTextField.setText(Integer.toString(numberOfSpecialUser));
+				// 	numberOfNonSpecialUsersTextField.setText(Integer.toString(numberOfNonSpecialUser));
+				// 	numberOfSpecialUsersTextField.selectAll();
+				// }
+
+				else if (numberOfSpecialUser < 0) {
+					if (contactTrajectoryMode != ContactTrajectoryMode.DISABLED) {
+						numberOfSpecialUser = 0;
+						numberOfNonSpecialUser = Literals.TOTAL_USERS;
+					} else {
+						numberOfSpecialUser = 1;
+						numberOfNonSpecialUser = Literals.TOTAL_USERS - 1;
+					}
 					
 					numberOfSpecialUsersTextField.setText(Integer.toString(numberOfSpecialUser));
 					numberOfNonSpecialUsersTextField.setText(Integer.toString(numberOfNonSpecialUser));
 					numberOfSpecialUsersTextField.selectAll();
 				}
+				else if (numberOfSpecialUser == 0) {
+					if (contactTrajectoryMode == ContactTrajectoryMode.DISABLED) {
+						numberOfSpecialUser = 1;
+						numberOfNonSpecialUser = Literals.TOTAL_USERS - 1;
+						
+						numberOfSpecialUsersTextField.setText(Integer.toString(numberOfSpecialUser));
+						numberOfNonSpecialUsersTextField.setText(Integer.toString(numberOfNonSpecialUser));
+						numberOfSpecialUsersTextField.selectAll();
+						
+						JOptionPane.showMessageDialog(
+							Configuration.this,
+							"El número de usuarios especiales debe ser al menos 1.\n" +
+							"Active 'Usar trayectorias de contactos.csv' para usar 0 usuarios especiales.",
+							"Validación de usuarios",
+							JOptionPane.WARNING_MESSAGE
+						);
+					}
+				}
+
 				// If new specialusers + old non-specialusers exceeds TOTAL_USERS -> Decrease
 				else if (numberOfSpecialUser + numberOfNonSpecialUser > Literals.TOTAL_USERS) {
 					numberOfNonSpecialUser = Literals.TOTAL_USERS - numberOfSpecialUser;
@@ -541,6 +586,9 @@ public class Configuration extends javax.swing.JDialog {
 
 			@Override
 			public void stateChanged(ChangeEvent e) {
+				if (isUpdatingFromContactCheckbox) {
+					return; // No hacer nada, dejar que el checkbox controle los valores
+				}
 				
 				// Number of RS users - NEW VALUE PROVIDED BY THE USER
 				int numberOfSpecialUser = Integer.valueOf(numberOfSpecialUsersTextField.getText()).intValue();
@@ -559,7 +607,13 @@ public class Configuration extends javax.swing.JDialog {
 				// If number introduced is lower than minimum
 				else if (numberOfNonSpecialUser <= 0) {
 					numberOfNonSpecialUser = 1;
-					numberOfSpecialUser = Literals.TOTAL_USERS - 1;
+					// numberOfSpecialUser = Literals.TOTAL_USERS - 1;
+
+					if (contactTrajectoryMode != ContactTrajectoryMode.DISABLED) {
+						numberOfSpecialUser = 0; // En modo contactos, usar 0
+					} else {
+						numberOfSpecialUser = Literals.TOTAL_USERS - 1; // Modo normal
+					}
 					
 					numberOfSpecialUsersTextField.setText(Integer.toString(numberOfSpecialUser));
 					numberOfNonSpecialUsersTextField.setText(Integer.toString(numberOfNonSpecialUser));
@@ -776,7 +830,7 @@ public class Configuration extends javax.swing.JDialog {
 							Literals.ITEM_FLOOR_COMBINED = f.getAbsolutePath();
 						}
 						
-						MainSimulator.configureElementIdMapperStatically(); // Añadido por Nacho Palacio 2025-07-10
+						MainSimulator.configureElementIdMapperStatically(); // Added by Nacho Palacio 2025-07-10
 
 
 						//System.out.println("2: "+Literals.GRAPH_FLOOR_COMBINED);
@@ -788,7 +842,53 @@ public class Configuration extends javax.swing.JDialog {
 			}
 		});
 
-		// Añadido por Nacho Palacio 2025-07-16
+		lblContactTrajectoryMode = new JLabel("Modo de trayectorias de contacto:");
+		lblContactTrajectoryMode.setFont(new Font("SansSerif", Font.PLAIN, 14));
+
+		contactTrajectoryModeComboBox = new JComboBox<>();
+		contactTrajectoryModeComboBox.setFont(new Font("SansSerif", Font.PLAIN, 14));
+		contactTrajectoryModeComboBox.setModel(new DefaultComboBoxModel<>(new String[] {
+			ContactTrajectoryMode.DISABLED.getDisplayName(),
+			ContactTrajectoryMode.SIMPLIFIED_ROTATION.getDisplayName(),
+			ContactTrajectoryMode.COMPLEX_REAL_EVENTS.getDisplayName()
+		}));
+
+		contactTrajectoryModeComboBox.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String selected = (String) contactTrajectoryModeComboBox.getSelectedItem();
+				System.out.println("🔘 Modo de trayectorias seleccionado en el combo: " + selected);
+				
+				isUpdatingFromContactCheckbox = true;
+				
+				if (selected.equals(ContactTrajectoryMode.DISABLED.getDisplayName())) {
+					contactTrajectoryMode = ContactTrajectoryMode.DISABLED;
+					
+					numberOfSpecialUsersTextField.setText("1");
+					numberOfSpecialUsersTextField.setEnabled(true);
+					numberOfNonSpecialUsersTextField.setText(String.valueOf(Literals.TOTAL_USERS - 1));
+					
+					initialInfectedTextField.setText("2");
+					initialInfectedTextField.setEnabled(true);
+					initialInfectedTextField.setToolTipText(null);
+					
+				} else if (selected.equals(ContactTrajectoryMode.SIMPLIFIED_ROTATION.getDisplayName())) {
+					contactTrajectoryMode = ContactTrajectoryMode.SIMPLIFIED_ROTATION;
+					configureContactTrajectoriesMode("Simplificado (Rotación Circular)");
+					
+				} else if (selected.equals(ContactTrajectoryMode.COMPLEX_REAL_EVENTS.getDisplayName())) {
+					contactTrajectoryMode = ContactTrajectoryMode.COMPLEX_REAL_EVENTS;
+					configureContactTrajectoriesMode("Complejo (Eventos Reales)");
+				}
+				
+				isUpdatingFromContactCheckbox = false;
+				
+				System.out.println(" Modo de trayectorias cambiado a: " + contactTrajectoryMode);
+			}
+		});
+
+
+		// Added by Nacho Palacio 2025-07-16
 		JLabel epidemicLabel = new JLabel("Epidemic simulation settings:");
 		epidemicLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
 
@@ -890,6 +990,11 @@ public class Configuration extends javax.swing.JDialog {
 				.addGroup(gl_epidemicPanel.createSequentialGroup()
 					.addContainerGap()
 					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.LEADING)
+						// .addComponent(useContactTrajectoriesCheckBox) // <-- Checkbox en su propia fila
+						.addGroup(gl_epidemicPanel.createSequentialGroup()
+						.addComponent(lblContactTrajectoryMode)
+						.addGap(18)
+						.addComponent(contactTrajectoryModeComboBox, 0, 250, Short.MAX_VALUE))
 						.addGroup(gl_epidemicPanel.createSequentialGroup()
 							.addComponent(lblEpidemicModel)
 							.addGap(18)
@@ -938,6 +1043,12 @@ public class Configuration extends javax.swing.JDialog {
 			gl_epidemicPanel.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_epidemicPanel.createSequentialGroup()
 					.addContainerGap()
+					// .addComponent(useContactTrajectoriesCheckBox)
+            		// .addGap(10)
+					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
+						.addComponent(lblContactTrajectoryMode)
+						.addComponent(contactTrajectoryModeComboBox, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addGap(10)
 					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
 						.addComponent(lblEpidemicModel)
 						.addComponent(epidemicModelComboBox, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
@@ -983,7 +1094,7 @@ public class Configuration extends javax.swing.JDialog {
 		);
 		epidemicPanel.setLayout(gl_epidemicPanel);
 
-		// Añadido por Nacho Palacio 2025-09-14
+		// Added by Nacho Palacio 2025-09-14
 		epidemicModelComboBox.addActionListener(e -> updateModelSpecificParameters());
 		
 		javax.swing.GroupLayout gl_simulationPanel = new javax.swing.GroupLayout(simulationPanel);
@@ -1245,7 +1356,25 @@ public class Configuration extends javax.swing.JDialog {
 						propagationStrategyComboBox.setEnabled(enableNetwork);
 						algorithmDescription = "K-Ideal: it is similar to Know-It-All but, rather than applying a user-based collaborative filtering, all the ratings about items unseen by the user are estimated and the k items with the best predicted ratings are recommended, independently of whether they exceed or not the recommendation threshold. The k-items are re-ordered, if needed, to minimize the total distance traversed by the user.";
 						break;
-						
+					
+					case "Risk-Aware (Risk-Aware)":
+						thresholdRecommendationTextField.setEnabled(true);
+						thresholdSimilarityTextField.setEnabled(true);
+						howManyTextField.setEnabled(true);
+						typeNetworkComboBox.setEnabled(enableNetwork);
+						propagationStrategyComboBox.setEnabled(enableNetwork);
+						algorithmDescription = "Risk-Aware: this algorithm extends UBCF by incorporating risk-awareness into the recommendation process. It considers not only the predicted user preferences but also the potential risks associated with each recommendation, aiming to minimize negative outcomes for the user.";
+						break;
+					
+					case "Non-Risk-Aware (Non-Risk-Aware)":
+						thresholdRecommendationTextField.setEnabled(true);
+						thresholdSimilarityTextField.setEnabled(true);
+						howManyTextField.setEnabled(true);
+						typeNetworkComboBox.setEnabled(enableNetwork);
+						propagationStrategyComboBox.setEnabled(enableNetwork);
+						algorithmDescription = "Non-Risk-Aware: this algorithm is a baseline approach that does not consider the potential risks associated with recommendations. It focuses solely on predicted user preferences without accounting for any negative outcomes.";
+						break;
+
 					case "Select an algorithm":
 						thresholdRecommendationTextField.setEnabled(false);
 						thresholdSimilarityTextField.setEnabled(false);
@@ -1262,7 +1391,7 @@ public class Configuration extends javax.swing.JDialog {
 			}
 		});
 		recommendationAlgorithmComboBox.setModel(new DefaultComboBoxModel(new String[] { "Select an algorithm", "User-Based Collaborative Filtering (UBCF)", "Completely-random (FULLY-RAND)",
-				"Exhaustive visit (ALL)", "Near POI (NPOI)", "Know-It-All (Know-It-All)", "K-Ideal (K-Ideal)" }));
+				"Exhaustive visit (ALL)", "Near POI (NPOI)", "Know-It-All (Know-It-All)", "K-Ideal (K-Ideal)", "Risk-Aware (Risk-Aware)", "Non-Risk-Aware (Non-Risk-Aware)" }));
 
 		nonSpecialUserPathsJTextField = new JTextField();
 		nonSpecialUserPathsJTextField.setFont(new Font("SansSerif", Font.PLAIN, 14));
@@ -1300,7 +1429,7 @@ public class Configuration extends javax.swing.JDialog {
 		pathStrategyComboBox = new JComboBox();
 		pathStrategyComboBox.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				/* Añadido por Nacho Palacio 2025-04-12. */
+				/* Added by Nacho Palacio 2025-04-12. */
 				String selectedStrategy = (String) pathStrategyComboBox.getSelectedItem();
 				String fileName = "";
 				int numberOfNonSpecialUsers = Integer.parseInt(numberOfNonSpecialUsersTextField.getText());
@@ -1598,35 +1727,8 @@ public class Configuration extends javax.swing.JDialog {
 		});
 		
 		GroupLayout gl_panel = new GroupLayout(panel);
-		// gl_panel.setHorizontalGroup(
-		// 	gl_panel.createParallelGroup(Alignment.LEADING)
-		// 		.addGroup(gl_panel.createSequentialGroup()
-		// 			.addGap(10)
-		// 			.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
-		// 				.addGroup(gl_panel.createSequentialGroup()
-		// 					.addComponent(simulationLabel)
-		// 					.addPreferredGap(ComponentPlacement.RELATED, 64, Short.MAX_VALUE)
-		// 					.addComponent(btnFasttestusersrandcent)
-		// 					.addPreferredGap(ComponentPlacement.RELATED)
-		// 					.addComponent(btnFasttestusersrandP2P)
-		// 					.addGap(30))
-		// 				.addGroup(gl_panel.createSequentialGroup()
-		// 					.addComponent(simulationPanel, GroupLayout.PREFERRED_SIZE, 480, GroupLayout.PREFERRED_SIZE)
-		// 					// // Añadido por Nacho Palacio 2022-07-16
-		// 					// .addGap(18)
-		// 					// .addComponent(epidemicLabel)
-		// 					// .addGap(11)
-		// 					// .addComponent(epidemicPanel, GroupLayout.PREFERRED_SIZE, 480, GroupLayout.PREFERRED_SIZE)
-		// 					.addPreferredGap(ComponentPlacement.RELATED)))
-		// 			.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
-		// 				.addComponent(experimentLabel)
-		// 				.addGroup(gl_panel.createParallelGroup(Alignment.TRAILING)
-		// 					.addComponent(saveButton)
-		// 					.addComponent(experimentPanel, GroupLayout.PREFERRED_SIZE, 513, GroupLayout.PREFERRED_SIZE)))
-		// 			.addContainerGap(225, Short.MAX_VALUE))
-		// );
 
-		// Modificado por Nacho Palacio 2022-07-16
+		// Modified by Nacho Palacio 2025-07-16
 		gl_panel.setHorizontalGroup(
 		gl_panel.createParallelGroup(Alignment.LEADING)
 			.addGroup(gl_panel.createSequentialGroup()
@@ -1776,10 +1878,32 @@ public class Configuration extends javax.swing.JDialog {
 	 * @param pathStrategy
 	 * @return T/F
 	 */
-	private boolean checkUsersInfo(int numberOfSpecialUser, int numberOfNonSpecialUser, String nonSpecialUserPaths, String pathStrategy) {
+	// private boolean checkUsersInfo(int numberOfSpecialUser, int numberOfNonSpecialUser, String nonSpecialUserPaths, String pathStrategy) {
 		
-		return (numberOfSpecialUser != 0 && numberOfNonSpecialUser != 0 && !nonSpecialUserPaths.isEmpty() 
-				&& !pathStrategy.equalsIgnoreCase("Select a strategy")); // PathStrategy really not needed if nonSpecialUserPaths is correct
+	// 	return (numberOfSpecialUser != 0 && numberOfNonSpecialUser != 0 && !nonSpecialUserPaths.isEmpty() 
+	// 			&& !pathStrategy.equalsIgnoreCase("Select a strategy")); // PathStrategy really not needed if nonSpecialUserPaths is correct
+	// }
+
+	private boolean checkUsersInfo(int numberOfSpecialUser, int numberOfNonSpecialUser, 
+								String nonSpecialUserPaths, String pathStrategy) {
+		
+		// boolean useContactTrajectories = (useContactTrajectoriesCheckBox != null && 
+		// 								useContactTrajectoriesCheckBox.isSelected());
+		
+		boolean useContactTrajectories = (contactTrajectoryMode != ContactTrajectoryMode.DISABLED);
+										
+		
+		boolean validSpecialUsers;
+		if (useContactTrajectories) {
+			validSpecialUsers = (numberOfSpecialUser >= 0);
+		} else {
+			validSpecialUsers = (numberOfSpecialUser > 0);
+		}
+		
+		return (validSpecialUsers && 
+				numberOfNonSpecialUser > 0 && 
+				!nonSpecialUserPaths.isEmpty() && 
+				!pathStrategy.equalsIgnoreCase("Select a strategy"));
 	}
 	
 	
@@ -1811,8 +1935,9 @@ public class Configuration extends javax.swing.JDialog {
 
 
 	/**
-	 * Añadido por Nacho Palacio 2025-07-15.
+	 * Added by Nacho Palacio 2025-07-15.
 	 * Gets the number of pixels that represent one kilometer
+	 * 
 	 * @return pixels per kilometer, or default value if simulation not configured
 	 */
 	public static double getPixelsPerKilometer() {
@@ -1823,8 +1948,9 @@ public class Configuration extends javax.swing.JDialog {
 	}
 
 	/**
-	 * Añadido por Nacho Palacio 2025-07-15.
+	 * Added by Nacho Palacio 2025-07-15.
 	 * Gets the number of pixels that represent one meter
+	 * 
 	 * @return pixels per meter, or default value if simulation not configured
 	 */
 	public static double getPixelsPerMeter() {
@@ -1835,13 +1961,27 @@ public class Configuration extends javax.swing.JDialog {
 	}
 
 	/**
-	 * Añadido por Nacho Palacio 2022-07-16.
+	 * Added by Nacho Palacio 2022-07-16.
 	 * Validates epidemic parameters
+	 * 
+	 * @param epidemicModel
+	 * @param initialInfected
+	 * @param maskCompliance
+	 * @param immunePopulation
+	 * @param superSpreaderProb
+	 * @return True if parameters are valid, false otherwise
 	 */
 	private boolean checkEpidemicParameters(String epidemicModel, int initialInfected, double maskCompliance, 
-                                      double immunePopulation, double superSpreaderProb) {
+                                  double immunePopulation, double superSpreaderProb) {
+		boolean validInitialInfected;
+		if (contactTrajectoryMode != ContactTrajectoryMode.DISABLED) {
+			validInitialInfected = (initialInfected >= 0);
+		} else {
+			validInitialInfected = (initialInfected > 0);
+		}
+		
 		return epidemicModel != null && 
-			initialInfected > 0 && 
+			validInitialInfected && 
 			maskCompliance >= 0.0 && maskCompliance <= 1.0 &&
 			immunePopulation >= 0.0 && immunePopulation <= 1.0 &&
 			superSpreaderProb >= 0.0 && superSpreaderProb <= 1.0;
@@ -1849,7 +1989,7 @@ public class Configuration extends javax.swing.JDialog {
 	
 
 	/**
-	 * Añadido por Nacho Palacio 2025-09-14
+	 * Added by Nacho Palacio 2025-09-14
 	 * Updates the model-specific parameters panel based on the selected epidemic model.
 	 */
 	private void updateModelSpecificParameters() {
@@ -2000,6 +2140,9 @@ public class Configuration extends javax.swing.JDialog {
 		modelSpecificPanel.setMinimumSize(new Dimension(400, 150));
 	}
 
+	/**
+	 * Adds Lelieveld model parameters to the model-specific parameters panel.
+	 */
 	private void addLelieveldParameters() {
 		JLabel lblViralLoadHigh = new JLabel("Viral load high [copies/cm³]");
 		lblViralLoadHigh.setFont(new Font("SansSerif", Font.PLAIN, 12));
@@ -2074,6 +2217,97 @@ public class Configuration extends javax.swing.JDialog {
 		modelSpecificPanel.setPreferredSize(new Dimension(400, 200));
     	modelSpecificPanel.setMinimumSize(new Dimension(400, 150));
 	}
+
+
+	/**
+	 * Enum para seleccionar el modo de trayectorias de contacto
+	 * Added by Nacho Palacio 2025-12-14
+	 */
+	public enum ContactTrajectoryMode {
+		DISABLED("Deshabilitado (modo tradicional)"),
+		SIMPLIFIED_ROTATION("Simplificado (rotación circular)"),
+		COMPLEX_REAL_EVENTS("Complejo (trayectorias reales)");
+		
+		private final String displayName;
+		
+		ContactTrajectoryMode(String displayName) {
+			this.displayName = displayName;
+		}
+		
+		public String getDisplayName() {
+			return displayName;
+		}
+		
+		@Override
+		public String toString() {
+			return displayName;
+		}
+	}
+
+	/**
+	 * Indicates whether contact trajectories are enabled.
+	 * 
+	 * @return True if contact trajectories are enabled, false otherwise.
+	 */
+	public boolean isUseContactTrajectoriesEnabled() {
+		return contactTrajectoryMode != ContactTrajectoryMode.DISABLED;
+	}
+
+	/**
+	 * Gets the current contact trajectory mode.
+	 * 
+	 * @return The current contact trajectory mode.
+	 */
+	public ContactTrajectoryMode getContactTrajectoryMode() {
+		return contactTrajectoryMode;
+	}
+
+	/**
+	 * Checks if the simplified rotation mode is active.
+	 * 
+	 * @return True if simplified rotation mode is active, false otherwise.
+	 */
+	public boolean isSimplifiedRotationMode() {
+		return contactTrajectoryMode == ContactTrajectoryMode.SIMPLIFIED_ROTATION;
+	}
+
+	/**
+	 * Checks if the complex real events mode is active.
+	 * 
+	 * @return True if complex real events mode is active, false otherwise.
+	 */
+	public boolean isComplexRealEventsMode() {
+		return contactTrajectoryMode == ContactTrajectoryMode.COMPLEX_REAL_EVENTS;
+	}
+
+	/**
+	 * Configures the parameters for the contact trajectories mode.
+	 * 
+	 * @param modeName The name of the selected contact trajectory mode.
+	 */
+	private void configureContactTrajectoriesMode(String modeName) {
+		numberOfSpecialUsersTextField.setText("0");
+		numberOfSpecialUsersTextField.setEnabled(false);
+		
+		numberOfNonSpecialUsersTextField.setText(String.valueOf(Literals.TOTAL_USERS));
+		
+		initialInfectedTextField.setText("0");
+		initialInfectedTextField.setEnabled(false);
+		initialInfectedTextField.setToolTipText(
+			"Con trayectorias de contactos, la infección se basa en cliques (1 usuario por clique)"
+		);
+		
+		JOptionPane.showMessageDialog(
+			Configuration.this,
+			"Modo seleccionado: " + modeName + "\n\n" +
+			"• El número de usuarios especiales (RS) se fija a 0\n" +
+			"• El número total de usuarios (no-RS) debe ser ≤ " + Literals.TOTAL_USERS + "\n" +
+			"• Los infectados iniciales se establecen en 0\n" +
+			"• La infección se basa en cliques (1 usuario infectado por clique)",
+			"Configuración de Trayectorias de Contacto",
+			JOptionPane.INFORMATION_MESSAGE
+		);
+	}
 	
 	
 	/**
@@ -2145,13 +2379,13 @@ public class Configuration extends javax.swing.JDialog {
 	private JButton chooseMap;
 	private String pathMap;
 
-	// Añadido por Nacho Palacio 2022-07-16
+	// Added by Nacho Palacio 2022-07-16
 	@SuppressWarnings("rawtypes")
 	public JComboBox epidemicModelComboBox;
 	public JTextField initialInfectedTextField;
 	public JTextField maskComplianceTextField;
 
-	// Añadido por Nacho Palacio 2025-09-14
+	// Added by Nacho Palacio 2025-09-14
 	public JTextField defaultVentilationRateTextField;
 	public JTextField virusDecayRateTextField;
 	public JTextField maskExhalationEffTextField;

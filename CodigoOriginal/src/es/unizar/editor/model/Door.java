@@ -13,7 +13,7 @@ public class Door extends Drawable implements Connectable {
 	
 	
 	public Door(Room room, long vertex_label, Point vertex_xy) {
-		/* Añadido por Nacho Palacio 2025-04-17. */
+		/* Added by Nacho Palacio 2025-04-17. */
     	super(room, ElementIdMapper.convertToRangeId(vertex_label, ElementIdMapper.CATEGORY_DOOR), vertex_xy);
 
 		this.setUrlIcon(Literals.IMAGES_PATH + "door.png");

@@ -8,7 +8,7 @@ import org.jgrapht.graph.SimpleWeightedGraph;
 
 public class HamiltonianPath {
 	public static <V, E> List<Long> getApproximateOptimalForCompleteGraph(SimpleWeightedGraph<Long, DefaultWeightedEdge> g, long initialVertex) {
-		/* Añadido por Nacho Palacio 2025-04-14. */
+		/* Added by Nacho Palacio 2025-04-14. */
 		if (g == null || g.vertexSet().isEmpty()) {
 			System.out.println("Warning: Empty graph received, unable to calculate Hamiltonian path");
 			return new LinkedList<>();

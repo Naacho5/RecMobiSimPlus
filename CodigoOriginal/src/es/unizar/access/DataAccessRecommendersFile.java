@@ -1,7 +1,6 @@
 package es.unizar.access;
 
 import java.io.File;
-import java.util.Properties;
 
 import es.unizar.util.Literals;
 

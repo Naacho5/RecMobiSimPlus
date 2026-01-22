@@ -72,7 +72,7 @@ public class NearestPath extends Path {
 		
 		// Get the items (sculptures, paintings and doors) of a specified room.
 		// LinkedList<Long> itemsByRoom = (LinkedList<Long>) getItemsByRoom(room);
-		// Modificado por Nacho Palacio 2025-06-29
+		// Modified by Nacho Palacio 2025-06-29
 		Map<Object, Object> itemsDoorVisited_cloned = itemsDoorVisited.entrySet().stream()
         .collect(Collectors.toMap(e -> e.getKey(), e -> new LinkedList<Object>(e.getValue())));
 
@@ -83,7 +83,7 @@ public class NearestPath extends Path {
 			itemsDoorVisited_cloned.put(room, itemsByRoom);
 		}
 
-		// Añadido por Nacho Palacio 2025-05-28
+		// Added by Nacho Palacio 2025-05-28
 		itemsByRoom = convertAndValidateItems(itemsByRoom, "itemsByRoom", numberOfItemsInMap);
 		
 		/*
@@ -141,12 +141,12 @@ public class NearestPath extends Path {
 					System.out.println(item + ", ");
 				*/
 
-				// Añadido por Nacho Palacio 2025-05-17
+				// Added by Nacho Palacio 2025-05-17
 				// long convertedItemToVisit = ElementIdMapper.convertToRangeId(itemToVisit, ElementIdMapper.CATEGORY_ITEM);
 				
 				// If the next item to visit is a painting or sculpture (range: 1-240):
 				// if (itemToVisit <= numberOfItemsInMap) {
-				if (ElementIdMapper.isInCorrectRange(itemToVisit, ElementIdMapper.CATEGORY_ITEM)) { // Modificado por Nacho Palacio 2025-05-20
+				if (ElementIdMapper.isInCorrectRange(itemToVisit, ElementIdMapper.CATEGORY_ITEM)) { // Modified by Nacho Palacio 2025-05-20
 					endVertex = itemToVisit;
 					// Get a new vertex.
 					vertex = getCurrentVertex(startVertex, endVertex);
@@ -174,7 +174,7 @@ public class NearestPath extends Path {
 					// long connectedDoor = getConnectedDoor(itemToVisit);
 
 					long connectedDoor = getConnectedDoor(itemToVisit);
-					// long connectedDoor = getValidConnectedDoor(itemToVisit); // Modificado por Nacho Palacio 2025-05-29
+					// long connectedDoor = getValidConnectedDoor(itemToVisit); // Modified by Nacho Palacio 2025-05-29
 					// ... resto del código ...
 					
 					
@@ -202,7 +202,7 @@ public class NearestPath extends Path {
 					// Update the available items to visit by non-RS user in the current room.
 					// itemsByRoom = (LinkedList<Long>) updateItemsByRoom(room, itemVisited, roomVisited);
 
-					// Modificado por Nacho Palacio 2025-05-29
+					// Modified by Nacho Palacio 2025-05-29
 					itemsByRoom = (LinkedList<Long>) itemsDoorVisited_cloned.get(room);
 					if (itemsByRoom == null) {
 						itemsByRoom = new LinkedList<>();
@@ -248,31 +248,16 @@ public class NearestPath extends Path {
 						for (int indexDoor = 1; indexDoor <= numberOfDoors; indexDoor++) {
 							long itemCandidateToVisit = accessGraphFile.getDoorOfRoomWithIndex(indexDoor, room);
 
-							// Añadido por Nacho Palacio 2025-06-01
+							// Added by Nacho Palacio 2025-06-01
 							if (itemCandidateToVisit > numberOfItems + numberOfDoors) {
-								// System.out.println("*** PUERTA CANDIDATA FUERA DE RANGO EN NearestPath ***");
-								// System.out.println("room: " + room);
-								// System.out.println("indexDoor: " + indexDoor);
-								// System.out.println("itemCandidateToVisit: " + itemCandidateToVisit);
-								// System.out.println("numberOfDoors en habitación: " + numberOfDoors);
-								// System.out.println("Rango válido: " + (numberOfItems + 1) + " a " + (numberOfItems + numberOfDoors));
-								// System.out.println("*** FIN DEBUG ***");
-
-								// Añadido por Nacho Palacio 2025-07-04
+								// Added by Nacho Palacio 2025-07-04
 								count++;
 								continue;
 							}
 
 							long connectedDoor = getConnectedDoor(itemCandidateToVisit);
-							// long connectedDoor = getValidConnectedDoor(itemCandidateToVisit); // Modificado por Nacho Palacio 2025-05-29
 
-							// if (connectedDoor <= 0 || !isValidDoor(connectedDoor)) {
-							// 	System.err.println("WARNING: Connected door " + connectedDoor + " is not valid, skipping candidate " + itemCandidateToVisit);
-							// 	count++;
-							// 	continue;
-							// }
-
-							// Modificado por Nacho Palacio 2025-05-31
+							// Modified by Nacho Palacio 2025-05-31
 							if (connectedDoor <= 0) {
 								count++;
 								continue;
@@ -280,7 +265,7 @@ public class NearestPath extends Path {
 
 							// itemsByRoom = (LinkedList<Long>) getItemsByRoom(getRoomFromItem(connectedDoor));
 							
-							// Modificado por Nacho Palacio 2025-06-29
+							// Modified by Nacho Palacio 2025-06-29
 							room = getRoomFromItem(connectedDoor);
 							itemsByRoom = (LinkedList<Long>) itemsDoorVisited_cloned.get(room);
 							if (itemsByRoom == null) {
@@ -304,9 +289,6 @@ public class NearestPath extends Path {
 					}
 					ifItemToVisitWasCero = true;
 				} else {
-					
-					// System.out.println("Items by room is empty");
-					
 					room = getRoomFromItem(startVertex);
 					
 					/*
@@ -318,13 +300,13 @@ public class NearestPath extends Path {
 					
 					int numberOfDoors = accessGraphFile.getNumDoorsByRoom(room);
 
-					// Modificado por Nacho Palacio 2025-05-31
+					// Modified by Nacho Palacio 2025-05-31
 					int indexDoor = random.nextInt(numberOfDoors - 1 + 1) + 1;
 					itemToVisit = accessGraphFile.getDoorOfRoomWithIndex(indexDoor, room);
 
 					long connectedDoor = getConnectedDoor(itemToVisit);
 
-					// Añadido por Nacho Palacio 2025-05-31
+					// Added by Nacho Palacio 2025-05-31
 					if (connectedDoor <= 0) {
 						break;
 					}
@@ -341,7 +323,7 @@ public class NearestPath extends Path {
 					//System.out.println(finalPath + "\n");
 					// itemsByRoom = (LinkedList<Long>) updateItemsByRoom(room, itemVisited, roomVisited);
 
-					// Modificado por Nacho Palacio 2025-05-29
+					// Modified by Nacho Palacio 2025-05-29
 					itemsByRoom = (LinkedList<Long>) itemsDoorVisited_cloned.get(room);
 					if (itemsByRoom == null) {
 						itemsByRoom = new LinkedList<>();
@@ -417,8 +399,11 @@ public class NearestPath extends Path {
 	}
 
 	/**
-	 * Validación del método getConnectedDoor con puertas reales.
-	 * Añadido por Nacho Palacio 2025-05-29.
+	 * Gets a valid connected door for the given door ID.
+	 * Added by Nacho Palacio 2025-05-29.
+	 * 
+	 * @param doorId ID of the door to find a valid connected door for
+	 * @return ID of a valid connected door
 	 */
 	protected long getValidConnectedDoor(long doorId) {
 		try {

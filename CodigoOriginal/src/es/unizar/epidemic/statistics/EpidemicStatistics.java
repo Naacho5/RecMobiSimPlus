@@ -3,6 +3,12 @@ package es.unizar.epidemic.statistics;
 import java.time.LocalDateTime;
 import java.util.*;
 
+/**
+ * Singleton class to collect and manage epidemic simulation statistics
+ * Adapted to store exposure iterations on disk for memory efficiency
+ * 
+ * @author Nacho Palacio
+ */
 public class EpidemicStatistics {
 
     private int totalUsers = 0;
@@ -11,6 +17,10 @@ public class EpidemicStatistics {
     private int totalRecoveries = 0;
     private long simulationStartTime;
     private long simulationEndTime;
+
+    private double totalExposureTimeSeconds = 0.0;
+    private double integratedConcentration = 0.0; 
+    
 
     private Map<String, Object> modelSpecificStats = new HashMap<>();
     
@@ -26,7 +36,19 @@ public class EpidemicStatistics {
     private List<HealthStateSnapshot> stateHistory = new ArrayList<>();
     
     private static EpidemicStatistics instance;
+
+    private EpidemicStatisticsCSVWriter csvWriter;
     
+    private EpidemicStatistics() {
+        csvWriter = new EpidemicStatisticsCSVWriter();
+    }
+
+    /**
+     * Gets the singleton instance of EpidemicStatistics.
+     * Creates a new instance if one does not already exist.
+     * 
+     * @return the singleton instance
+     */
     public static EpidemicStatistics getInstance() {
         if (instance == null) {
             instance = new EpidemicStatistics();
@@ -34,30 +56,109 @@ public class EpidemicStatistics {
         return instance;
     }
     
+    /**
+     * Starts the simulation and initializes statistics.
+     * Records the total number of users, initial infected count,
+     * and simulation start time.
+     * 
+     * @param totalUsers total number of users in the simulation
+     * @param initialInfected number of initially infected users
+     */
     public void startSimulation(int totalUsers, int initialInfected) {
         this.totalUsers = totalUsers;
         this.initialInfected = initialInfected;
         this.simulationStartTime = System.currentTimeMillis();
-        System.out.println("📊 Estadísticas iniciadas - Usuarios: " + totalUsers + ", Infectados iniciales: " + initialInfected);
     }
     
+    /**
+     * Ends the simulation and finalizes statistics.
+     * Records the simulation end time and closes the CSV writer.
+     */
     public void endSimulation() {
         this.simulationEndTime = System.currentTimeMillis();
+        if (csvWriter != null) {
+            csvWriter.close();
+        }
     }
 
+    /**
+     * Resets all statistics for a new simulation.
+     * Clears all counters, maps, and collections and reinitializes
+     * the CSV writer.
+     * Added by Nacho Palacio 2025-10-11
+     */
+    public void reset() {
+        this.totalUsers = 0;
+        this.initialInfected = 0;
+        this.totalInfections = 0;
+        this.totalRecoveries = 0;
+        
+        this.simulationStartTime = 0;
+        this.simulationEndTime = 0;
+
+        this.totalExposureTimeSeconds = 0.0;
+        this.integratedConcentration = 0.0;
+        
+        this.totalContacts = 0;
+        this.infectiousContacts = 0;
+        this.averageContactDuration = 0.0;
+        
+        if (this.roomStats != null) {
+            this.roomStats.clear();
+        }
+        
+        if (this.stateHistory != null) {
+            this.stateHistory.clear();
+        }
+        
+        if (this.modelSpecificStats != null) {
+            this.modelSpecificStats.clear();
+        }
+        
+        csvWriter = new EpidemicStatisticsCSVWriter();
+    }
+
+    /**
+     * Resets the singleton instance.
+     * Calls reset() on the current instance if it exists.
+     */
     public static void resetInstance() {
-        instance = new EpidemicStatistics();
+        if (instance != null) {
+            instance.reset();
+        }
     }
     
+    /**
+     * Records a new infection event.
+     * Increments the total infections counter.
+     * 
+     * @param userId the ID of the newly infected user
+     * @param transmissionSource description of the transmission source
+     */
     public void recordInfection(int userId, String transmissionSource) {
         totalInfections++;
-        //System.out.println("🦠 Nueva infección registrada - Usuario " + userId + " (Total: " + totalInfections + ")");
     }
     
+    /**
+     * Records a recovery event.
+     * Increments the total recoveries counter.
+     * 
+     * @param userId the ID of the recovered user
+     */
     public void recordRecovery(int userId) {
         totalRecoveries++;
     }
     
+    /**
+     * Records a contact event between two users.
+     * Updates total contacts, average contact duration, and room-specific
+     * contact statistics.
+     * 
+     * @param user1 the ID of the first user
+     * @param user2 the ID of the second user
+     * @param duration contact duration in seconds
+     * @param roomId the ID of the room where contact occurred
+     */
     public void recordContact(int user1, int user2, double duration, int roomId) {
         totalContacts++;
         averageContactDuration = ((averageContactDuration * (totalContacts - 1)) + duration) / totalContacts;
@@ -65,39 +166,147 @@ public class EpidemicStatistics {
         RoomStatistics roomStat = roomStats.computeIfAbsent(roomId, k -> new RoomStatistics(roomId));
         roomStat.addContact();
     }
+
+    /**
+     * Registra un contacto
+     * Without disk storage (original in-memory version)
+     */
+    // public void recordContact(int user1, int user2, double duration, int roomId) {
+    //     totalContacts++;
+    //     averageContactDuration = ((averageContactDuration * (totalContacts - 1)) + duration) / totalContacts;
+        
+    //     RoomStatistics roomStat = roomStats.computeIfAbsent(roomId, k -> new RoomStatistics(roomId));
+    //     roomStat.addContact();
+        
+    //     // Escribir a CSV
+    //     csvWriter.recordContact(System.currentTimeMillis(), user1, user2, duration, roomId, false);
+    // }
     
+    /**
+     * Records an infectious contact event.
+     * Increments the count of contacts where at least one user was infectious.
+     * 
+     * @param infectiousUser the ID of the infectious user
+     * @param susceptibleUser the ID of the susceptible user
+     */
     public void recordInfectiousContact(int infectiousUser, int susceptibleUser) {
         infectiousContacts++;
     }
     
+    // Without disk storage (original in-memory version)
+    // public void recordRoomAerosolConcentration(int roomId, double concentration) {
+    //     // System.out.printf("[EpidemicStatistics] Registrando concentración en habitación %d: %.6f\n", roomId, concentration);
+    //     RoomStatistics roomStat = roomStats.computeIfAbsent(roomId, k -> new RoomStatistics(roomId));
+    //     roomStat.addAerosolMeasurement(concentration);
+    // }
+
+    /**
+     * Records aerosol concentration without duration weighting.
+     * Delegates to the overloaded method with a default duration of 1.0 second.
+     * 
+     * @param roomId the ID of the room
+     * @param concentration the aerosol concentration value
+     */
     public void recordRoomAerosolConcentration(int roomId, double concentration) {
+        recordRoomAerosolConcentration(roomId, concentration, 1.0);
+    }
+
+    /**
+     * Records aerosol concentration with duration weighting.
+     * Updates room-specific statistics and calculates integrated concentration
+     * for time-weighted averaging.
+     * 
+     * @param roomId the ID of the room
+     * @param concentration the aerosol concentration value
+     * @param durationSeconds duration of exposure in seconds
+     */
+    public void recordRoomAerosolConcentration(int roomId, double concentration, double durationSeconds) {
         RoomStatistics roomStat = roomStats.computeIfAbsent(roomId, k -> new RoomStatistics(roomId));
         roomStat.addAerosolMeasurement(concentration);
+        
+        integratedConcentration += concentration * durationSeconds;
+        totalExposureTimeSeconds += durationSeconds;
     }
-    
-    public void recordHealthStateSnapshot(int susceptible, int exposed, int infectious, int recovered) {
-        stateHistory.add(new HealthStateSnapshot(susceptible, exposed, infectious, recovered));
+
+    // Without disk storage (original in-memory version)
+    // public void recordRoomAerosolConcentration(int roomId, double concentration, double durationSeconds) {
+    //     // Mantener en memoria para compatibilidad y cálculos rápidos
+    //     RoomStatistics roomStat = roomStats.computeIfAbsent(roomId, k -> new RoomStatistics(roomId));
+    //     roomStat.addAerosolMeasurement(concentration);
+        
+    //     // Escribir a CSV (NO bloquea, es asincrónico lógicamente)
+    //     csvWriter.recordAerosolMeasurement(simulationStartTime + System.currentTimeMillis(), roomId, concentration, durationSeconds);
+        
+    //     integratedConcentration += concentration * durationSeconds;
+    //     totalExposureTimeSeconds += durationSeconds;
+    // }
+
+    /**
+     * Records a health state snapshot.
+     * Captures the current distribution of users across health states
+     * and adds it to the state history.
+     * 
+     * @param susceptible number of susceptible users
+     * @param infectious number of infectious users
+     * @param recovered number of recovered users
+     */
+    public void recordHealthStateSnapshot(int susceptible, int infectious, int recovered) {
+        stateHistory.add(new HealthStateSnapshot(susceptible, infectious, recovered));
     }
+
+    /**
+     * Registra un snapshot de estado de salud
+     * - Mantiene snapshots en memoria (se guardan periódicamente)
+     * - Pero también escribe a CSV
+     * // Without disk storage (original in-memory version)
+     */
+    // public void recordHealthStateSnapshot(int susceptible, int exposed, int infectious, int recovered) {
+    //     // Limitar en memoria a últimos 100 snapshots (circular buffer)
+    //     if (stateHistory.size() >= 100) {
+    //         stateHistory.remove(0);
+    //     }
+        
+    //     HealthStateSnapshot snapshot = new HealthStateSnapshot(susceptible, exposed, infectious, recovered);
+    //     stateHistory.add(snapshot);
+        
+    //     // Escribir a CSV
+    //     csvWriter.recordHealthStateSnapshot(
+    //         System.currentTimeMillis(),
+    //         susceptible, exposed, infectious, recovered
+    //     );
+    // }
     
+    /**
+     * Sets a model-specific statistic value.
+     * Stores custom statistics that are specific to the transmission model being used.
+     * 
+     * @param key the statistic key or name
+     * @param value the statistic value
+     */
     public void setModelSpecificStat(String key, Object value) {
         modelSpecificStats.put(key, value);
     }
     
+    /**
+     * Prints final statistics to the console.
+     * Outputs a comprehensive summary including simulation time, population statistics,
+     * contact statistics, room statistics, model-specific statistics, and health state evolution.
+     */
     public void printFinalStatistics() {
         System.out.println("\n" + "=".repeat(60));
-        System.out.println("📊 FINAL SIMULATION STATISTICS");
+        System.out.println(" FINAL SIMULATION STATISTICS");
         System.out.println("=".repeat(60));
         
         // Time statistics
         long durationMs = simulationEndTime - simulationStartTime;
         double durationSeconds = durationMs / 1000.0;
-        System.out.println("⏱️  SIMULATION TIME");
+        System.out.println("  SIMULATION TIME");
         System.out.println("   Duration: " + String.format("%.2f seconds", durationSeconds));
         System.out.println("   Start: " + new Date(simulationStartTime));
         System.out.println("   End: " + new Date(simulationEndTime));
         
         // Population statistics
-        System.out.println("\n👥 POPULATION STATISTICS");
+        System.out.println("\n POPULATION STATISTICS");
         System.out.println("   Total users: " + totalUsers);
         System.out.println("   Initial infected: " + initialInfected);
         System.out.println("   Total infections: " + totalInfections);
@@ -116,7 +325,7 @@ public class EpidemicStatistics {
         
         // Room statistics
         if (!roomStats.isEmpty()) {
-            System.out.println("\n🏠 ROOM STATISTICS");
+            System.out.println("\n ROOM STATISTICS");
             for (RoomStatistics roomStat : roomStats.values()) {
                 roomStat.printStats();
             }
@@ -132,11 +341,10 @@ public class EpidemicStatistics {
         
         // Health state evolution
         if (!stateHistory.isEmpty()) {
-            System.out.println("\n📈 HEALTH STATE EVOLUTION");
+            System.out.println("\n HEALTH STATE EVOLUTION");
             HealthStateSnapshot last = stateHistory.get(stateHistory.size() - 1);
             System.out.println("   Final state:");
             System.out.println("     Susceptible: " + last.susceptible);
-            System.out.println("     Exposed: " + last.exposed);
             System.out.println("     Infectious: " + last.infectious);
             System.out.println("     Recovered: " + last.recovered);
         }
@@ -154,14 +362,26 @@ public class EpidemicStatistics {
             this.roomId = roomId;
         }
         
+        /**
+         * Increments the total contact count for this room.
+         */
         public void addContact() {
             totalContacts++;
         }
         
+        /**
+         * Adds an aerosol concentration measurement for this room.
+         * 
+         * @param concentration the aerosol concentration value
+         */
         public void addAerosolMeasurement(double concentration) {
             aerosolConcentrations.add(concentration);
         }
         
+        /**
+         * Prints statistics for this room.
+         * Outputs contact count and aerosol concentration statistics (average and maximum).
+         */
         public void printStats() {
             System.out.println("   Room " + roomId + ":");
             System.out.println("     Contacts: " + totalContacts);
@@ -179,12 +399,11 @@ public class EpidemicStatistics {
     }
     
     public static class HealthStateSnapshot {
-        public final int susceptible, exposed, infectious, recovered;
+        public final int susceptible, infectious, recovered;
         public final LocalDateTime timestamp;
         
-        public HealthStateSnapshot(int susceptible, int exposed, int infectious, int recovered) {
+        public HealthStateSnapshot(int susceptible, int infectious, int recovered) {
             this.susceptible = susceptible;
-            this.exposed = exposed;
             this.infectious = infectious;
             this.recovered = recovered;
             this.timestamp = LocalDateTime.now();
@@ -192,15 +411,34 @@ public class EpidemicStatistics {
     }
     
     // Getters
+    
+    /** Gets the total number of infections. 
+     * 
+     * @return total infections count 
+     */
     public int getTotalInfections() { return totalInfections; }
+    
+    /** Gets the total number of contacts. 
+     * 
+     * @return total contacts count
+      */
     public int getTotalContacts() { return totalContacts; }
+    
+    /** Gets the simulation duration in seconds. 
+     * 
+     * @return simulation duration in seconds 
+     */
     public double getSimulationDurationSeconds() { 
         return (simulationEndTime - simulationStartTime) / 1000.0; 
     }
 
    
     /**
-     * Calculates the average aerosol concentration across all rooms
+     * Calculates the average aerosol concentration across all rooms.
+     * Computes the arithmetic mean of all concentration measurements
+     * from all rooms.
+     * 
+     * @return average aerosol concentration
      */
     public double getAverageAerosolConcentration() {
         if (roomStats.isEmpty()) {
@@ -223,7 +461,11 @@ public class EpidemicStatistics {
     }
 
     /**
-     * Calculates the maximum aerosol concentration recorded in any room
+     * Calculates the maximum aerosol concentration recorded in any room.
+     * Finds the highest concentration value among all measurements
+     * across all rooms.
+     * 
+     * @return maximum aerosol concentration
      */
     public double getMaxAerosolConcentration() {
         double maxConcentration = 0.0;
@@ -241,15 +483,92 @@ public class EpidemicStatistics {
         return maxConcentration;
     }
 
+    /**
+     * Gets the number of infectious contacts.
+     * 
+     * @return count of contacts involving infectious users
+     */
     public int getInfectiousContacts() {
         return infectiousContacts;
     }
 
+    /**
+     * Gets statistics for a specific room.
+     * 
+     * @param roomId the ID of the room
+     * @return room statistics object, or null if not found
+     */
     public RoomStatistics getRoomStatistics(int roomId) {
         return roomStats.get(roomId);
     }
 
+    /**
+     * Gets statistics for all rooms.
+     * 
+     * @return copy of the map containing all room statistics
+     */
     public Map<Integer, RoomStatistics> getAllRoomStatistics() {
         return new HashMap<>(roomStats);
     }
+
+    /**
+     * Gets the time-weighted average aerosol concentration across all rooms.
+     * Calculates the average concentration weighted by exposure time,
+     * providing a more accurate measure of actual exposure.
+     * 
+     * @return time-weighted average concentration
+     */
+    public double getTimeWeightedAverageAerosolConcentration() {
+        if (totalExposureTimeSeconds <= 0) {
+            return 0.0;
+        }
+        
+        double result = integratedConcentration / totalExposureTimeSeconds;
+     
+        return result;
+    }
+
+    /**
+     * Gets the number of rooms with recorded statistics.
+     * 
+     * @return count of rooms in the statistics map
+     */
+    public int getRoomStatsSize() {
+        return roomStats != null ? roomStats.size() : 0;
+    }
+
+    /**
+     * Gets the total number of aerosol measurements across all rooms.
+     * 
+     * @return total count of aerosol concentration measurements
+     */
+    public int getTotalAerosolMeasurements() {
+        if (roomStats == null || roomStats.isEmpty()) return 0;
+        int total = 0;
+        for (RoomStatistics rs : roomStats.values()) {
+            if (rs.aerosolConcentrations != null) {
+                total += rs.aerosolConcentrations.size();
+            }
+        }
+        return total;
+    }
+
+    /**
+     * Gets the number of health state snapshots recorded.
+     * 
+     * @return count of snapshots in the state history
+     */
+    public int getStateHistorySize() {
+        return stateHistory != null ? stateHistory.size() : 0;
+    }
+
+    /**
+     * Gets the number of model-specific statistics recorded.
+     * 
+     * @return count of model-specific statistics
+     */
+    public int getModelSpecificStatsSize() {
+        return modelSpecificStats != null ? modelSpecificStats.size() : 0;
+    }
+
 }

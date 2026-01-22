@@ -9,11 +9,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 
-import javax.swing.JOptionPane;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -28,7 +25,6 @@ import es.unizar.editor.model.Connectable;
 import es.unizar.editor.model.Corner;
 import es.unizar.editor.model.Door;
 import es.unizar.editor.model.Item;
-import es.unizar.editor.model.MapEditorModel;
 import es.unizar.editor.model.Point;
 import es.unizar.editor.model.Room;
 import es.unizar.editor.model.RoomSeparator;
@@ -67,6 +63,7 @@ public class SVGParserSimulation {
 		
 		DocumentBuilder builder;
 		try {
+			System.out.println("Parsing SVG file: "+svg.getAbsolutePath());
 			builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
 			Document doc = builder.parse(svg);
 			doc.getDocumentElement().normalize();

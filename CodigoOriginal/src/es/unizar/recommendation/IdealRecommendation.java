@@ -43,10 +43,13 @@ public class IdealRecommendation {
 			long itemID = Long.valueOf(array[1]).longValue();
 			long contextID = Long.valueOf(array[2]).longValue();
 			float rating = Float.valueOf(array[3]).floatValue();
+			// long itemIDInternal = Long.valueOf(array[4]).longValue();
 
 			// Obtiene solo los items no vistos.
 			if ((seenPreferences == null || !seenPreferences.hasPrefWithItemID(itemID)) && contextID == context) {
-				topList.add(new GenericRecommendedItem(itemID, rating));
+				// topList.add(new GenericRecommendedItem(itemID, rating));
+				System.out.println("IdealRecommendation: Recomendando itemID " + itemID + " con rating " + rating + " para userID " + userID + " en contexto " + context);
+				topList.add(new GenericRecommendedItem(itemID, rating)); // Modified by Nacho Palacio 2025-11-05
 			}
 			posAll++;
 		}

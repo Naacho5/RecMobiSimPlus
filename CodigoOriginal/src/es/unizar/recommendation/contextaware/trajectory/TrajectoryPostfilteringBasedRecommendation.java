@@ -43,12 +43,16 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 	private String finalPath;
 	private float threshold;
 
+	private static final int MAX_FINAL_PATH_LENGTH = 10000;
+
+
 	public TrajectoryPostfilteringBasedRecommendation(DBDataModel dataModel, String dbURL, AbstractTrajectoryStrategy trajectoryStrategy, long entranceDoor, float threshold) throws Exception {
 		super(dataModel, 0, dbURL, null, 0, 0);
 		this.setTrajectoryStrategy(trajectoryStrategy);
 		this.door = entranceDoor;
 		this.finalPath = null;
 		this.threshold = threshold;
+		System.out.println("✅ TrajectoryPostfilteringBasedRecommendation: Created with door " + door + " and threshold " + threshold);
 	}
 
 	// Para P2P
@@ -111,35 +115,47 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 		// Filtra los items teniendo en cuenta un umbral de rating
 		List<RecommendedItem> candidateItemsFiltered = listRecommendedItemThreshold(candidateItemsFromRecommender);
 
-		/* Añadido por Nacho Palacio 2025-04-14. */
+		/* Added by Nacho Palacio 2025-04-14. */
 		if (candidateItemsFiltered == null || candidateItemsFiltered.isEmpty()) {
             return candidateItemsFromRecommender;
         }
 
 		// Las lista previamente filtrada se lleva a una lista de entero con solo los items a recomendar
 		List<Long> candidateItemsToLong = listRecommendedItemToListLong(candidateItemsFiltered);
+
+		// Added by Nacho Palacio 2025-10-22
+		List<Long> candidateItemsInternal = new ArrayList<>();
+		for (Long itemId : candidateItemsToLong) {
+			candidateItemsInternal.add(es.unizar.util.ElementIdMapper.convertToRangeId(itemId, es.unizar.util.ElementIdMapper.CATEGORY_ITEM));
+		}
+		// System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommend: candidateItemsInternal = " + candidateItemsInternal);
 					 
-		/* Añadido por Nacho Palacio 2025-04-14. */
+		/* Added by Nacho Palacio 2025-04-14. */
 		if (candidateItemsToLong.isEmpty()) {
             return candidateItemsFiltered;
         }
 
 		// Candidate items from graph
-		long initialVertex = getItemClosestToTheFrontDoor(door, candidateItemsToLong);
+		long initialVertex = getItemClosestToTheFrontDoor(door, candidateItemsInternal); // Modified by Nacho Palacio 2025-10-22
 
-		List<Long> pathHamiltonianCycle = getTrajectoryStrategy().getOptimalTrajectory(candidateItemsToLong, initialVertex);
+		// System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommend: initialVertex = " + initialVertex);
+		
+		List<Long> pathHamiltonianCycle = getTrajectoryStrategy().getOptimalTrajectory(candidateItemsInternal, initialVertex); // Modified by Nacho Palacio 2025-10-22
 		// Los items son ordenados teniendo en cuenta una trayectoria
 		List<Long> sortedItems = sortingItemsBeginBy(initialVertex, pathHamiltonianCycle);
+
+		// System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommend: sortedItems = " + sortedItems);
 
 		// Obtiene un path
 		// finalPath = ShortestTrajectoryStrategy.preprocessingPath(door, DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, door, initialVertex).toString());
 		// convertRecommendItemsToPath(sortedItems);
 
-		/* Añadido por Nacho Palacio 2015-04-14. */
+		/* Added by Nacho Palacio 2015-04-14. */
 		try {
 			finalPath = ShortestTrajectoryStrategy.preprocessingPath(door, 
                       DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, door, initialVertex).toString());
             
+			// System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommend: finalPath inicial calculado.");
             // Si finalPath es nulo, devuelve los items filtrados sin trayectoria
             if (finalPath == null) {;
                 return candidateItemsFiltered;
@@ -153,11 +169,28 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 
 		// Obtiene la lista de RecommendedItem teniendo en cuenta la trayectoria.
 		List<RecommendedItem> finalRecommendedItems = new LinkedList<>();
+		// for (int i = 0; i < sortedItems.size(); i++) {
+		// 	long itemGraph = sortedItems.get(i);
+		// 	for (int j = 0; j < candidateItemsFiltered.size(); j++) {
+		// 		RecommendedItem itemRecommender = candidateItemsFiltered.get(j);
+		// 		if (itemGraph == itemRecommender.getItemID()) {
+		// 			if (finalRecommendedItems.isEmpty()) {
+		// 				finalRecommendedItems.add(itemRecommender);
+		// 			} else {
+		// 				if (!finalRecommendedItems.contains(itemRecommender)) {
+		// 					finalRecommendedItems.add(itemRecommender);
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// }
+
 		for (int i = 0; i < sortedItems.size(); i++) {
-			long itemGraph = sortedItems.get(i);
+			long itemGraphInternal = sortedItems.get(i);
+			long itemGraphExternal = es.unizar.util.ElementIdMapper.getBaseId(itemGraphInternal);
 			for (int j = 0; j < candidateItemsFiltered.size(); j++) {
 				RecommendedItem itemRecommender = candidateItemsFiltered.get(j);
-				if (itemGraph == itemRecommender.getItemID()) {
+				if (itemGraphExternal == itemRecommender.getItemID()) {
 					if (finalRecommendedItems.isEmpty()) {
 						finalRecommendedItems.add(itemRecommender);
 					} else {
@@ -168,7 +201,7 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 				}
 			}
 		}
-
+		// System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommend: finalRecommendedItems = " + finalRecommendedItems);
 		return finalRecommendedItems;
 	}
 
@@ -176,25 +209,64 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 	public List<RecommendedItem> recommendIdeal(List<RecommendedItem> candidateItemsFromRecommender) throws TasteException {
 		// Las lista de items candidatos se lleva a una lista de entero.
 		List<Long> candidateItemsToLong = listRecommendedItemToListLong(candidateItemsFromRecommender);
+		// Added by Nacho Palacio 2025-10-22
+		List<Long> candidateItemsInternal = new ArrayList<>();
+		for (Long itemId : candidateItemsToLong) {
+			candidateItemsInternal.add(es.unizar.util.ElementIdMapper.convertToRangeId(itemId, es.unizar.util.ElementIdMapper.CATEGORY_ITEM));
+		}
+
+		System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendIdeal: candidateItemsInternal = " + candidateItemsInternal);
 
 		// Candidate items from graph
-		long initialVertex = getItemClosestToTheFrontDoor(door, candidateItemsToLong);
-		List<Long> pathHamiltonianCycle = getTrajectoryStrategy().getOptimalTrajectory(candidateItemsToLong, initialVertex);
+		long initialVertex = getItemClosestToTheFrontDoor(door, candidateItemsInternal); // Modified by Nacho Palacio 2025-10-22
+		List<Long> pathHamiltonianCycle = getTrajectoryStrategy().getOptimalTrajectory(candidateItemsInternal, initialVertex); // Modified by Nacho Palacio 2025-10-22
 		// Los items son ordenados teniendo en cuenta una trayectoria
 		List<Long> sortedItems = sortingItemsBeginBy(initialVertex, pathHamiltonianCycle);
+		System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendIdeal: sortedItems = " + sortedItems);
+
+		long internalDoor = es.unizar.util.ElementIdMapper.convertToRangeId(door, es.unizar.util.ElementIdMapper.CATEGORY_DOOR);
+
+		if (!trajectoryStrategy.graph.containsVertex(internalDoor)) {
+			System.err.println(" El grafo NO contiene el vértice de puerta (start): " + door);
+			return candidateItemsFromRecommender;
+		}
+		if (!trajectoryStrategy.graph.containsVertex(initialVertex)) {
+			System.err.println(" El grafo NO contiene el vértice de destino (initialVertex): " + initialVertex);
+			return candidateItemsFromRecommender;
+		}
+
+		System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendIdeal: initialVertex = " + initialVertex);
 
 		// Obtiene un path
-		finalPath = ShortestTrajectoryStrategy.preprocessingPath(door, DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, door, initialVertex).toString());
+		finalPath = ShortestTrajectoryStrategy.preprocessingPath(internalDoor, DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, internalDoor, initialVertex).toString());
+		System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendIdeal: finalPath inicial calculado.");
 		convertRecommendItemsToPath(sortedItems);
 
 		// Obtiene nuevamente la lista de RecommendedItem pero teniendo en
 		// cuenta la trayectoria.
 		List<RecommendedItem> finalRecommendedItems = new LinkedList<>();
+		// for (int i = 0; i < sortedItems.size(); i++) {
+		// 	long itemGraph = sortedItems.get(i);
+		// 	for (int j = 0; j < candidateItemsFromRecommender.size(); j++) {
+		// 		RecommendedItem itemRecommender = candidateItemsFromRecommender.get(j);
+		// 		if (itemGraph == itemRecommender.getItemID()) {
+		// 			if (finalRecommendedItems.isEmpty()) {
+		// 				finalRecommendedItems.add(itemRecommender);
+		// 			} else {
+		// 				if (!finalRecommendedItems.contains(itemRecommender)) {
+		// 					finalRecommendedItems.add(itemRecommender);
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// }
+
 		for (int i = 0; i < sortedItems.size(); i++) {
-			long itemGraph = sortedItems.get(i);
+			long itemGraphInternal = sortedItems.get(i);
+			long itemGraphExternal = es.unizar.util.ElementIdMapper.getBaseId(itemGraphInternal);
 			for (int j = 0; j < candidateItemsFromRecommender.size(); j++) {
 				RecommendedItem itemRecommender = candidateItemsFromRecommender.get(j);
-				if (itemGraph == itemRecommender.getItemID()) {
+				if (itemGraphExternal == itemRecommender.getItemID()) {
 					if (finalRecommendedItems.isEmpty()) {
 						finalRecommendedItems.add(itemRecommender);
 					} else {
@@ -205,42 +277,124 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 				}
 			}
 		}
+
+		System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendIdeal: finalRecommendedItems = " + finalRecommendedItems);
 		return finalRecommendedItems;
 	}
 
 	// Para Baseline: Random, ALL
 	public List<RecommendedItem> recommendBaseline(List<RecommendedItem> candidateItemsFromRecommender) throws TasteException {
 
+		// System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendBaseline: Iniciando cálculo de trayectoria.");
+		// System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendBaseline: candidateItemsFromRecommender size = " + candidateItemsFromRecommender.size());
+		// Added by Nacho Palacio 2025-10-21
+		this.finalPath = null; // limpiar antes de calcular
+		if (candidateItemsFromRecommender == null || candidateItemsFromRecommender.isEmpty()) {
+			System.err.println("[Postfiltering] Lista de ítems vacía, no se genera trayectoria.");
+			return new ArrayList<>();
+		}
+
+		// Added by Nacho Palacio 2025-10-22
+		long internalDoor = es.unizar.util.ElementIdMapper.convertToRangeId(door, es.unizar.util.ElementIdMapper.CATEGORY_DOOR);
+		// System.out.println(" [DEBUG recommendBaseline] door original: " + door + ", internalDoor: " + internalDoor);
+
 		// Las lista de items candidatos se lleva a una lista de entero.
 		List<Long> candidateItemsToLong = listRecommendedItemToListLong(candidateItemsFromRecommender);
+		// System.out.println(" [DEBUG recommendBaseline] candidateItemsToLong: " + candidateItemsToLong);
+
+		// Imprime los IDs de los items candidatos
+		// System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendBaseline: candidateItemsToLong = " + candidateItemsToLong);
+
+		// Added by Nacho Palacio 2025-10-22
+		List<Long> candidateItemsInternal = new ArrayList<>();
+		for (Long itemId : candidateItemsToLong) {
+			long internalId = es.unizar.util.ElementIdMapper.convertToRangeId(itemId, es.unizar.util.ElementIdMapper.CATEGORY_ITEM);
+			candidateItemsInternal.add(internalId);
+			// System.out.println(" [DEBUG recommendBaseline] Item externo: " + itemId + " -> interno: " + internalId);
+		}
+		// System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendBaseline: candidateItemsInternal = " + candidateItemsInternal);
 
 		// Candidate items from graph
-		long initialVertex = candidateItemsToLong.get(0);
+		// long initialVertex = candidateItemsToLong.get(0);
+		long initialVertex = candidateItemsInternal.get(0); // Modified by Nacho Palacio 2025-10-22
+		// System.out.println(" [DEBUG recommendBaseline] initialVertex (primer item interno): " + initialVertex);
 
-		// Obtiene un path
-		//System.out.println("Door: " + door + "; shortest path " + DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, door, initialVertex) + "; TrajectoryStrategy.graph: " + trajectoryStrategy.graph + "; initialVertex: " + initialVertex);
+		// System.out.println(" [DEBUG recommendBaseline] Verificando vértices en el grafo:");
+		// System.out.println("   - Total vértices en grafo: " + trajectoryStrategy.graph.vertexSet().size());
+		// System.out.println("   - ¿Grafo contiene internalDoor (" + internalDoor + ")? " + trajectoryStrategy.graph.containsVertex(internalDoor));
+		// System.out.println("   - ¿Grafo contiene door original (" + door + ")? " + trajectoryStrategy.graph.containsVertex(door));
+		// System.out.println("   - ¿Grafo contiene initialVertex (" + initialVertex + ")? " + trajectoryStrategy.graph.containsVertex(initialVertex));
 		
-		// Añadido por Nacho Palacio 2025-09-28
-		if (!trajectoryStrategy.graph.containsVertex(door)) {
-			System.err.println("❌ El grafo NO contiene el vértice de puerta: " + door);
+		// ✅ DEBUG: Imprimir algunos vértices del grafo para comparar
+		// System.out.println("   - Primeros 20 vértices del grafo:");
+		// int count = 0;
+		// for (Long vertex : trajectoryStrategy.graph.vertexSet()) {
+		// 	if (count < 20) {
+		// 		System.out.println("      " + vertex);
+		// 		count++;
+		// 	} else {
+		// 		break;
+		// 	}
+		// }
+		// Obtiene un path
+		// System.out.println("Door: " + door + "; shortest path " + DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, door, initialVertex) + "; TrajectoryStrategy.graph: " + trajectoryStrategy.graph + "; initialVertex: " + initialVertex);
+		
+		// Added by Nacho Palacio 2025-09-28
+		if (!trajectoryStrategy.graph.containsVertex(internalDoor)) {
+			System.err.println(" [recommendBaseline] El grafo NO contiene internalDoor: " + internalDoor);
+			System.err.println("   Intentando con door original: " + door);
 			return candidateItemsFromRecommender;
 		}
-		if (!trajectoryStrategy.graph.containsVertex(initialVertex)) {
-			System.err.println("❌ El grafo NO contiene el vértice de destino: " + initialVertex);
-			return candidateItemsFromRecommender;
+		else {
+			// System.out.println("El grafo si contiene el vértice de puerta: " + internalDoor);
 		}
 
-		finalPath = ShortestTrajectoryStrategy.preprocessingPath(door, DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, door, initialVertex).toString());
-		convertRecommendItemsToPath(candidateItemsToLong);
+		if (!trajectoryStrategy.graph.containsVertex(initialVertex)) {
+			System.err.println(" [recommendBaseline] El grafo NO contiene initialVertex: " + initialVertex);
+        	return candidateItemsFromRecommender;
+		}
+		else {
+			// System.out.println("El grafo si contiene el vértice de destino: " + initialVertex);
+		}
+
+		System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendBaseline: Calculando finalPath desde puerta " + internalDoor + " hasta initialVertex " + initialVertex);
+		finalPath = ShortestTrajectoryStrategy.preprocessingPath(internalDoor, DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, internalDoor, initialVertex).toString());
+
+		System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendBaseline: finalPath inicial calculado.");
+		System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendBaseline: finalPath = " + finalPath);
+
+		convertRecommendItemsToPath(candidateItemsInternal); // Modified by Nacho Palacio 2025-10-22
+		System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendBaseline: finalPath completo calculado.");
 
 		// Obtiene nuevamente la lista de RecommendedItem pero teniendo en
 		// cuenta la trayectoria.
+		// List<RecommendedItem> finalRecommendedItems = new LinkedList<>();
+		// for (int i = 0; i < candidateItemsToLong.size(); i++) {
+		// 	long itemGraph = candidateItemsToLong.get(i);
+		// 	System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendBaseline: Procesando itemGraph = " + itemGraph);
+		// 	for (int j = 0; j < candidateItemsFromRecommender.size(); j++) {
+		// 		RecommendedItem itemRecommender = candidateItemsFromRecommender.get(j);
+		// 		System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendBaseline: -- Comparando con itemRecommender = " + itemRecommender.getItemID());
+		// 		if (itemGraph == itemRecommender.getItemID()) {
+		// 			if (finalRecommendedItems.isEmpty()) {
+		// 				finalRecommendedItems.add(itemRecommender);
+		// 			} else {
+		// 				if (!finalRecommendedItems.contains(itemRecommender)) {
+		// 					finalRecommendedItems.add(itemRecommender);
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// }
+
+		// Modified by Nacho Palacio 2025-10-22
 		List<RecommendedItem> finalRecommendedItems = new LinkedList<>();
-		for (int i = 0; i < candidateItemsToLong.size(); i++) {
-			long itemGraph = candidateItemsToLong.get(i);
+		for (int i = 0; i < candidateItemsInternal.size(); i++) {
+			long itemGraphInternal = candidateItemsInternal.get(i);
+			long itemGraphExternal = es.unizar.util.ElementIdMapper.getBaseId(itemGraphInternal); // Convierte a externo si es necesario
 			for (int j = 0; j < candidateItemsFromRecommender.size(); j++) {
 				RecommendedItem itemRecommender = candidateItemsFromRecommender.get(j);
-				if (itemGraph == itemRecommender.getItemID()) {
+				if (itemGraphExternal == itemRecommender.getItemID()) {
 					if (finalRecommendedItems.isEmpty()) {
 						finalRecommendedItems.add(itemRecommender);
 					} else {
@@ -251,18 +405,59 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 				}
 			}
 		}
+
+		System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendBaseline: finalRecommendedItems size = " + finalRecommendedItems.size());
 		return finalRecommendedItems;
 	}
 
 	private void convertRecommendItemsToPath(List<Long> items) {
 		long start = items.get(0);
+
+		StringBuilder pathBuilder = new StringBuilder(finalPath != null ? finalPath : ""); // Added by Nacho Palacio 2025-12-08
+
 		for (int i = 1; i < items.size(); i++) {
+			// Added by Nacho Palacio 2025-12-08
+			if (pathBuilder.length() > MAX_FINAL_PATH_LENGTH) {
+                System.out.println("Warning! Path truncado por exceder límite de " + MAX_FINAL_PATH_LENGTH + " caracteres");
+                break;
+            }
+
 			long end = items.get(i);
+			// if (end != start) {
+			// 	finalPath += ", " + ShortestTrajectoryStrategy.preprocessingPath(start, DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, start, end).toString());
+			// 	start = end;
+			// }
+			// if (end != start) {
+			// 	if (trajectoryStrategy.graph.containsVertex(start) && trajectoryStrategy.graph.containsVertex(end)) {
+			// 		// System.out.println("✅ convertRecommendItemsToPath: El grafo contiene el vértice start=" + start + " y end=" + end);
+			// 		if (DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, start, end) != null) {
+			// 			finalPath += ", " + ShortestTrajectoryStrategy.preprocessingPath(start, DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, start, end).toString());
+			// 		}
+			// 		else {
+			// 			// System.err.println(" convertRecommendItemsToPath: No se encontró un camino entre start=" + start + " y end=" + end);
+			// 		}
+			// 	} else {
+			// 		// System.err.println(" convertRecommendItemsToPath: El grafo NO contiene el vértice start=" + start + " o end=" + end);
+			// 	}
+			// 	start = end;
+			// }
+
+			// Modified by Nacho Palacio 2025-12-08
 			if (end != start) {
-				finalPath += ", " + ShortestTrajectoryStrategy.preprocessingPath(start, DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, start, end).toString());
-				start = end;
-			}
-		}
+                if (trajectoryStrategy.graph.containsVertex(start) && trajectoryStrategy.graph.containsVertex(end)) {
+                    var pathBetween = DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, start, end);
+                    if (pathBetween != null) {
+                        if (pathBuilder.length() > 0) {
+                            pathBuilder.append(", ");
+                        }
+                        pathBuilder.append(ShortestTrajectoryStrategy.preprocessingPath(start, pathBetween.toString()));
+                    }
+                }
+                start = end;
+            }
+        }
+        
+        finalPath = pathBuilder.toString();
 	}
 
 	private List<Long> sortingItemsBeginBy(long initialVertex, List<Long> items) {
@@ -285,15 +480,38 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 	}
 
 	private long getItemClosestToTheFrontDoor(long door, List<Long> items) {
+		// Imprimir diccionario de ubicaciones
+		// System.out.println(" [getItemClosestToTheFrontDoor] Diccionario de ubicaciones:");
+		for (Long key : trajectoryStrategy.diccionaryItemLocation.keySet()) {
+			// System.out.println("ID: " + key + " -> " + trajectoryStrategy.diccionaryItemLocation.get(key));
+		}
+
 		long itemClosest = 0;
 		double shorterDistance = 999999;
 		for (int i = 0; i < items.size(); i++) {
 			long item = items.get(i);
 			// Esta condicion es para que no salga el mismo como el mas cercano.
+			// if (item != door) {
+			// 	String itemLocation = trajectoryStrategy.diccionaryItemLocation.get(item);
+			// 	String doorLocation = trajectoryStrategy.diccionaryItemLocation.get(door);
+			// 	double distance = Distance.distanceBetweenTwoPoints(Double.valueOf(itemLocation.split(", ")[0]).doubleValue(), Double.valueOf(itemLocation.split(", ")[1]).doubleValue(), Double.valueOf(doorLocation.split(", ")[0]).doubleValue(), Double.valueOf(doorLocation.split(", ")[1]).doubleValue());
+			// 	if (distance < shorterDistance) {
+			// 		shorterDistance = distance;
+			// 		itemClosest = item;
+			// 	}
+			// }
 			if (item != door) {
 				String itemLocation = trajectoryStrategy.diccionaryItemLocation.get(item);
 				String doorLocation = trajectoryStrategy.diccionaryItemLocation.get(door);
-				double distance = Distance.distanceBetweenTwoPoints(Double.valueOf(itemLocation.split(", ")[0]).doubleValue(), Double.valueOf(itemLocation.split(", ")[1]).doubleValue(), Double.valueOf(doorLocation.split(", ")[0]).doubleValue(), Double.valueOf(doorLocation.split(", ")[1]).doubleValue());
+				if (itemLocation == null || doorLocation == null) {
+					System.err.println(" Ubicación no encontrada para el item " + item + " o la puerta " + door);
+					continue;
+				}
+				double distance = Distance.distanceBetweenTwoPoints(
+					Double.valueOf(itemLocation.split(", ")[0]).doubleValue(),
+					Double.valueOf(itemLocation.split(", ")[1]).doubleValue(),
+					Double.valueOf(doorLocation.split(", ")[0]).doubleValue(),
+					Double.valueOf(doorLocation.split(", ")[1]).doubleValue());
 				if (distance < shorterDistance) {
 					shorterDistance = distance;
 					itemClosest = item;
@@ -376,7 +594,9 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 	}
 
 	public String getFinalPath() {
-		return finalPath;
+		// return finalPath;
+		// Modified by Nacho Palacio 2025-10-21
+		return finalPath != null ? finalPath : "";
 	}
 
 	public void setFinalPath(String finalPath) {

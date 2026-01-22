@@ -29,7 +29,7 @@ public class ElementIdMapper {
     public static long SEPARATOR_ID_START = 5000;
     public static long USER_ID_START = 6000;
 
-    // Añadido por Nacho Palacio 2025-06-03
+    // Added by Nacho Palacio 2025-06-03
     // Flags
     private static boolean isDynamicallyConfigured = false;
     private static SystemRangeData systemData = null;
@@ -316,15 +316,22 @@ public class ElementIdMapper {
      * @return ID converted to the correct range.
      */
     public static long convertToRangeId(long currentId, int category) {
-        // Añadido por Nacho Palacio 2025-06-05
+        // System.out.println("Se llama a convertToRangeId con currentId: " + currentId + " y category: " + category);
+        // Added by Nacho Palacio 2025-06-05
         if (currentId == 0) {
             new Exception("Stack trace para currentId=0").printStackTrace();
             return 0;
         }
 
         if (isDynamicallyConfigured) {
-            int newCategory = determineActualCategory(currentId); // Añadido por Nacho Palacio 2025-06-22
 
+            // Modified by Nacho Palacio 2025-10-12: Antes solo estaba el de debajo
+            if (isInCorrectRange(currentId, category)) {
+                return currentId;
+            }
+
+            int newCategory = determineActualCategory(currentId); // Added by Nacho Palacio 2025-06-22
+            // System.out.println("Nueva categoria: " + newCategory);
             if (newCategory != category && category == CATEGORY_ITEM) {
                 category = newCategory;
             }
@@ -346,8 +353,8 @@ public class ElementIdMapper {
                     break;
                     
                 case CATEGORY_DOOR:
-                    int startInvisibleDoorId = systemData.totalItems + systemData.totalDoors + systemData.totalStairs; // Añadido por Nacho Palacio 2025-07-02
-                    int endInvisibleDoorId = startInvisibleDoorId + systemData.totalInvisibleDoors; // Añadido por Nacho Palacio 2025-07-02
+                    int startInvisibleDoorId = systemData.totalItems + systemData.totalDoors + systemData.totalStairs; // Added by Nacho Palacio 2025-07-02
+                    int endInvisibleDoorId = startInvisibleDoorId + systemData.totalInvisibleDoors; // Added by Nacho Palacio 2025-07-02
                     boolean isInvisibleDoor = currentId > startInvisibleDoorId && currentId <= endInvisibleDoorId; // REVISAR
                     boolean isDoor = currentId > systemData.totalItems && currentId <= (systemData.totalItems + systemData.totalDoors);
                     if (isDoor || isInvisibleDoor) {
@@ -407,8 +414,8 @@ public class ElementIdMapper {
                     return convertedId;
                 }
 
-                return currentId % 1000 + 2284; // Modificado por Nacho Palacio 2025-06-24
-                // return currentId % 1000 + DOOR_ID_START; // Modificado por Nacho Palacio 2025-06-24
+                return currentId % 1000 + 2284; // Modified by Nacho Palacio 2025-06-24
+                // return currentId % 1000 + DOOR_ID_START; // Modified by Nacho Palacio 2025-06-24
 
 
                 
@@ -521,15 +528,15 @@ public class ElementIdMapper {
 
     /**
      * Configura los rangos dinámicamente basándose en datos reales del sistema.
-     * Añadido por Nacho Palacio 2025-06-03.
-     * Modificado por Nacho Palacio 2025-06-25.
+     * Added by Nacho Palacio 2025-06-03.
+     * Modified by Nacho Palacio 2025-06-25.
      * @param data Datos reales del sistema.
      */
     public static void configureDynamicRanges(Object rangeData) {
         
         // Verificar si ya está configurado
         if (isDynamicallyConfigured) {
-            System.out.println("⚠️  ElementIdMapper ya está configurado dinámicamente - omitiendo reconfiguración");
+            System.out.println("Warning!  ElementIdMapper ya está configurado dinámicamente - omitiendo reconfiguración");
             return;
         }
         
@@ -571,7 +578,7 @@ public class ElementIdMapper {
 
     /**
      * Procesa los datos de rango usando reflexión para evitar dependencias circulares.
-     * AÑADIDO por Nacho Palacio 2025-06-25.
+     * Added by Nacho Palacio 2025-06-25.
      */
     private static void processRangeDataReflection(Object rangeData) throws Exception {
         Class<?> dataClass = rangeData.getClass();
@@ -583,7 +590,7 @@ public class ElementIdMapper {
         int totalDoors = getIntField(dataClass, rangeData, "totalDoors");
         int totalStairs = getIntField(dataClass, rangeData, "totalStairs");
         int totalRooms = getIntField(dataClass, rangeData, "totalRooms");
-        int totalInvisibleDoors = countInvisibleDoors(); // Añadido por Nacho Palacio 2025-07-02 
+        int totalInvisibleDoors = countInvisibleDoors(); // Added by Nacho Palacio 2025-07-02 
         
         long minItemId = getLongField(dataClass, rangeData, "minItemId");
         long maxItemId = getLongField(dataClass, rangeData, "maxItemId");
@@ -635,6 +642,16 @@ public class ElementIdMapper {
             SEPARATOR_ID_START = CORNER_ID_START + 1000;
             USER_ID_START = SEPARATOR_ID_START + 1000;
         }
+
+        // Imprimir rangos
+        System.out.println("Items empiezan en: " + systemData.minItemId);
+        System.out.println("Items acaban en: " + systemData.maxItemId);
+        System.out.println("Puertas empiezan en: " + systemData.minDoorId);
+        System.out.println("Puertas acaban en: " + systemData.maxDoorId);
+
+        System.out.println("El numero total de items es: " + systemData.totalItems);
+        System.out.println("El numero total de puertas es: " + systemData.totalDoors);
+        System.out.println("El numero total de puertas invisibles es: " + systemData.totalInvisibleDoors);
     }
 
     /**
@@ -671,7 +688,7 @@ public class ElementIdMapper {
 
     /**
      * Métodos auxiliares para reflexión.
-     * Añadido por Nacho Palacio 2025-06-25.
+     * Added by Nacho Palacio 2025-06-25.
      */
     private static int getIntField(Class<?> clazz, Object obj, String fieldName) throws Exception {
         return (Integer) clazz.getField(fieldName).get(obj);
@@ -683,7 +700,7 @@ public class ElementIdMapper {
 
     /**
      * Verifica si ElementIdMapper ya está configurado dinámicamente.
-     * Añadido por Nacho Palacio 2025-06-25.
+     * Added by Nacho Palacio 2025-06-25.
      */
     public static boolean isDynamicallyConfigured() {
         return isDynamicallyConfigured;
@@ -691,7 +708,7 @@ public class ElementIdMapper {
 
     /**
      * Cuenta el número total de puertas invisibles en el sistema.
-     * Añadido por Nacho Palacio 2025-07-02.
+     * Added by Nacho Palacio 2025-07-02.
      * 
      * @return Número total de puertas invisibles
      */

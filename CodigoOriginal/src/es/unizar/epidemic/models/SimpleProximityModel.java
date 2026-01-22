@@ -1,9 +1,8 @@
 package es.unizar.epidemic.models;
 
-import es.unizar.epidemic.ContactRecord;
-import es.unizar.epidemic.EpidemicConfiguration;
-import es.unizar.epidemic.HealthStatus;
-import es.unizar.epidemic.UserEpidemicExtension;
+import es.unizar.epidemic.contact.ContactRecord;
+import es.unizar.epidemic.general.HealthStatus;
+import es.unizar.epidemic.general.UserEpidemicExtension;
 import es.unizar.epidemic.statistics.EpidemicStatistics;
 import es.unizar.gui.simulation.User;
 import java.util.List;
@@ -11,17 +10,18 @@ import java.util.List;
 /**
  * Simple proximity-based transmission model
  * Transmission occurs based on distance, time, and base probability
- * Añadido por Nacho Palacio 2025-07-14
+ * 
+ * @author Nacho Palacio
  */
-public class SimpleProximityModel implements EpidemicModel {
+public class SimpleProximityModel extends AbstractEpidemicModel {
     
     private PengParameters parameters;
     private String modelName = "Simple Proximity Model";
     
     // Simple model parameters
-    private double maxTransmissionDistance = 1.5;    // meters
-    private double baseTransmissionProbability = 0.01; // 5% base probability
-    private int minContactDuration = 200;             // seconds
+    private double maxTransmissionDistance = 6.5;    // meters
+    private double baseTransmissionProbability = 0.1; // 5% base probability
+    private int minContactDuration = 300;             // seconds
     
     public SimpleProximityModel() {
         this.parameters = new PengParameters();
@@ -32,18 +32,18 @@ public class SimpleProximityModel implements EpidemicModel {
         this.maxTransmissionDistance = maxTransmissionDistance;
         this.baseTransmissionProbability = baseTransmissionProbability;
         this.minContactDuration = minContactDuration;
-
-        // DEBUG
-        System.out.println("=== SIMPLE PROXIMITY MODEL INICIALIZADO ===");
-        System.out.println("Distancia máxima por defecto: " + maxTransmissionDistance);
-        System.out.println("Probabilidad base por defecto: " + baseTransmissionProbability);
-        System.out.println("Duración mínima por defecto: " + minContactDuration);
-
-        // System.out.println("\n=== SIMPLE PROXIMITY MODEL CREADO ===");
-        // EpidemicConfiguration config = EpidemicConfiguration.getInstance();
-        // config.printCurrentConfiguration();
     }
     
+    /**
+     * Calculates the transmission probability based on proximity and contact.
+     * Takes into account distance, contact duration, health status, infectious factors,
+     * and mask usage to determine the probability of transmission between users.
+     * 
+     * @param infectious the infectious user
+     * @param susceptible the susceptible user
+     * @param contact the contact record between users
+     * @return transmission probability (0.0 to 1.0)
+     */
     @Override
     public double calculateTransmissionProbability(User infectious, User susceptible, ContactRecord contact) {
         UserEpidemicExtension infExtension = getUserEpidemicExtension(infectious);
@@ -59,7 +59,6 @@ public class SimpleProximityModel implements EpidemicModel {
                 
         HealthStatus infStatus = infExtension.getHealthStatus();
         if (infStatus != HealthStatus.INFECTIOUS_SYMPTOMATIC && 
-            infStatus != HealthStatus.INFECTIOUS_ASYMPTOMATIC &&
             infStatus != HealthStatus.SUPER_SPREADER) {
             return 0.0;
         }
@@ -68,16 +67,22 @@ public class SimpleProximityModel implements EpidemicModel {
         if (susStatus != HealthStatus.SUSCEPTIBLE) {
             return 0.0;
         }
+
+        UserEpidemicExtension extension = susceptible.getEpidemicExtension();
+        if (extension != null && extension.isImmune()) {
+            return 0.0;
+        }
         
         double pixelsPerMeter = es.unizar.gui.Configuration.getPixelsPerMeter();
         double distanceMeters = contact.getDistance() / pixelsPerMeter;
+        int duration = contact.getDuration();
 
         
         if (distanceMeters > maxTransmissionDistance) {
             return 0.0;
         }
         
-        if (contact.getDuration() < minContactDuration) {
+        if (duration < minContactDuration) {
             return 0.0;
         }
         
@@ -114,7 +119,13 @@ public class SimpleProximityModel implements EpidemicModel {
     }
     
     /**
-     * Calculates distance factor for transmission probability
+     * Calculates distance factor for transmission probability.
+     * Returns a multiplier based on distance between users, with closer
+     * proximity resulting in higher transmission risk.
+     * REVISAR Y AJUSTAR VALORES
+     * 
+     * @param distance distance between users in meters
+     * @return distance factor multiplier (0.0 to 8.0)
      */
     private double calculateDistanceFactor(double distance) {
         double distanceMeters = distance; // Already in meters
@@ -122,11 +133,11 @@ public class SimpleProximityModel implements EpidemicModel {
         double factor;
 
         if (distanceMeters <= 0.5) {
-            factor = 2.0;  // Very close contact
+            factor = 8.0;  // Very close contact (antes 2.0)
         } else if (distanceMeters <= 1.0) {
-            factor = 1.5;  // Close contact
+            factor = 4.0;  // Close contact (antes 1.5)
         } else if (distanceMeters <= 1.5) {
-            factor = 1.25;  // Moderate distance
+            factor = 2.0;  // Moderate distance (antes 1.25)
         } else if (distanceMeters <= maxTransmissionDistance) {
             factor = 1.0;  // Far distance
         } else {
@@ -137,7 +148,13 @@ public class SimpleProximityModel implements EpidemicModel {
     }
     
     /**
-     * Calculates duration factor for transmission probability
+     * Calculates duration factor for transmission probability.
+     * Returns a multiplier based on contact duration, with longer
+     * exposure resulting in higher transmission risk.
+     * REVISAR Y AJUSTAR VALORES
+     * 
+     * @param durationSeconds contact duration in seconds
+     * @return duration factor multiplier (0.0 to 2.5)
      */
     private double calculateDurationFactor(int durationSeconds) {
         double factor;
@@ -158,25 +175,32 @@ public class SimpleProximityModel implements EpidemicModel {
     }
     
     /**
-     * Gets infectious factor based on health status
+     * Gets infectious factor based on health status.
+     * Returns a multiplier representing the infectiousness level
+     * of the user based on their current health state.
+     * 
+     * @param extension the user's epidemic extension data
+     * @return infectious factor multiplier (0.0 to 1.0)
      */
     private double getInfectiousFactor(UserEpidemicExtension extension) {
         switch (extension.getHealthStatus()) {
             case INFECTIOUS_SYMPTOMATIC:
-                return 1.5;
-            case INFECTIOUS_ASYMPTOMATIC:
                 return 1.0;
             case SUPER_SPREADER:
-                return 2.0;
-            case EXPOSED:
-                return 0.1; // Antes 0.0 
+                return 1.0; 
             default:
                 return 0.0;
         }
     }
     
     /**
-     * Calculates mask protection factor
+     * Calculates mask protection factor.
+     * Returns a reduction multiplier based on whether the infectious
+     * and/or susceptible user is wearing a mask.
+     * 
+     * @param infectious the infectious user's epidemic extension
+     * @param susceptible the susceptible user's epidemic extension
+     * @return mask protection factor (0.25 to 1.0)
      */
     private double getMaskFactor(UserEpidemicExtension infectious, UserEpidemicExtension susceptible) {
         boolean infMask = infectious.isMaskWearing();
@@ -194,82 +218,44 @@ public class SimpleProximityModel implements EpidemicModel {
         return factor;
     }
     
+    /**
+     * Updates health states for all users.
+     * Simple model does not implement health state updates.
+     * 
+     * @param users list of all users in the simulation
+     * @param currentDay current simulation day
+     */
     @Override
     public void updateHealthStates(List<User> users, int currentDay) {
-        for (User user : users) {
-            UserEpidemicExtension extension = getUserEpidemicExtension(user);
-            if (extension != null) {
-                updateUserHealthState(extension, currentDay);
-            }
-        }
+        // Simple model does not implement health state updates
     }
     
     /**
-     * Updates individual user health state
+     * Gets the name of this transmission model.
+     * 
+     * @return model name identifier
      */
-    private void updateUserHealthState(UserEpidemicExtension extension, int currentHour) {
-        if (extension.getHealthStatus() != HealthStatus.SUSCEPTIBLE) {
-            extension.setHoursSinceInfection(extension.getHoursSinceInfection() + 1);
-        }
-        
-        switch (extension.getHealthStatus()) {
-            case EXPOSED:
-                handleExposedTransition(extension);
-                break;
-                
-            case INFECTIOUS_ASYMPTOMATIC:
-            case INFECTIOUS_SYMPTOMATIC:
-                handleInfectiousTransition(extension);
-                break;
-                
-            default:
-                break;
-        }
-    }
-    
-    /**
-     * Handles transition from EXPOSED state
-     */
-    private void handleExposedTransition(UserEpidemicExtension extension) {
-        if (extension.getHoursSinceInfection() >= extension.getIncubationPeriodHours()) {
-            if (Math.random() < 0.7) {
-                extension.setHealthStatus(HealthStatus.INFECTIOUS_ASYMPTOMATIC);
-            } else {
-                extension.setHealthStatus(HealthStatus.INFECTIOUS_SYMPTOMATIC);
-            }
-        }
-    }
-    
-    /**
-     * Handles transition from infectious states
-     */
-    private void handleInfectiousTransition(UserEpidemicExtension extension) {
-        int totalSickTime = extension.getIncubationPeriodHours() + extension.getInfectiousPeriodHours();
-        
-        if (extension.getHoursSinceInfection() >= totalSickTime) {
-            extension.setHealthStatus(HealthStatus.SUSCEPTIBLE);
-            extension.setHoursSinceInfection(0);
-            extension.setTransmissionProbability(0.0);
-        }
-    }
-    
-    /**
-     * Gets epidemic extension from user (placeholder)
-     */
-    private UserEpidemicExtension getUserEpidemicExtension(User user) {
-        return user.getEpidemicExtension();
-    }
-    
     @Override
     public String getModelName() {
         return modelName;
     }
     
+    /**
+     * Gets the parameters object for this model.
+     * 
+     * @return Peng model parameters (used for compatibility)
+     */
     @Override
     public PengParameters getParameters() {
         return parameters;
     }
     
+    /**
+     * Sets the parameters object for this model.
+     * Extracts base transmission probability from the parameters.
+     * 
+     * @param parameters new Peng model parameters
+     */
     @Override
     public void setParameters(PengParameters parameters) {
         this.parameters = parameters;
@@ -278,7 +264,13 @@ public class SimpleProximityModel implements EpidemicModel {
     }
     
     /**
-     * Configures simple model parameters
+     * Configures simple model parameters.
+     * Sets the maximum transmission distance, base probability,
+     * and minimum contact duration for the proximity model.
+     * 
+     * @param maxDistance maximum distance for transmission in meters
+     * @param baseProbability base transmission probability (0.0 to 1.0)
+     * @param minDuration minimum contact duration in seconds
      */
     public void configureSimpleModel(double maxDistance, double baseProbability, int minDuration) {
         this.maxTransmissionDistance = maxDistance;
@@ -287,27 +279,59 @@ public class SimpleProximityModel implements EpidemicModel {
     }
     
     // Getters
+    
+    /**
+     * Gets the maximum transmission distance.
+     * 
+     * @return maximum transmission distance in meters
+     */
     public double getMaxTransmissionDistance() {
         return maxTransmissionDistance;
     }
     
+    /**
+     * Gets the base transmission probability.
+     * 
+     * @return base transmission probability (0.0 to 1.0)
+     */
     public double getBaseTransmissionProbability() {
         return baseTransmissionProbability;
     }
     
+    /**
+     * Gets the minimum contact duration.
+     * 
+     * @return minimum contact duration in seconds
+     */
     public int getMinContactDuration() {
         return minContactDuration;
     }
     
     // Setters
+    
+    /**
+     * Sets the maximum transmission distance.
+     * 
+     * @param maxTransmissionDistance maximum transmission distance in meters
+     */
     public void setMaxTransmissionDistance(double maxTransmissionDistance) {
         this.maxTransmissionDistance = maxTransmissionDistance;
     }
     
+    /**
+     * Sets the base transmission probability.
+     * 
+     * @param baseTransmissionProbability base transmission probability (0.0 to 1.0)
+     */
     public void setBaseTransmissionProbability(double baseTransmissionProbability) {
         this.baseTransmissionProbability = baseTransmissionProbability;
     }
     
+    /**
+     * Sets the minimum contact duration.
+     * 
+     * @param minContactDuration minimum contact duration in seconds
+     */
     public void setMinContactDuration(int minContactDuration) {
         this.minContactDuration = minContactDuration;
     }

@@ -1,9 +1,7 @@
 package es.unizar.access;
 
 import java.io.File;
-import java.util.Random;
 
-import es.unizar.gui.Configuration;
 import es.unizar.util.ElementIdMapper;
 import es.unizar.util.Literals;
 
@@ -32,7 +30,7 @@ public class DataAccessGraphFile extends DataAccess {
 		return Integer.valueOf(getPropertyValue(Literals.NUMBER_ROOM)).intValue();
 	}
 
-	// Modificado por Nacho Palacio 2025-04-22.
+	// Modified by Nacho Palacio 2025-04-22.
 	public long getRoom(int posRoom) {
 		int rawId = Integer.valueOf(getPropertyValue(Literals.ROOM + posRoom)).intValue();
 		return ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_ROOM);
@@ -42,7 +40,7 @@ public class DataAccessGraphFile extends DataAccess {
 		return Integer.valueOf(getPropertyValue(Literals.NUMBER_ITEMS_BY_ROOM + posRoom)).intValue();
 	}
 
-	// Modificado por Nacho Palacio 2025-04-22.
+	// Modified by Nacho Palacio 2025-04-22.
 	public long getItemOfRoom(int posItem, int posRoom) {
 		String itemId = getPropertyValue(Literals.ITEM_OF_ROOM + posItem + "_" + posRoom);
 		if (itemId == null || itemId.isEmpty()) {
@@ -57,21 +55,23 @@ public class DataAccessGraphFile extends DataAccess {
 		return Integer.valueOf(getPropertyValue(Literals.NUMBER_DOORS_BY_ROOM + posRoom)).intValue();
 	}
 
-	// Modificado por Nacho Palacio 2025-04-22.
+	// Modified by Nacho Palacio 2025-04-22.
 	public long getDoorOfRoom(int door, int room) {
 		// String doorId = getPropertyValue(Literals.DOOR + door + "_" + room);
-		String doorId = getPropertyValue(Literals.DOOR_OF_ROOM + door + "_" + room); // Modificado por Nacho Palacio 2025-05-02
+		String doorId = getPropertyValue(Literals.DOOR_OF_ROOM + door + "_" + room); // Modified by Nacho Palacio 2025-05-02
+		// System.out.println("GraphFile: Obteniendo Door ID externo de " + Literals.DOOR_OF_ROOM + door + "_" + room + " = " + doorId);
 		if (doorId == null || doorId.isEmpty()) {
 			return -1;
 		}
 		
 		long rawId = Long.parseLong(doorId);
+		// System.out.println("GraphFile: Door ID externo obtenido: " + rawId);
 		long internalId = ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_DOOR);
 		// System.out.println("GraphFile: Convirtiendo Door ID externo " + rawId + " a interno " + internalId);
 		return internalId;
 	}
 
-	// Modificado por Nacho Palacio 2025-04-22.
+	// Modified by Nacho Palacio 2025-04-22.
 	public long getDoorOfRoom(String door) {
 		String doorId = getPropertyValue(door);
 		if (doorId == null || doorId.isEmpty()) {
@@ -94,7 +94,7 @@ public class DataAccessGraphFile extends DataAccess {
 		return Integer.valueOf(getPropertyValue(Literals.NUMBER_STAIRS_BY_MAP)).intValue();
 	}
 
-	// Modificado por Nacho Palacio 2025-04-22.
+	// Modified by Nacho Palacio 2025-04-22.
 	public long getStairsOfRoom(int pos) {
 		String stairsId = getPropertyValue(Literals.STAIRS_OF_ROOM + pos);
 		if (stairsId == null || stairsId.isEmpty()) {
@@ -105,7 +105,7 @@ public class DataAccessGraphFile extends DataAccess {
 		return ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_STAIRS);
 	}
 
-	// Modificado por Nacho Palacio 2025-04-22.
+	// Modified by Nacho Palacio 2025-04-22.
 	public long getStairsOfRoom(String stairs) {
 		String stairsId = getPropertyValue(stairs);
 		if (stairsId == null || stairsId.isEmpty()) {
@@ -140,32 +140,43 @@ public class DataAccessGraphFile extends DataAccess {
 		int totalRoom = this.getNumberOfRoom();
 		int posRoom = randInt(1, totalRoom);
 		long door = -1;
+		// System.out.println("Selected room: " + posRoom);
 		if (this.getRoomNumberSubrooms(posRoom) > 0) {
 			int posSubroom = randInt(1, this.getRoomNumberSubrooms(posRoom));
 			//posRoom = this.getSubroom(posSubroom, posRoom);
 			int totalDoor = this.getNumberOfDoorsBySubroom(posSubroom, posRoom) + this.getNumberOfInvisibleDoorsBySubroom(posSubroom, posRoom);
 			int posDoor = randInt(1, totalDoor);
+			// System.out.println("Selected subRoom: " + posSubroom);
+			// System.out.println("Selected door: " + posDoor + " (total doors: " + totalDoor + ")");
 			if (posDoor > this.getNumberOfDoorsBySubroom(posSubroom, posRoom)) {
+				// System.out.println("It's an invisible door");
 				door = this.getInvisibleDoorOfSubroom(posDoor - this.getNumberOfDoorsBySubroom(posSubroom, posRoom), posSubroom, posRoom);
 			}
 			else {
+				// System.out.println("It's a normal door");
 				door = this.getDoorOfSubroom(posDoor, posSubroom, posRoom);
 			}
 		}
 		else {
+			// System.out.println("Selected room: " + posRoom);
 			int totalDoor = this.getNumberOfDoorsByRoom(posRoom);
 			int posDoor = randInt(1, totalDoor);
 			door = this.getDoorOfRoom(posDoor, posRoom);
+
+			// System.out.println("Selected door: " + posDoor + " (total doors: " + totalDoor + ")");
 		}
 		
+		// System.out.println("Selected door ID: " + door);
 		return door;
 	}
 
 	public static int randInt(int min, int max) {
 		// nextInt is normally exclusive of the top value,
 		// so add 1 to make it inclusive
-		Random random = new Random(Configuration.simulation.getSeed());
-		int randomNum = random.nextInt((max - min) + 1) + min;
+		// Random random = new Random(Configuration.simulation.getSeed());
+		// int randomNum = random.nextInt((max - min) + 1) + min;
+
+		int randomNum = (int) (Math.random() * ((max - min) + 1)) + min; // Modified by Nacho Palacio 2025-10-30
 		return randomNum;
 	}
 	
@@ -198,7 +209,7 @@ public class DataAccessGraphFile extends DataAccess {
 		return Integer.valueOf(getPropertyValue(Literals.NUMBER_DOORS_BY_SUBROOM + posSubroom + "_" + posRoom)).intValue();
 	}
 
-	// Modificado por Nacho Palacio 2025-04-22.
+	// Modified by Nacho Palacio 2025-04-22.
 	public long getDoorOfSubroom(int posDoor, int posSubroom, int posRoom) {
 		String doorId = getPropertyValue(Literals.DOOR_OF_SUBROOM + posDoor + "_" + posSubroom + "_" + posRoom);
 		if (doorId == null || doorId.isEmpty()) {
@@ -209,7 +220,7 @@ public class DataAccessGraphFile extends DataAccess {
 		return ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_DOOR);
 	}
 
-	// Modificado por Nacho Palacio 2025-04-22.
+	// Modified by Nacho Palacio 2025-04-22.
 	public long getDoorOfSubroom(String doorOfSubroom) {
 		String doorId = getPropertyValue(doorOfSubroom);
 		if (doorId == null || doorId.isEmpty()) {
@@ -225,7 +236,7 @@ public class DataAccessGraphFile extends DataAccess {
 		return Integer.valueOf(getPropertyValue(Literals.NUMBER_INVISIBLE_DOORS_BY_SUBROOM + posSubroom + "_" + posRoom)).intValue();
 	}
 
-	// Modificado por Nacho Palacio 2025-04-22.
+	// Modified by Nacho Palacio 2025-04-22.
 	public long getInvisibleDoorOfSubroom(int posInvisibleDoor, int posSubroom, int posRoom) {
 		String doorId = getPropertyValue(Literals.INVISIBLE_DOOR_OF_SUBROOM + posInvisibleDoor + "_" + posSubroom + "_" + posRoom);
 		if (doorId == null || doorId.isEmpty()) {
@@ -236,7 +247,7 @@ public class DataAccessGraphFile extends DataAccess {
 		return ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_DOOR);
 	}
 
-	// Modificado por Nacho Palacio 2025-04-22.
+	// Modified by Nacho Palacio 2025-04-22.
 	public long getInvisibleDoorOfSubroom(String invisibleDoorOfSubroom) {
 		String doorId = getPropertyValue(invisibleDoorOfSubroom);
 		if (doorId == null || doorId.isEmpty()) {
@@ -268,7 +279,7 @@ public class DataAccessGraphFile extends DataAccess {
 		setPropertyValue(Literals.NUMBER_ROOM, Integer.toString(numberOfRoom));
 	}
 
-	/* Añadido por Nacho Palacio 2025-04-17. */
+	/* Added by Nacho Palacio 2025-04-17. */
 	public void setRoom(int posRoom, long roomLabel) {
 		setPropertyValue(Literals.ROOM + posRoom, Long.toString(roomLabel));
 	}
@@ -277,7 +288,7 @@ public class DataAccessGraphFile extends DataAccess {
 		setPropertyValue(Literals.NUMBER_ITEMS_BY_ROOM + posRoom, Integer.toString(numberOfItems));
 	}
 
-	// Modificado por Nacho Palacio 2025-04-22.
+	// Modified by Nacho Palacio 2025-04-22.
 	public void setItemOfRoom(int posItem, int posRoom, String itemLabel) {
 		try {
 			long id = Long.parseLong(itemLabel);
@@ -296,7 +307,7 @@ public class DataAccessGraphFile extends DataAccess {
 		setPropertyValue(Literals.NUMBER_DOORS_BY_ROOM + posRoom, Integer.toString(numberOfDoors));
 	}
 
-	// Modificado por Nacho Palacio 2025-04-22.
+	// Modified by Nacho Palacio 2025-04-22.
 	public void setDoorOfRoom(int door, int room, String doorId) {
 		try {
 			long id = Long.parseLong(doorId);
@@ -323,7 +334,7 @@ public class DataAccessGraphFile extends DataAccess {
 		setPropertyValue(Literals.NUMBER_STAIRS_BY_MAP, Integer.toString(numberOfStairs));
 	}
 
-	// Modificado por Nacho Palacio 2025-04-22.
+	// Modified by Nacho Palacio 2025-04-22.
 	public void setStairsOfRoom(int pos, String stairsLabel) {
 		try {
 			long id = Long.parseLong(stairsLabel);
@@ -388,7 +399,7 @@ public class DataAccessGraphFile extends DataAccess {
 		setPropertyValue(Literals.NUMBER_DOORS_BY_SUBROOM + posSubroom + "_" + posRoom, Integer.toString(numberDoorsSubroom));
 	}
 
-	// Modificado por Nacho Palacio 2025-04-22.
+	// Modified by Nacho Palacio 2025-04-22.
 	public void setDoorOfSubroom(int posDoor, int posSubroom, int posRoom, String doorLabel) {
 		try {
 			long id = Long.parseLong(doorLabel);
@@ -408,7 +419,7 @@ public class DataAccessGraphFile extends DataAccess {
 		setPropertyValue(Literals.NUMBER_INVISIBLE_DOORS_BY_SUBROOM + posSubroom + "_" + posRoom, Integer.toString(numberInvisibleDoorsSubroom));
 	}
 
-	// Modificado por Nacho Palacio 2025-04-22.
+	// Modified by Nacho Palacio 2025-04-22.
 	public void setInvisibleDoorOfSubroom(int posDoor, int posSubroom, int posRoom, String invisibleDoorLabel) {
 		try {
 			long id = Long.parseLong(invisibleDoorLabel);

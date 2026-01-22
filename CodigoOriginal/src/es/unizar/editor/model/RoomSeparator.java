@@ -12,7 +12,7 @@ public class RoomSeparator extends Drawable {
 	private Corner c1, c2;
 
 	public RoomSeparator(Room room, long vertex_label, Corner c1, Corner c2) {
-		/* Añadido por Nacho Palacio 2025-04-17. */
+		/* Added by Nacho Palacio 2025-04-17. */
     	super(room, ElementIdMapper.convertToRangeId(vertex_label, ElementIdMapper.CATEGORY_SEPARATOR), c1.getVertex_xy());
 		this.setUrlIcon(Literals.IMAGES_PATH + "dashedLine.png");
 		

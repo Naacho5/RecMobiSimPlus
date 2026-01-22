@@ -25,7 +25,7 @@ public class RandomPath extends Path {
 	@SuppressWarnings("unchecked")
 	@Override
 	public String generatePath(long startVertex) {
-		// Añadido por Nacho Palacio 2025-04-23.
+		// Added by Nacho Palacio 2025-04-23.
 		startVertex = ensureInternalId(startVertex, ElementIdMapper.CATEGORY_ITEM);
 
 		String finalPath = "";
@@ -52,15 +52,15 @@ public class RandomPath extends Path {
 		LinkedList<Long> itemsByRoom = (LinkedList<Long>) itemsDoorVisited_cloned.get(room);
 
 		itemsByRoom = convertAndValidateItems(itemsByRoom, "itemsByRoom", numberOfItemsInMuseum);
-
-		// Añadido por Nacho Palacio 2025-04-22.
+		
+		// Added by Nacho Palacio 2025-04-22.
 		// Verify null value
         if (itemsByRoom == null) {
             itemsByRoom = new LinkedList<>();
             itemsDoorVisited_cloned.put(room, itemsByRoom);
         }
 
-		// Modificado por Nacho Palacio 2025-06-28
+		// Modified by Nacho Palacio 2025-06-28
 		if (ElementIdMapper.isInCorrectRange(startVertex, ElementIdMapper.CATEGORY_ITEM)) {
 			itemsByRoom.remove(startVertex);
 		}
@@ -131,9 +131,8 @@ public class RandomPath extends Path {
 				break;
 			}
 		}
-	
 		finalPath = eraseRepeatedObjects(finalPath);
-
+		
 		if (finalPath.length() >= 2) {
 			// To remove the "," at the end of the generated path.
 			return finalPath.substring(0, finalPath.length() - 2);
@@ -145,8 +144,10 @@ public class RandomPath extends Path {
 
 
 	/**
-	 * Modificado por Nacho Palacio 2025-04-23.
-	 * Inicializa el mapa de ítems por habitación usando IDs externos.
+	 * Initialize items by room map.
+	 * Modified by Nacho Palacio 2025-04-23.
+	 * 
+	 * @param roomItems map of room IDs to their corresponding item IDs.
 	 */
 	public void initializeItemsByRoom(Map<Integer, List<Long>> roomItems) {	
 		// Crear nuevo mapa si es nulo
@@ -154,12 +155,12 @@ public class RandomPath extends Path {
 			itemsDoorVisited = new HashMap<>();
 		}
 
-		// Añadido por Nacho Palacio 2025-04-26.
+		// Added by Nacho Palacio 2025-04-26.
 		if (doorsByRoomMap == null) {
 			doorsByRoomMap = new HashMap<>();
 		}
 		
-		// Modificado por Nacho Palacio 2025-06-08
+		// Modified by Nacho Palacio 2025-06-08
 		for (Map.Entry<Integer, List<Long>> entry : roomItems.entrySet()) {
 			int roomId = entry.getKey();
 			List<Long> items = entry.getValue();
