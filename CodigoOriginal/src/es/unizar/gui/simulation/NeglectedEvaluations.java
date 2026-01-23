@@ -216,7 +216,7 @@ public class NeglectedEvaluations extends javax.swing.JDialog{
 			try {
 				// Read file with simulations' parameters (fileChooser)
 				DataAccessSimulations simulationsAccess = new DataAccessSimulations(this.simulations);
-				simulationsAccess.printAllProperties(); // Añadido por Nacho Palacio 2025-04-13.
+				simulationsAccess.printAllProperties(); // Added by Nacho Palacio 2025-04-13.
 				
 				// For every simulation
 				int numSimulations = Integer.valueOf(simulationsAccess.getPropertyValue(Literals.NUMBER_SIMULATIONS)).intValue();
@@ -344,7 +344,7 @@ public class NeglectedEvaluations extends javax.swing.JDialog{
 		Configuration config =  new Configuration(timeAvailableUser, delayObservingPainting, timeForIteration, screenRefreshTime, timeForThePaths, userVelocity, kmToPixel, ttl, timeOnStairs,
 					minimumTimeToUpdateRecommendation, communicationRange, maxKnowledgeBaseSize, communicationBandwidth, latencyOfTransmission, timeToChangeMood, useFixedSeed, seed,
 					numberOfSpecialUser, numberOfNonSpecialUser, nonSpecialUserPaths, pathStrategy, recommendationAlgorithm, thresholdRecommendation, thresholdSimilarity, howMany, networkType,
-					propagationStrategy, probabilityUserDisobedience, numberVoteReceived, generateUserPaths);
+					propagationStrategy, probabilityUserDisobedience, numberVoteReceived, generateUserPaths, timeAvailableUser);
 	}
 	
 	/**

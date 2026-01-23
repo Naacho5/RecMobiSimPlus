@@ -36,7 +36,7 @@ public class Distance {
     		return euclideanDistance(x1, y1, x2, y2);
     	}
     	else {
-    		//System.out.println("¡¡¡¡¡¡¡¡¡¡¡ COLLIDES !!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    		//System.out.println("Â¡Â¡Â¡Â¡Â¡Â¡Â¡Â¡Â¡Â¡Â¡ COLLIDES !!!!!!!!!!!!!!!!!!!!!!!!!!!");
     		return distanceInsidePolygon(x1, y1, x2, y2, MainMuseumSimulator.floor.rooms.get(room1));
     	}
     	*/

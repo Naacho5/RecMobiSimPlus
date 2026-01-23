@@ -77,6 +77,7 @@ public class UserRunnable implements Runnable { // , Cloneable
 		}
 		
 		while (running) {
+			// System.out.println(" UserRunnable.run(): Beginning of main loop iteration " + iteration + ".");
 			
 			// Wait if simulation is paused
 			// https://stackoverflow.com/questions/16758346/how-pause-and-then-resume-a-thread
@@ -114,10 +115,15 @@ public class UserRunnable implements Runnable { // , Cloneable
 				}
 
 				// It initializes the initial position of users.
+				// System.out.println("UserRunnable.run(): Antes de initializeUsers");
 				Configuration.simulation.initializeUsers();
+
+				// System.out.println(" Adding users to floor graph...");
 
 				// UserRunnable "user" list is null; Same for MainMuseumSimulator
 				MainSimulator.floor.addUsersToFloorGraph(Configuration.simulation.userList);
+
+				// System.out.println(" UserRunnable.run(): After adding users to floor graph.");
 				
 				if (MainSimulator.gui.isSelected()) {
 					repaint();
@@ -126,12 +132,14 @@ public class UserRunnable implements Runnable { // , Cloneable
 				if (Literals.COMPILE_DISTANCES_STATS) {
 					Configuration.simulation.updateUserDistances(0);
 				}
+				// System.out.println(" UserRunnable.run(): After repainting for the first time.");
 
 				firstTime = false;
 				
 				// Print time when finished initializing users and dbs
 				Configuration.simulation.currentTime();
 			} else {
+				// System.out.println(" UserRunnable.run(): Beginning of iteration " + iteration);
 				
 				long initialTime = 0, finalTime = 0;
 				
@@ -144,11 +152,19 @@ public class UserRunnable implements Runnable { // , Cloneable
 				
 				for (int userPosition = 0; userPosition < Configuration.simulation.userList.size(); userPosition++) {
 					User currentUser = Configuration.simulation.userList.get(userPosition);
+					// System.out.println(" UserRunnable.run(): Checking if user " + currentUser.userID + " has to change his/her mood.");
+					// System.out.println(" UserRunnable.run(): Current time of user " + currentUser.userID + " is " + Configuration.simulation.currentTimeOfUsers[currentUser.userID - 1] + ", time to change mood is " + Configuration.simulation.getTimeToChangeMood() + ".");
 					if (Configuration.simulation.currentTimeOfUsers[currentUser.userID - 1] >= Configuration.simulation.getTimeToChangeMood()) {
 						Configuration.simulation.changeMoodOfUsers(currentUser);
 						MainSimulator.printConsole("User " + currentUser.userID + " has changed his/her mood.", Level.INFO);
+						// System.out.println(" UserRunnable.run(): User " + currentUser.userID + " has changed his/her mood.");
+					}
+					else {
+						// System.out.println(" UserRunnable.run(): User " + currentUser.userID + " has NOT changed his/her mood.");
 					}
 				}
+
+				// System.out.println(" UserRunnable.run(): After changing users' mood.");
 				
 				finalTime = System.currentTimeMillis();
 				
@@ -159,6 +175,7 @@ public class UserRunnable implements Runnable { // , Cloneable
 				initialTime = System.currentTimeMillis();
 				Configuration.simulation.updateUsers(stateOfUsers,timeUsersInRooms);
 				finalTime = System.currentTimeMillis();
+				// System.out.println(" UserRunnable.run(): After updating users' position.");
 				
 				log.log(Level.INFO, "- Time to update users' position: " + (finalTime-initialTime));
 				
@@ -172,6 +189,7 @@ public class UserRunnable implements Runnable { // , Cloneable
 				if (Literals.COMPILE_DISTANCES_STATS) {
 					//System.out.println("DISTANCE STATS " + timeSpent + ": ");
 					Configuration.simulation.updateUserDistances(timeSpent);
+					// System.out.println(" UserRunnable.run(): After updating user distances for time " + timeSpent + ".");
 					//System.out.println();
 				}
 				
@@ -179,7 +197,7 @@ public class UserRunnable implements Runnable { // , Cloneable
 				if (Configuration.simulation.getTimeForIterationInSecond() >= 10 || (Configuration.simulation.getTimeForIterationInSecond() < 10 && timeSpent % 5 == 0)) {
 					MainSimulator.printConsole( "Time spent: " + timeSpent + "/" + totalTime, Level.WARNING);
 					// Print in console too if wanted
-					//System.out.println("Time spent: " + timeSpent + "/" + totalTime);
+					// System.out.println("Time spent: " + timeSpent + "/" + totalTime);
 				}
 				finalTime = System.currentTimeMillis();
 				log.log(Level.INFO, "PRINT CURRENT TIME: " + (finalTime-initialTime));
@@ -189,23 +207,32 @@ public class UserRunnable implements Runnable { // , Cloneable
 				initialTime = System.currentTimeMillis();
 				if (MainSimulator.gui.isSelected()) {
 					repaint();
+					// System.out.println(" UserRunnable.run(): After repainting users' position.");
 				}
 				finalTime = System.currentTimeMillis();
 				log.log(Level.INFO, "- Time to repaint: " + (finalTime-initialTime));
 
+				// System.out.println(" UserRunnable.run(): Before exchanging information between users.");
+
 				if (running) {
+					// System.out.println(" UserRunnable.run(): Before exchanging information between users.");
 					// Exchange of information between users, taking into account the selected network type and propagation strategy.
 					if (Configuration.simulation.getNetworkType().equalsIgnoreCase("Peer To Peer (P2P)")) {
+						// System.out.println(" UserRunnable.run(): Exchanging information between users.");
 						String propagationStrategy = Configuration.simulation.getPropagationStrategy();
 						if (propagationStrategy.equalsIgnoreCase("Opportunistic")) {
+							// System.out.println(" UserRunnable.run(): Using Opportunistic strategy.");
 							Configuration.simulation.exchangeDataP2POpportunistic();
 						} else if (propagationStrategy.equalsIgnoreCase("Flooding")) {
+							// System.out.println(" UserRunnable.run(): Using Flooding strategy.");
 							Configuration.simulation.exchangeDataP2PFlooding();
 						}
 					}
 	
 					// If the user receives new information, then the recommended path is updated. Without the neighbors, only if it is necessary to update for the RS user.
+					// System.out.println(" UserRunnable.run(): Before updating path recommender.");
 					Configuration.simulation.updatePathRecommender();
+					// System.out.println(" UserRunnable.run(): After updating path recommender.");
 				}
 				
 				log.log(Level.INFO, Literals.ENDING_DEBUG_MESSAGE);
@@ -213,13 +240,17 @@ public class UserRunnable implements Runnable { // , Cloneable
 				iteration++;
 			}
 
+			// System.out.println(" UserRunnable.run(): Before sleeping to refresh the screen.");
+
 			// Refresh the screen.
 			double millis = Configuration.simulation.getScreenRefreshTimeInSecond() * 1000;
 			sleep(millis);
 			
 			MainSimulator.userInfo.reloadTables();
+			// System.out.println(" UserRunnable.run(): After reloading tables.");
 		}
-		
+		// System.out.println(" UserRunnable.run(): Exited the main loop.");
+
 		MainSimulator.printConsole("Finished simulation\n", Level.WARNING);
 	}
 

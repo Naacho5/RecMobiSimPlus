@@ -48,6 +48,11 @@ public class GraphForSpecialUser {
 	public SimpleWeightedGraph<Long, DefaultWeightedEdge> graphRecommender;
 	public List<List<String>> paths;
 
+	// Added by Nacho Palacio 2025-12-08
+	private SimpleWeightedGraph<Long, DefaultWeightedEdge> cachedGraph = null;
+    private boolean graphCacheValid = false;
+
+
 	public GraphForSpecialUser() {
 		this.random = new Random();
 		// this.random.setSeed(100);
@@ -67,7 +72,12 @@ public class GraphForSpecialUser {
 	 * @return The built graph.
 	 */
 	public SimpleWeightedGraph<Long, DefaultWeightedEdge> buildGraphForSpecialUser() {
-		
+		//System.out.println("Se llama a buildGraphForSpecialUser");
+		// Added by Nacho Palacio 2025-12-08
+		if (graphCacheValid && cachedGraph != null) {
+            return cachedGraph;
+        }
+
 		double weight = 0;
 		String location1 = null;
 		String location2 = null;
@@ -110,14 +120,14 @@ public class GraphForSpecialUser {
 					// New verticesRelated every iteration
 					verticesRelated = new LinkedList<>();
 					
-					//System.out.println("Items");
+					// System.out.println("Items");
 					// Subroom Items
 					int numberOfItemBySubroom = dataAccesGraphFile.getNumberOfItemsBySubroom(posSubroom, posRoom);
 					for (int posItemSubroom = 1; posItemSubroom <= numberOfItemBySubroom; posItemSubroom++) {
 						long itemID = dataAccesGraphFile.getItemOfSubroom(posItemSubroom, posSubroom, posRoom);
 						graph.addVertex(itemID);
 						verticesRelated.add(itemID);
-						//System.out.println(" - Added item: " + itemID);
+						// System.out.println(" - Added item: " + itemID);
 					}
 					
 					//System.out.println("Doors");
@@ -127,7 +137,7 @@ public class GraphForSpecialUser {
 						long doorID = dataAccesGraphFile.getDoorOfSubroom(posDoorSubroom, posSubroom, posRoom);
 						graph.addVertex(doorID);
 						verticesRelated.add(doorID);
-						//System.out.println(" - Added door: " + doorID);
+						// System.out.println(" - Added door: " + doorID);
 					}
 					
 					//System.out.println("Invisible doors");
@@ -137,14 +147,23 @@ public class GraphForSpecialUser {
 						long invisibleDoorID = dataAccesGraphFile.getInvisibleDoorOfSubroom(posInvisibleDoorSubroom, posSubroom, posRoom);
 						graph.addVertex(invisibleDoorID);
 						verticesRelated.add(invisibleDoorID);
-						//System.out.println(" - Added invisibleDoor: " + invisibleDoorID);
+						// System.out.println(" - Added invisibleDoor: " + invisibleDoorID);
 					}
 					
-					//System.out.println("ADD EDGES");
+					// System.out.println("ADD EDGES");
 					// Add edges
 					addEdges(graph, verticesRelated);
 					
 				}
+			}
+
+			// System.out.println(" Vértices en el grafo:");
+			for (Long v : graph.vertexSet()) {
+				// System.out.println("  - " + v);
+			}
+			// System.out.println(" Aristas en el grafo:");
+			for (DefaultWeightedEdge e : graph.edgeSet()) {
+				// System.out.println("  - " + graph.getEdgeSource(e) + " <-> " + graph.getEdgeTarget(e) + " (peso: " + graph.getEdgeWeight(e) + ")");
 			}
 		}
 		
@@ -160,7 +179,7 @@ public class GraphForSpecialUser {
 
 			location1 = MainSimulator.floor.diccionaryItemLocation.get(d1);
 
-			// Añadido por Nacho Palacio 2025-06-10
+			// Added by Nacho Palacio 2025-06-10
 			if (location1 == null) {		
 				if (ElementIdMapper.isInCorrectRange(d1, ElementIdMapper.CATEGORY_DOOR)) {
 					long d1External = ElementIdMapper.getBaseId(d1);
@@ -174,7 +193,7 @@ public class GraphForSpecialUser {
 
 			location2 = MainSimulator.floor.diccionaryItemLocation.get(d2);
 
-			// Añadido por Nacho Palacio 2025-06-10
+			// Added by Nacho Palacio 2025-06-10
 			if (location2 == null) {
 				if (ElementIdMapper.isInCorrectRange(d2, ElementIdMapper.CATEGORY_DOOR)) {
 					long d2External = ElementIdMapper.getBaseId(d2);
@@ -203,7 +222,7 @@ public class GraphForSpecialUser {
 
 			location1 = MainSimulator.floor.diccionaryItemLocation.get(invD1);
 
-			// Añadido por Nacho Palacio 2025-06-10
+			// Added by Nacho Palacio 2025-06-10
 			if (location1 == null) {		
 				if (ElementIdMapper.isInCorrectRange(invD1, ElementIdMapper.CATEGORY_DOOR)) {
 					long invD1External = ElementIdMapper.getBaseId(invD1);
@@ -217,7 +236,7 @@ public class GraphForSpecialUser {
 
 			location2 = MainSimulator.floor.diccionaryItemLocation.get(invD2);
 
-			// Añadido por Nacho Palacio 2025-06-10
+			// Added by Nacho Palacio 2025-06-10
 			if (location2 == null) {		
 				if (ElementIdMapper.isInCorrectRange(invD2, ElementIdMapper.CATEGORY_DOOR)) {
 					long invD2External = ElementIdMapper.getBaseId(invD2);
@@ -233,6 +252,31 @@ public class GraphForSpecialUser {
 					Double.valueOf(location2.split(", ")[0]).doubleValue(), Double.valueOf(location2.split(", ")[1]).doubleValue());
 			graph.setEdgeWeight(graph.addEdge(invD1, invD2), weight);
 		}
+
+		System.out.println("===== Puertas e ítems por habitación =====");
+		for (int roomId = 1; roomId <= dataAccesGraphFile.getNumberOfRoom(); roomId++) {
+			System.out.print("Habitación " + roomId + " - Ítems: ");
+			int numItems = dataAccesGraphFile.getNumberOfItemsByRoom(roomId);
+			for (int i = 1; i <= numItems; i++) {
+				long itemId = dataAccesGraphFile.getItemOfRoom(i, roomId);
+				long externalItemId = ElementIdMapper.getBaseId(itemId);
+				System.out.print(itemId + ":" + externalItemId + " ");
+			}
+			System.out.print(" | Puertas: ");
+			int numDoors = dataAccesGraphFile.getNumberOfDoorsByRoom(roomId);
+			for (int i = 1; i <= numDoors; i++) {
+				long doorId = dataAccesGraphFile.getDoorOfRoom(i, roomId);
+				long externalDoorId = ElementIdMapper.getBaseId(doorId);
+				System.out.print(doorId + ":" + externalDoorId + " ");
+			}
+			System.out.println();
+		}
+		System.out.println("==========================================");
+
+		// Added by Nacho Palacio 2025-12-08
+		this.cachedGraph = graph;
+        this.graphCacheValid = true;
+
 		return graph;
 	}
 
@@ -278,7 +322,7 @@ public class GraphForSpecialUser {
 				location1 = MainSimulator.floor.diccionaryItemLocation.get(v1);
 				location2 = MainSimulator.floor.diccionaryItemLocation.get(v2);
 
-				// Añadido por Nacho Palacio 2025-06-09
+				// Added by Nacho Palacio 2025-06-09
 				if (location1 == null) {
 					if (ElementIdMapper.isInCorrectRange(v1, ElementIdMapper.CATEGORY_ITEM)) {
 						long v1External = ElementIdMapper.getBaseId(v1);
@@ -343,7 +387,7 @@ public class GraphForSpecialUser {
 			String line = null;
 			while ((line = br.readLine()) != null) {
 
-				// Añadido por Nacho Palacio 2025-04-24
+				// Added by Nacho Palacio 2025-04-24
 				if (line.trim().isEmpty()) {
 					// Crear una ruta simple por defecto para líneas vacías
 					List<String> defaultPath = new ArrayList<>();
@@ -456,7 +500,7 @@ public class GraphForSpecialUser {
 		return currentRoom;
 	}
 
-	// Añadido por Nacho Palacio 2025-04-24
+	// Added by Nacho Palacio 2025-04-24
 	private String convertEdgeIdsToInternal(String edge) {
 		String[] vertices = edge.replace("(", "").replace(")", "").split(" : ");
 		if (vertices.length == 2) {
@@ -481,4 +525,22 @@ public class GraphForSpecialUser {
 		}
 		return edge;
 	}
+
+	/**
+     * Invalidates the cached graph.
+     */
+    public void invalidateGraphCache() {
+        this.cachedGraph = null;
+        this.graphCacheValid = false;
+    }
+
+    /**
+     * Gets the cached graph without rebuilding.
+     */
+    public SimpleWeightedGraph<Long, DefaultWeightedEdge> getCachedGraph() {
+        if (cachedGraph == null) {
+            return buildGraphForSpecialUser();
+        }
+        return cachedGraph;
+    }
 }

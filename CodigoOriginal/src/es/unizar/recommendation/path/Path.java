@@ -44,7 +44,7 @@ public abstract class Path {
 	public DataAccessRoomFile accessRoomFile;
 	public Random random;
 
-	public Map<Integer, LinkedList<Long>> doorsByRoomMap; // Añadido por Nacho Palacio 2025-04-25
+	public Map<Integer, LinkedList<Long>> doorsByRoomMap; // Added by Nacho Palacio 2025-04-25
 	
 	public int numberOfRooms;
 	public int numberOfRoomsAndSubrooms;
@@ -53,7 +53,7 @@ public abstract class Path {
 	public int numberOfInvisibleDoors;
 	public int numberOfStairs;
 
-	private Map<Long, Integer> itemToRoomMap; // Añadido por Nacho Palacio 2025-04-23
+	private Map<Long, Integer> itemToRoomMap; // Added by Nacho Palacio 2025-04-23
 	
 	// =========== Logger ================================:
 	public static final Logger log = Logger.getLogger(Literals.DEBUG_MESSAGES);
@@ -65,7 +65,7 @@ public abstract class Path {
 		this.accessGraphFile = new DataAccessGraphFile(new File(Literals.GRAPH_FLOOR_COMBINED));
 		this.accessItemFile = new DataAccessItemFile(new File(Literals.ITEM_FLOOR_COMBINED));
 		this.accessRoomFile = new DataAccessRoomFile(new File(Literals.ROOM_FLOOR_COMBINED));
-		this.doorsByRoomMap = new HashMap<>(); // Añadido por Nacho Palacio 2025-04-25
+		this.doorsByRoomMap = new HashMap<>(); // Added by Nacho Palacio 2025-04-25
 		random = new Random(Configuration.simulation.getSeed());
 		//random.setSeed(100);
 
@@ -87,7 +87,7 @@ public abstract class Path {
 		
 		getNumberRoomsItemsDoorsStairs();
 
-		initializeItemToRoomMap(); // Añadido por Nacho Palacio 2025-04-23
+		initializeItemToRoomMap(); // Added by Nacho Palacio 2025-04-23
 	}
 
 	private void getNumberRoomsItemsDoorsStairs() {
@@ -122,8 +122,9 @@ public abstract class Path {
 
 	/**
 	 * Load a map that contains the connected doors.
-	 * Modificado por Nacho Palacio 2025-05-31
-	 * @return
+	 * Added by Nacho Palacio 2025-05-31
+	 * 
+	 * @return The map of connected doors.
 	 */
 	public Map<Long, Long> mapDoorConnected() {
 		Map<Long, Long> dictionary = new HashMap<>();
@@ -159,7 +160,7 @@ public abstract class Path {
 	/**
 	 * Load a map that contains the items by room. Initially, it is assumed that not items have been visited.
 	 * 
-	 * @return
+	 * @return The map of items by room.
 	 */
 	public Map<Integer, LinkedList<Long>> mapItemRoomVisited() {
 		Map<Integer, LinkedList<Long>> itemsDoor = new HashMap<>();
@@ -242,7 +243,7 @@ public abstract class Path {
 	 * @return A pair of vertices.
 	 */
 	public String getCurrentVertex(long startVertex, long endVertex) {
-		// Modificado por Nacho Palacio 2025-05-31
+		// Modified by Nacho Palacio 2025-05-31
 		if (!isValidConnection(startVertex, endVertex)) {
         	return "";
 		}
@@ -263,7 +264,7 @@ public abstract class Path {
 			String locationStartVertex = diccionaryItemLocation.get(startVertex);
 			String locationEndVertex = diccionaryItemLocation.get(endVertex);
 
-			// Añadido por Nacho Palacio 2025-04-23			
+			// Added by Nacho Palacio 2025-04-23			
 			if (locationStartVertex == null && ElementIdMapper.isInCorrectRange(startVertex, ElementIdMapper.CATEGORY_DOOR)) {
 				long externalId = ElementIdMapper.getBaseId(startVertex);
 				locationStartVertex = diccionaryItemLocation.get(externalId);
@@ -271,7 +272,7 @@ public abstract class Path {
 					diccionaryItemLocation.put(startVertex, locationStartVertex);
 				}
 			}
-			// Añadido por Nacho Palacio 2025-04-23
+			// Added by Nacho Palacio 2025-04-23
 			if (locationEndVertex == null && ElementIdMapper.isInCorrectRange(endVertex, ElementIdMapper.CATEGORY_DOOR)) {
 				long externalId = ElementIdMapper.getBaseId(endVertex);
 				locationEndVertex = diccionaryItemLocation.get(externalId);
@@ -280,7 +281,7 @@ public abstract class Path {
 				}
 			}
 
-			/* Añadido por Nacho Palacio 2025-04-16. */
+			/* Added by Nacho Palacio 2025-04-16. */
 			if (locationStartVertex == null || locationEndVertex == null) {
 				return 0.0;
 			}
@@ -317,7 +318,7 @@ public abstract class Path {
 		List<Integer> roomVisited = new LinkedList<>();
 		for (long item : Simulation.itemRatedOfUsers.get(currentUser.userID)) {
 			// int r = getRoomFromItem(item);
-			int r = Configuration.simulation.getRoom(item); // Modificado por Nacho Palacio 2025-06-19
+			int r = Configuration.simulation.getRoom(item); // Modified by Nacho Palacio 2025-06-19
 			if (roomVisited.isEmpty() || !roomVisited.contains(r)) {
 				roomVisited.add(r);
 			}
@@ -332,7 +333,7 @@ public abstract class Path {
 	 * @return The room of the specified item or door.
 	 */
 	public int getRoomFromItem(long startVertex) {
-		// Añadido por Nacho Palacio 2025-04-23.
+		// Added by Nacho Palacio 2025-04-23.
 		long originalId = startVertex;
     
 		// Mirar en el mapa
@@ -381,24 +382,24 @@ public abstract class Path {
 			// If there are no subrooms
 			if (numberOfSubrooms <= 0) {
 				// Get number of objects depending on starVertex
-				// Modificado por Nacho Palacio 2025-04-23
+				// Modified by Nacho Palacio 2025-04-23
 				int numberOfObjects = (idToSearch <= this.numberOfItems) ? 
                     accessGraphFile.getNumberOfItemsByRoom(i) : 
                     accessGraphFile.getNumberOfDoorsByRoom(i);
 
 				for (int j = 1; j <= numberOfObjects; j++) {
 					// Get object depending on startVertex
-					// Modificado por Nacho Palacio 2025-04-23
+					// Modified by Nacho Palacio 2025-04-23
 					long object = (idToSearch <= this.numberOfItems) ? 
                         accessGraphFile.getItemOfRoom(j, i) : 
                         accessGraphFile.getDoorOfRoom(j, i);
 
-					if (object == idToSearch) { // Modificado por Nacho Palacio 2025-04-23
+					if (object == idToSearch) { // Modified by Nacho Palacio 2025-04-23
 						currentRoom = i;
 						// i = numberOfRooms;
 						// break;
 						
-						// Añadido por Nacho Palacio 2025-04-23
+						// Added by Nacho Palacio 2025-04-23
 						itemToRoomMap.put(originalId, currentRoom);
 						itemToRoomMap.put(idToSearch, currentRoom);
 						
@@ -408,7 +409,7 @@ public abstract class Path {
 			}
 			// There are subrooms
 			else {
-				// Modificado por Nacho Palacio 2025-06-06. Cambiados startVertex por idToSearch
+				// Modified by Nacho Palacio 2025-06-06. Cambiados startVertex por idToSearch
 				for (int posSubroom = 1; posSubroom <= numberOfSubrooms; posSubroom++) {
 					// Get number of objects depending on starVertex
 					int numberOfObjects = -1;
@@ -450,7 +451,7 @@ public abstract class Path {
 			i++;
 		}
 
-		// Añadido por Nacho Palacio 2025-06-24
+		// Added by Nacho Palacio 2025-06-24
 		if (currentRoom == 0) {
 			currentRoom = searchInAllSubrooms(idToSearch, originalId);
 			
@@ -466,7 +467,7 @@ public abstract class Path {
 			}
 		}
 
-		// Añadido por Nacho Palacio 2025-04-23
+		// Added by Nacho Palacio 2025-04-23
 		if (currentRoom == 0) {
 			return 1;
 		}
@@ -488,17 +489,22 @@ public abstract class Path {
 	}
 
 
-	// Modificado por Nacho Palacio 2025-04-25
+	// Modified by Nacho Palacio 2025-04-25
 	public List<Long> getItemsByRoom(int room) {
 		List<Long> itemsByRoom = new LinkedList<>();
 		List<Long> doorsByRoom = new LinkedList<>();  // Lista separada para puertas
 		
 		if (room <= this.numberOfRooms) {
+			System.out.println("getItemsByRoom");
+			
 			// Get the number of items from specified room.
 			int numberOfItemsByRoom = accessGraphFile.getNumberOfItemsByRoom(room);
+
+			System.out.println("Número de items en la habitación " + room + ": " + numberOfItemsByRoom);
 			for (int j = 1; j <= numberOfItemsByRoom; j++) {
 				long itemId = accessGraphFile.getItemOfRoom(j, room);
-				if (ElementIdMapper.isInCorrectRange(itemId, ElementIdMapper.CATEGORY_ITEM)) {  // Modificado por Nacho Palacio 2025-05-17
+				System.out.println("Se procesa item: " + itemId);
+				if (ElementIdMapper.isInCorrectRange(itemId, ElementIdMapper.CATEGORY_ITEM)) {  // Modified by Nacho Palacio 2025-05-17
 					itemsByRoom.add(itemId);
 					
 					// También id interno
@@ -512,10 +518,11 @@ public abstract class Path {
 			
 			// Get the doors from specified room (conservadas separadamente).
 			int numberOfDoorsByRoom = accessGraphFile.getNumberOfDoorsByRoom(room);
+			System.out.println("Número de puertas en la habitación " + room + ": " + numberOfDoorsByRoom);
 			for (int j = 1; j <= numberOfDoorsByRoom; j++) {
 				long doorId = accessGraphFile.getDoorOfRoom(j, room);
-				
-				if (ElementIdMapper.isInCorrectRange(doorId, ElementIdMapper.CATEGORY_DOOR)) { // Modificado por Nacho Palacio 2025-05-17
+				System.out.println("Se procesa puerta: " + doorId);
+				if (ElementIdMapper.isInCorrectRange(doorId, ElementIdMapper.CATEGORY_DOOR)) { // Modified by Nacho Palacio 2025-05-17
 					doorsByRoom.add(doorId);
 					
 					// También id interno
@@ -528,6 +535,8 @@ public abstract class Path {
 			}
 		}
 		else {
+			System.out.println("Entro al else");
+
 			int posRoom = 0, posSubroom = 0;
 			for (int i = 1; i <= numberOfRooms; i++) {
 				int numberOfSubrooms = accessGraphFile.getRoomNumberSubrooms(i);
@@ -547,8 +556,7 @@ public abstract class Path {
 			int numberOfItemsBySubroom = accessGraphFile.getNumberOfItemsBySubroom(posSubroom, posRoom);
 			for (int j = 1; j <= numberOfItemsBySubroom; j++) {
 				long itemId = accessGraphFile.getItemOfSubroom(j, posSubroom, posRoom);
-				
-				if (ElementIdMapper.isInCorrectRange(itemId, ElementIdMapper.CATEGORY_ITEM)) { // Modificado por Nacho Palacio 2025-05-17
+				if (ElementIdMapper.isInCorrectRange(itemId, ElementIdMapper.CATEGORY_ITEM)) { // Modified by Nacho Palacio 2025-05-17
 					itemsByRoom.add(itemId);
 					
 					// También id interno
@@ -563,8 +571,7 @@ public abstract class Path {
 			int numberOfDoorsBySubroom = accessGraphFile.getNumberOfDoorsBySubroom(posSubroom, posRoom);
 			for (int j = 1; j <= numberOfDoorsBySubroom; j++) {
 				long doorId = accessGraphFile.getDoorOfSubroom(j, posSubroom, posRoom);
-				
-				if (ElementIdMapper.isInCorrectRange(doorId, ElementIdMapper.CATEGORY_DOOR)) { // Modificado por Nacho Palacio 2025-05-17
+				if (ElementIdMapper.isInCorrectRange(doorId, ElementIdMapper.CATEGORY_DOOR)) { // Modified by Nacho Palacio 2025-05-17
 					doorsByRoom.add(doorId);
 					
 					// También id interno
@@ -588,6 +595,7 @@ public abstract class Path {
 				}
 			}
 		}
+
 		
 		itemsDoorVisited.put(room, new LinkedList<>(itemsByRoom));
 		
@@ -620,17 +628,27 @@ public abstract class Path {
 		return itemsByRoom;
 	}
 
+	/**
+	 * Get the item (most likely or nearest) to visit by non-RS user.
+	 * 
+	 * @param startVertex The start vertex.
+	 * @param itemsByRoom List of items from specified room.
+	 * @param roomVisited List of visited rooms.
+	 * @param itemVisited List of visited items.
+	 * @param repeated List of repeated items.
+	 * @return The item most likely or nearest to visit.
+	 */
 	public long getItemToVisit(long startVertex, List<Long> itemsByRoom, List<Integer> roomVisited, List<Long> itemVisited, List<Long> repeated) {
 		long itemToVisit = 0;
 		double initialDistance = 9999999;
 
-		// Añadido por Nacho Palacio 2025-07-05
+		// Added by Nacho Palacio 2025-07-05
 		double closestDistance = initialDistance;
     	long closestItem = 0;
 
 		String startVertexLocation = diccionaryItemLocation.get(startVertex);
 
-		// Añadido por Nacho Palacio 2025-05-17
+		// Added by Nacho Palacio 2025-05-17
 		if (startVertexLocation == null) {
 			// return 0;
         
@@ -657,10 +675,8 @@ public abstract class Path {
 		System.out.println();
 		*/
 		for (Long endVertex : itemsByRoom) {
-			boolean isRepeated = repeated.contains(endVertex) && Collections.frequency(repeated, endVertex) > 5;
-
 			if (!(repeated.contains(endVertex) && Collections.frequency(repeated, endVertex) > 5)) {
-				// Añadido por Nacho Palacio 2025-06-28
+				// Added by Nacho Palacio 2025-06-28
 				long externalEndVertex = endVertex;
 				if (ElementIdMapper.isInCorrectRange(endVertex, ElementIdMapper.CATEGORY_ITEM)) {
 					externalEndVertex = ElementIdMapper.getBaseId(endVertex);
@@ -685,13 +701,13 @@ public abstract class Path {
 
 						closestDistance = currentDistance;
                     	closestItem = endVertex;
-					} // Añadido por Nacho Palacio 2025-07-05
+					} // Added by Nacho Palacio 2025-07-05
 					else {
-                    	// System.out.println("      - ❌ Mismo vértice o ya visitado");
+                    	// System.out.println("      -  Mismo vértice o ya visitado");
                 	}
 				}
 				else {
-                	// System.out.println("      - ❌ Distancia mayor que el actual más cercano");
+                	// System.out.println("      -  Distancia mayor que el actual más cercano");
             	}
 			}
 		}
@@ -717,7 +733,8 @@ public abstract class Path {
 
 	/**
 	 * Get the connection of the current door.
-	 * Modificado por Nacho Palacio 2025-05-31
+	 * Modified by Nacho Palacio 2025-05-31
+	 * 
 	 * @param currentDoor: The current door.
 	 * @return The connection of the current door.
 	 */
@@ -764,7 +781,7 @@ public abstract class Path {
 			connectedDoor = doors.get(random.nextInt(doors.size()));
 		}
 		
-		// Añadido por Nacho Palacio 2025-05-31
+		// Added by Nacho Palacio 2025-05-31
 		if (connectedDoor <= 0) {
 			return 0;
 		}
@@ -816,7 +833,7 @@ public abstract class Path {
 	public String getToConnectedDoor(long start, long itemToVisit, List<Long> itemVisited, long connectedDoor) {
 		String subpath = "";
 
-		// Añadido por Nacho Palacio 2025-05-31
+		// Added by Nacho Palacio 2025-05-31
 		if (connectedDoor <= 0) {
 			return subpath;
 		}
@@ -830,7 +847,7 @@ public abstract class Path {
 		// subpath += getCurrentVertex(startVertex, endVertex);
 		// startVertex = endVertex;
 
-		// Añadido por Nacho Palacio 2025-07-05
+		// Added by Nacho Palacio 2025-07-05
 		String vertex1 = getCurrentVertex(startVertex, endVertex);
 		subpath += vertex1;
 		startVertex = endVertex;
@@ -843,7 +860,7 @@ public abstract class Path {
 		// subpath += getCurrentVertex(startVertex, endVertex);
 		// startVertex = endVertex;
 
-		// Añadido por Nacho Palacio 2025-07-05
+		// Added by Nacho Palacio 2025-07-05
 		String vertex2 = getCurrentVertex(startVertex, endVertex);
 		subpath += vertex2;
 		startVertex = endVertex;
@@ -861,7 +878,7 @@ public abstract class Path {
 	public double getCurrentTimeConnectedDoors(String subpath) {
 		double currentTime = 0;
 
-		/* Añadido por Nacho Palacio 2025-04-16. */
+		/* Added by Nacho Palacio 2025-04-16. */
 		if (subpath == null || subpath.trim().isEmpty()) {
 			return 0.0;
 		}
@@ -876,7 +893,7 @@ public abstract class Path {
 				String locationStartVertex = diccionaryItemLocation.get(startVertex);
                 String locationEndVertex = diccionaryItemLocation.get(endVertex);
 
-				// Añadido por Nacho Palacio 2025-04-23.
+				// Added by Nacho Palacio 2025-04-23.
 				if (locationStartVertex == null && ElementIdMapper.isInCorrectRange(startVertex, ElementIdMapper.CATEGORY_DOOR)) {
 					long externalId = ElementIdMapper.getBaseId(startVertex);
 					locationStartVertex = diccionaryItemLocation.get(externalId);
@@ -887,7 +904,7 @@ public abstract class Path {
 					locationEndVertex = diccionaryItemLocation.get(externalId);
 				}
 
-                /* Añadido por Nacho Palacio 2025-04-16. */
+                /* Added by Nacho Palacio 2025-04-16. */
                 if (locationStartVertex == null || locationEndVertex == null) {
                     continue;
                 }
@@ -919,16 +936,16 @@ public abstract class Path {
 	 * @return The end vertex from sub-path.
 	 */
 	public long getEndVertex(String subpath) {
-		// Añadido por Nacho Palacio 2025-05-17
+		// Added by Nacho Palacio 2025-05-17
 		String edges[] = subpath.split(", ");
 
-		if (edges.length == 0) { // Añadido por Nacho Palacio 2025-05-17
+		if (edges.length == 0) { // Added by Nacho Palacio 2025-05-17
 			return 0;
 		}
 
 		String edge = edges[edges.length - 1];
 
-		// Añadido por Nacho Palacio 2025-05-17
+		// Added by Nacho Palacio 2025-05-17
 		String[] cleanedEdge = Configuration.simulation.cleanEdge(edge);
 		if (cleanedEdge.length < 2) {
 			return 0;
@@ -1021,7 +1038,7 @@ public abstract class Path {
 		
 
 		// if (startVertex > numberOfItems && startVertex < idInvisibleDoors && endVertex > numberOfItems && endVertex < idInvisibleDoors) { // They are doors
-		if (externalStartVertex > numberOfItems && externalStartVertex < idInvisibleDoors && externalEndVertex > numberOfItems && externalEndVertex < idInvisibleDoors) { // Modificado por Nacho Palacio 2025-06-27
+		if (externalStartVertex > numberOfItems && externalStartVertex < idInvisibleDoors && externalEndVertex > numberOfItems && externalEndVertex < idInvisibleDoors) { // Modified by Nacho Palacio 2025-06-27
 			List<Long> connectedStairsStartVertex = getConnectedStairs(startVertex);
 			List<Long> connectedStairsEndVertex = getConnectedStairs(endVertex);
 			
@@ -1086,8 +1103,8 @@ public abstract class Path {
 	}
 
 	/**
-	 * Inicializa un mapa para acceso rápido a la habitación de un ítem.
-	 * Añadido por Nacho Palacio 2025-04-24.
+	 * Initialize the map of items to rooms.
+	 * Added by Nacho Palacio 2025-04-24.
 	 */
 	private void initializeItemToRoomMap() {
 		itemToRoomMap = new HashMap<>();
@@ -1140,7 +1157,7 @@ public abstract class Path {
 			}
 		}
 
-		// Añadido por Nacho Palacio 2025-04-23
+		// Added by Nacho Palacio 2025-04-23
 		// Añadir información de puertas conectadas
 		int numberDoorConnected = accessGraphFile.getNumberOfConnectedDoor();
 
@@ -1223,8 +1240,11 @@ public abstract class Path {
 	}
 
 	/**
-	 * Valida si una puerta existe realmente en el sistema.
-	 * Añadido por Nacho Palacio 2025-05-29.
+	 * Validates if a door exists in the system.
+	 * Added by Nacho Palacio 2025-05-29.
+	 * 
+	 * @param doorId The door ID to validate.
+	 * @return true if the door is valid, false otherwise.
 	 */
 	protected boolean isValidDoor(long doorId) {
 		try {
@@ -1253,8 +1273,10 @@ public abstract class Path {
 	}
 
 	/**
-	 * Obtiene una puerta válida aleatoria del sistema.
-	 * Añadido por Nacho Palacio 2025-05-29.
+	 * Gets a valid random door from the system.
+	 * Added by Nacho Palacio 2025-05-29.
+	 * 
+	 * @return A valid random door ID.
 	 */
 	protected long getValidRandomDoor() {
 		try {
@@ -1282,8 +1304,11 @@ public abstract class Path {
 	}
 
 	/**
-	 * Obtiene todas las puertas válidas de una habitación específica.
-	 * Añadido por Nacho Palacio 2025-05-29.
+	 * Gets the valid doors for a specific room.
+	 * Added by Nacho Palacio 2025-05-29.
+	 * 
+	 * @param room The room ID.
+	 * @return A list of valid door IDs for the specified room.
 	 */
 	protected List<Long> getValidDoorsForRoom(int room) {
 		List<Long> validDoors = new ArrayList<>();
@@ -1301,7 +1326,13 @@ public abstract class Path {
 		return validDoors;
 	}
 
-	// Añadido por Nacho Palacio 2025-05-31
+	/**
+	 * Checks if the connection between two vertices is valid.
+	 * 
+	 * @param startVertex The starting vertex ID.
+	 * @param endVertex The ending vertex ID.
+	 * @return true if the connection is valid, false otherwise.
+	 */
 	private boolean isValidConnection(long startVertex, long endVertex) {
 		if (endVertex <= 0) {
 			return false;
@@ -1311,8 +1342,8 @@ public abstract class Path {
 			return true;
 		}
 
-		int startRoom = Configuration.simulation.getRoom(startVertex); // Modificado por Nacho Palacio 2025-06-19
-		int endRoom = Configuration.simulation.getRoom(endVertex); // Modificado por Nacho Palacio 2025-06-19
+		int startRoom = Configuration.simulation.getRoom(startVertex); // Modified by Nacho Palacio 2025-06-19
+		int endRoom = Configuration.simulation.getRoom(endVertex); // Modified by Nacho Palacio 2025-06-19
 		
 		if (startRoom == endRoom) {
 			return true;
@@ -1328,7 +1359,12 @@ public abstract class Path {
 		return true;
 	}
 
-	// Añadido por Nacho Palacio 2025-05-31
+	/**
+	 * Indicates if the vertex is a door.
+	 * 
+	 * @param vertex
+	 * @return true if the vertex is a door, false otherwise.
+	 */
 	private boolean isDoor(long vertex) {
 		return vertex > this.numberOfItems;
 	}
@@ -1337,7 +1373,7 @@ public abstract class Path {
 
 	/**
 	 * Búsqueda exhaustiva en todas las subhabitaciones del sistema.
-	 * Añadido por Nacho Palacio 2025-06-23.
+	 * Added by Nacho Palacio 2025-06-23.
 	 * 
 	 * @param idToSearch ID a buscar
 	 * @param originalId ID original para caché
@@ -1495,20 +1531,22 @@ public abstract class Path {
 	}
 
 	/**
-	 * Añadido por Nacho Palacio 2025-06-28.
-	 * Inicializa el mapa de ítems por habitación usando IDs externos.
+	 * Initializes the items by room map.
+	 * Added by Nacho Palacio 2025-06-28.
+	 * 
+	 * @param roomItems Map of room IDs to lists of item IDs.
 	 */
 	public void initializeItemsByRoom(Map<Integer, List<Long>> roomItems) {	
 		if (itemsDoorVisited == null) {
 			itemsDoorVisited = new HashMap<>();
 		}
 
-		// Añadido por Nacho Palacio 2025-04-26.
+		// Added by Nacho Palacio 2025-04-26.
 		if (doorsByRoomMap == null) {
 			doorsByRoomMap = new HashMap<>();
 		}
 		
-		// Modificado por Nacho Palacio 2025-06-08
+		// Modified by Nacho Palacio 2025-06-08
 		for (Map.Entry<Integer, List<Long>> entry : roomItems.entrySet()) {
 			int roomId = entry.getKey();
 			List<Long> items = entry.getValue();
@@ -1532,8 +1570,12 @@ public abstract class Path {
 	}
 
 	/**
-     * Añadido por Nacho Palacio 2025-06-28.
-     * Asegura que un ID esté en formato interno, convirtiéndolo si es necesario.
+	 * Ensures that the given ID is in the correct internal range for its category.
+     * Added by Nacho Palacio 2025-06-28.
+	 * 
+	 * @param id       The ID to check.
+	 * @param category The category of the element (e.g., item, door, stairs).
+	 * @return The ID in the correct internal range.
      */
     protected long ensureInternalId(long id, int category) {
         if (!ElementIdMapper.isInCorrectRange(id, category)) {
@@ -1545,8 +1587,13 @@ public abstract class Path {
     }
 
 	/**
-	 * Convierte y valida todos los IDs de una lista al formato interno.
-	 * Añadido por Nacho Palacio 2025-06-28.
+	 * Converts and validates a list of item IDs to ensure they are in the correct internal format.
+	 * Added by Nacho Palacio 2025-06-28.
+	 * 
+	 * @param itemsList     The list of item IDs to convert and validate.
+	 * @param listType      The type of items in the list (e.g., "item", "door", "stairs").
+	 * @param numberOfItems The total number of items in the system.
+	 * @return A LinkedList of validated item IDs in the correct internal format
 	 */
 	protected LinkedList<Long> convertAndValidateItems(LinkedList<Long> itemsList, String listType, int numberOfItems) {
 		if (itemsList == null || itemsList.isEmpty()) {
@@ -1565,7 +1612,7 @@ public abstract class Path {
 
 			
 			// Si ya está en formato interno correcto, mantenerlo
-			// Modificado por Nacho Palacio 2025-06-16
+			// Modified by Nacho Palacio 2025-06-16
 			int determinedCategory = ElementIdMapper.determineCategoryFromInternalId(itemId);
 			if (ElementIdMapper.isInCorrectRange(itemId, ElementIdMapper.CATEGORY_ITEM) || 
 				ElementIdMapper.isInCorrectRange(itemId, ElementIdMapper.CATEGORY_DOOR) ||
@@ -1593,7 +1640,7 @@ public abstract class Path {
 				convertedId = ElementIdMapper.convertToRangeId(itemId, ElementIdMapper.CATEGORY_DOOR);
 				wasConverted = true;
 			} else {
-				// Modificado por Nacho Palacio 2025-06-15
+				// Modified by Nacho Palacio 2025-06-15
 				convertedId = ElementIdMapper.convertToRangeId(itemId, ElementIdMapper.CATEGORY_STAIRS);
 				wasConverted = true;
 			}

@@ -22,8 +22,8 @@ public class Room extends RoomPolygon{
 	 * @param label
 	 * @param corners
 	 */
-	public Room(long label, List<Corner> corners) { // Modificado por Nacho Palacio 2025-04-18. Antes: public Room(int label, List<Corner> corners) {
-		/* Añadido por Nacho Palacio 2025-04-17. */
+	public Room(long label, List<Corner> corners) { // Modified by Nacho Palacio 2025-04-18. Antes: public Room(int label, List<Corner> corners) {
+		/* Added by Nacho Palacio 2025-04-17. */
 		super(ElementIdMapper.convertToRangeId(label, ElementIdMapper.CATEGORY_ROOM));
 		
 		this.roomName = null;

@@ -13,13 +13,13 @@ import earcut4j.Earcut;
 
 public class RoomPolygon {
 	
-	protected long label; // Añadido por Nacho Palacio 2025-04-17.
+	protected long label; // Added by Nacho Palacio 2025-04-17.
 
 	protected List<Corner> corners;
 	protected Polygon polygon;
 	
 
-	/* Añadido por Nacho Palacio 2025-04-17. */
+	/* Added by Nacho Palacio 2025-04-17. */
 	public RoomPolygon(long label) {
 		// Init
 		this.label = label;
@@ -27,12 +27,12 @@ public class RoomPolygon {
 		this.polygon = new Polygon();
 	}
 
-	/* Añadido por Nacho Palacio 2025-04-17. */
+	/* Added by Nacho Palacio 2025-04-17. */
 	public long getLabel() {
 		return label;
 	}
 
-	/* Añadido por Nacho Palacio 2025-04-17. */
+	/* Added by Nacho Palacio 2025-04-17. */
 	public void setLabel(long label) {
 		this.label = label;
 	}
@@ -70,7 +70,7 @@ public class RoomPolygon {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((corners == null) ? 0 : corners.hashCode());
-		result = prime * result + (int)(label ^ (label >>> 32)); // Añadido por Nacho Palacio 2025-04-17.
+		result = prime * result + (int)(label ^ (label >>> 32)); // Added by Nacho Palacio 2025-04-17.
 		return result;
 	}
 	

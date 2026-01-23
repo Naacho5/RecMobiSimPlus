@@ -192,7 +192,7 @@ public class MapEditorController implements ActionListener, FocusListener, MapPa
 			switch (model.getSelected()) {
 				case corner:
 					// Create corner and add it to model
-					Corner corner = new Corner(null, model.getNextCornerId(), p); // Modificado por Nacho Palacio 2025-04-18
+					Corner corner = new Corner(null, model.getNextCornerId(), p); // Modified by Nacho Palacio 2025-04-18
 					
 					if (!model.addCornerToCurrentRoomCorners(corner)) {
 						view.showMessage(JOptionPane.WARNING_MESSAGE, "COULDN'T ADD CORNER TO MAP");
@@ -202,7 +202,7 @@ public class MapEditorController implements ActionListener, FocusListener, MapPa
 				    
 				case door:
 					// Create door and add it to model
-					Door door = new Door(null, model.getNextDoorId(), p); // Modificado por Nacho Palacio 2025-04-18
+					Door door = new Door(null, model.getNextDoorId(), p); // Modified by Nacho Palacio 2025-04-18
 					
 					// Add room to door if it is inside a room
 					Room doorRoom = model.isInsideRoom(p, -1);
@@ -217,7 +217,7 @@ public class MapEditorController implements ActionListener, FocusListener, MapPa
 					
 				case stairs:
 					// Create corner and add it to model
-					Stairs stairs = new Stairs(null, model.getNextStairsId(), p); // Modificado por Nacho Palacio 2025-04-18
+					Stairs stairs = new Stairs(null, model.getNextStairsId(), p); // Modified by Nacho Palacio 2025-04-18
 					
 					if (!model.addStairs(stairs)) {
 						view.showMessage(JOptionPane.WARNING_MESSAGE, "COULDN'T ADD STAIRS TO MAP");
@@ -264,7 +264,7 @@ public class MapEditorController implements ActionListener, FocusListener, MapPa
 										// 		model.getCurrentRoomSeparatorCorner(), cornerClicked);
 										
 										RoomSeparator rs = new RoomSeparator(roomFirstCorner, model.getNextSeparatorId(),
-										model.getCurrentRoomSeparatorCorner(), cornerClicked); // Modificado por Nacho Palacio 2025-04-18
+										model.getCurrentRoomSeparatorCorner(), cornerClicked); // Modified by Nacho Palacio 2025-04-18
 										
 										if(model.addRoomSeparator(rs)) {
 											model.setCurrentRoomSeparatorCorner(null);
@@ -294,7 +294,7 @@ public class MapEditorController implements ActionListener, FocusListener, MapPa
 					
 				case visitable:
 					// Create item and add it to model
-					Item itemVisitable = new Item(null, model.getNextItemId(), p); // Modificado por Nacho Palacio 2025-04-18
+					Item itemVisitable = new Item(null, model.getNextItemId(), p); // Modified by Nacho Palacio 2025-04-18
 					
 					Room r = model.isInsideRoom(p, -1);
 					if (r != null) {
@@ -541,7 +541,7 @@ public class MapEditorController implements ActionListener, FocusListener, MapPa
 					model.eraseDrawableList(new ArrayList<>(model.getCurrentRoomCorners()));
 					
 					// Create a new room with the current room corners
-					Room room = new Room(model.getNumRooms()+1, model.getCurrentRoomCorners()); // Modificado por Nacho Palacio 2025-04-18
+					Room room = new Room(model.getNumRooms()+1, model.getCurrentRoomCorners()); // Modified by Nacho Palacio 2025-04-18
 
 					if(model.addRoom(room)) {// (this adds the corners to persist to drawable elements)
 						model.emptyCurrentRoomCorners();

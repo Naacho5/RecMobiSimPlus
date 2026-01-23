@@ -2,11 +2,13 @@ package es.unizar.gui.simulation;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import com.mxgraph.model.mxCell;
 import com.mxgraph.model.mxGeometry;
 
 import es.unizar.access.DataAccessRoomFile;
+import es.unizar.epidemic.data.ContactTrajectoryBuilder;
 import es.unizar.gui.MainSimulator;
 import es.unizar.gui.graph.DrawFloorGraph;
 import es.unizar.util.Literals;
@@ -21,15 +23,25 @@ public class User {
 	//public ImageLabel userImage;
 	public boolean drawImage;
 	public boolean isSpecialUser;
-	public int room = -1;
+	public int room = -2;
 	public DataAccessRoomFile dataAccessRoomFile = new DataAccessRoomFile(new File(Literals.ROOM_FLOOR_COMBINED));
 	
 	public boolean hasFinishedVisit;
 	
 	public mxCell userCell;
 
-	private es.unizar.epidemic.UserEpidemicExtension epidemicExtension; // Añadido por Nacho Palacio 2025-07-15
+	public es.unizar.epidemic.general.UserEpidemicExtension epidemicExtension; // Added by Nacho Palacio 2025-07-15
 	
+	public double totalObservationTime = 0.0;
+
+	public int totalItemsObserved = 0;
+
+	public List<ContactTrajectoryBuilder.UserRoomEvent> contactTrajectory; // Added by Nacho Palacio 2025-10-05
+
+	// Added by Nacho Palacio 2025-10-12
+	public String pathString;
+    public List<String> pathList;
+
 	// Move user X_DISPLACEMENT pixels in order to not collapse with item while watching it.
 	private static final int X_DISPLACEMENT = -5; // Move user a bit to the left
 
@@ -41,31 +53,59 @@ public class User {
 		this.isSpecialUser = isSpecialUser;
 		this.hasFinishedVisit = false;
 
-		// Añadido por Nacho Palacio 2025-07-15
-		this.epidemicExtension = new es.unizar.epidemic.UserEpidemicExtension();
+		// Added by Nacho Palacio 2025-07-15
+		this.epidemicExtension = new es.unizar.epidemic.general.UserEpidemicExtension();
 		
 		createUserCell();
 	}
 
-	// Añadido por Nacho Palacio 2025-07-15
-	public es.unizar.epidemic.UserEpidemicExtension getEpidemicExtension() {
+	/**
+	 * Gets the user's epidemic extension.
+	 * 
+	 * @return the user's epidemic extension
+	 */
+	public es.unizar.epidemic.general.UserEpidemicExtension getEpidemicExtension() {
         return epidemicExtension;
     }
+
+	/**
+	 * Gets the contact trajectory of the user.
+	 * 
+	 * @return the contact trajectory of the user
+	 */
+	public List<ContactTrajectoryBuilder.UserRoomEvent> getContactTrajectory() {
+		return contactTrajectory;
+	}
     
-    public void setEpidemicExtension(es.unizar.epidemic.UserEpidemicExtension epidemicExtension) {
+	/**
+	 * Sets the user's epidemic extension.
+	 * 
+	 * @param epidemicExtension the epidemic extension to set
+	 */
+    public void setEpidemicExtension(es.unizar.epidemic.general.UserEpidemicExtension epidemicExtension) {
         this.epidemicExtension = epidemicExtension;
     }
+
+	/**
+	 * Sets the contact trajectory of the user.
+	 * 
+	 * @param trajectory the contact trajectory to set
+	 */
+	public void setContactTrajectory(List<ContactTrajectoryBuilder.UserRoomEvent> trajectory) {
+		this.contactTrajectory = trajectory;
+	}
 	
 
 	/**
 	 * The user's next move in the current room.
 	 * 
-	 * @param nextLocation: The user's next location.
-	 * @param room:         The current room.
+	 * @param nextLocation: the user's next location
+	 * @param room:         the current room
 	 */
 	public void move(String nextLocation, int room) {
 		this.x = Double.valueOf(nextLocation.split(", ")[0]).doubleValue();
 		this.y = Double.valueOf(nextLocation.split(", ")[1]).doubleValue();
+
 		this.room = room;
 		
 		// Change userCell's positions
@@ -107,81 +147,11 @@ public class User {
 	/**
 	 * Get room from current user, by using his/her location.
 	 * 
-	 * @param userLocation The current user location.
+	 * @param userLocation the current user location
 	 */
 	public void getRoomOfTheUser() {
-		// int numberRooms = dataAccessRoomFile.getNumberOfRoom();
-		
-		// for (int room = 1; room <= numberRooms; room++) {
-			
-			/*
-			List<Integer> xpoints = new ArrayList<Integer>();
-			List<Integer> ypoints = new ArrayList<Integer>();
-			
-			int numCorners = dataAccessRoomFile.getRoomNumberCorner(room);
-			for(int i = 1; i <= numCorners; i++) {
-				String xy = dataAccessRoomFile.getRoomCornerXY(i, room);
-				String[] array = xy.split(", ");
-				xy = array[1] + ", " + array[0];
-				
-				int x = (int) Double.valueOf(xy.split(", ")[0]).doubleValue();
-				int y = (int) Double.valueOf(xy.split(", ")[1]).doubleValue();
-				
-				xpoints.add(x);
-				ypoints.add(y);
-				
-			}
-			
-			int[] xpointsarr = xpoints.stream().mapToInt(i->i).toArray();
-			int[] ypointsarr = ypoints.stream().mapToInt(i->i).toArray();
-			Shape shape = new Polygon(xpointsarr, ypointsarr, xpoints.size()); // no matter xpoints.size() or ypoints.size()
-			Area area = new Area(shape);
-
-			if (area.contains(Double.valueOf(this.x).doubleValue(), Double.valueOf(this.y).doubleValue())) {
-				this.room = room;
-				// If room is found, stop looking for the room
-				break;
-			}
-			*/
-			
-			
-			/*
-			// Corners of the room.
-			String xy1 = dataAccessRoomFile.getRoomCornerXY(1, room);
-			String[] array = xy1.split(", ");
-			xy1 = array[1] + ", " + array[0];
-			String xy2 = dataAccessRoomFile.getRoomCornerXY(2, room);
-			array = xy2.split(", ");
-			xy2 = array[1] + ", " + array[0];
-			String xy3 = dataAccessRoomFile.getRoomCornerXY(3, room);
-			array = xy3.split(", ");
-			xy3 = array[1] + ", " + array[0];
-			String xy4 = dataAccessRoomFile.getRoomCornerXY(4, room);
-			array = xy4.split(", ");
-			xy4 = array[1] + ", " + array[0];
-			// Array of 4 points of the room.
-			int[] xpoints = new int[4];
-			xpoints[0] = (int) Double.valueOf(xy1.split(", ")[0]).doubleValue();
-			xpoints[1] = (int) Double.valueOf(xy2.split(", ")[0]).doubleValue();
-			xpoints[2] = (int) Double.valueOf(xy3.split(", ")[0]).doubleValue();
-			xpoints[3] = (int) Double.valueOf(xy4.split(", ")[0]).doubleValue();
-			int[] ypoints = new int[4];
-			ypoints[0] = (int) Double.valueOf(xy1.split(", ")[1]).doubleValue();
-			ypoints[1] = (int) Double.valueOf(xy2.split(", ")[1]).doubleValue();
-			ypoints[2] = (int) Double.valueOf(xy3.split(", ")[1]).doubleValue();
-			ypoints[3] = (int) Double.valueOf(xy4.split(", ")[1]).doubleValue();
-			
-			
-			if(MainMuseumSimulator.floor.rooms.get(room).contains(Double.valueOf(this.x).doubleValue(), Double.valueOf(this.y).doubleValue())) {
-				this.room = room;
-				break;
-			};
-			
-		}*/
-		// System.out.println("DEBUG: Getting room for user " + this.userID + " at position (" + this.x + "," + this.y + ")");
 		this.room = MainSimulator.floor.getRoomFromPosition((int) x, (int) y);
-		// System.out.println("DEBUG: User " + this.userID + " moves to room " + this.room);
-	}
+		}
 	
 	/**
 	 * Creates the user's mxCell to be inserted in the scenario graph.

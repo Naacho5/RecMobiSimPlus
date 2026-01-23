@@ -1,14 +1,21 @@
 package es.unizar.epidemic.tests;
 
-import es.unizar.epidemic.EpidemicConfiguration;
+import es.unizar.epidemic.general.EpidemicConfiguration;
 import es.unizar.gui.simulation.Simulation;
-import es.unizar.gui.simulation.User;
 
-import java.util.List;
 
+/**
+ * Utility class for creating and running epidemic simulations for testing
+ * 
+ * @author Nacho Palacio
+ */
 public class SimulationUtils {
     /**
      * Creates and runs a simulation based on the provided scenario and model.
+     * 
+     * @param scenario The test scenario to simulate
+     * @param model The epidemic model to use
+     * @return The completed Simulation instance
      */
     public static Simulation createAndRunSimulation(Scenarios.TestScenario scenario, String model) {
         EpidemicConfiguration config = EpidemicConfiguration.getInstance();

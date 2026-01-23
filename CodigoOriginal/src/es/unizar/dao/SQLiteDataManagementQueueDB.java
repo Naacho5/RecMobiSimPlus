@@ -52,6 +52,7 @@ public class SQLiteDataManagementQueueDB extends DBConnection implements DataMan
 	 */
 	@Override
 	public void connect(String dbURL) throws ClassNotFoundException, SQLException {
+		System.out.println("SQLiteDataManagementQueueDB: Connecting to database with url " + dbURL);
 		
 		dbInstance.connect(dbURL);
 		

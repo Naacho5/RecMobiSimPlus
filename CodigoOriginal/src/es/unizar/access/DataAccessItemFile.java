@@ -3,11 +3,7 @@ package es.unizar.access;
 import es.unizar.util.ElementIdMapper;
 import es.unizar.util.Literals;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Properties;
-import es.unizar.util.ElementIdMapper;
 
 /**
  * Access to the values of the properties stored in the floor files. Getters and setters.
@@ -45,7 +41,7 @@ public class DataAccessItemFile extends DataAccess {
         return Integer.valueOf(getPropertyValue(Literals.VERTEX_DIMENSION_WIDTH)).intValue();
     }
 
-    // Modificado por Nacho Palacio 2025-04-22.
+    // Modified by Nacho Palacio 2025-04-22.
     public long getItemID(int position) {
         int rawId = Integer.valueOf(getPropertyValue(Literals.ITEM_ID + position)).intValue();
         long internalId = ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_ITEM);
@@ -182,7 +178,7 @@ public class DataAccessItemFile extends DataAccess {
     	setPropertyValue(Literals.VERTEX_DIMENSION_WIDTH, Integer.toString(width));
     }
 
-    // Modificado por Nacho Palacio 2025-04-22.
+    // Modified by Nacho Palacio 2025-04-22.
     public void setItemID(int position, long id) {
         long baseId = (id % ElementIdMapper.ITEM_ID_START);
         if (baseId == 0 && id >= ElementIdMapper.ITEM_ID_START) {
@@ -289,7 +285,7 @@ public class DataAccessItemFile extends DataAccess {
         setPropertyValue(Literals.ITEM_WIDTH + position, Double.toString(width));
     }
 
-    /* Añadido por Nacho Palacio 2025-04-17. */
+    /* Added by Nacho Palacio 2025-04-17. */
     public void setItemRoom(int position, long roomLabel) {
         setPropertyValue(Literals.ITEM_ROOM + position, Long.toString(roomLabel));
     }

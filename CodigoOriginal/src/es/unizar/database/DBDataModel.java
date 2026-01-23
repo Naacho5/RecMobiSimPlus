@@ -18,10 +18,14 @@
 package es.unizar.database;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.apache.mahout.cf.taste.common.NoSuchItemException;
 import org.apache.mahout.cf.taste.common.NoSuchUserException;
@@ -51,6 +55,12 @@ public class DBDataModel extends AbstractDataModel {
 
 	private static final long serialVersionUID = 1L;
 
+	// Added by Nacho Palacio 2025-12-08
+	private static final int MAX_POOL_SIZE = 10;
+    private static final ConcurrentHashMap<String, Queue<DBDataModel>> connectionPools = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Object> poolLocks = new ConcurrentHashMap<>();
+	private boolean fromPool = false;
+
 	//private static final Logger log = LoggerFactory.getLogger(DBDataModel.class);
 
 	private final long[] userIDs;
@@ -67,12 +77,16 @@ public class DBDataModel extends AbstractDataModel {
 	 */
 	public DBDataModel(String dbURL, Database db, int numUsers) throws SQLException {
 		dataAccess = new DataAccessLayer(dbURL, db);
+
+		System.out.println("DBDataModel: Loading preferences from database at " + dbURL + " ...");
+		
+
 		this.dbURL = dbURL;
 		//this.userIDs = dataAccess.getUserIDs();
 
-		boolean usersAdded = dataAccess.ensureRequiredUsers(numUsers); // Añadido por Nacho Palacio 2025-04-14.
+		boolean usersAdded = dataAccess.ensureRequiredUsers(numUsers); // Added by Nacho Palacio 2025-04-14.
 
-		/* Añadido por Nacho Palacio 2025-04-15. */
+		/* Added by Nacho Palacio 2025-04-15. */
 		if (usersAdded) {
 			try {
 				Thread.sleep(1000); // Esperar 1 segundo
@@ -83,7 +97,7 @@ public class DBDataModel extends AbstractDataModel {
 
 		long[] correctUserIDs = dataAccess.getUserIDs();
 
-		/* Añadido por Nacho Palacio 2025-04-14. */
+		/* Added by Nacho Palacio 2025-04-14. */
 		if (numUsers > correctUserIDs.length) {
 			numUsers = correctUserIDs.length; // Limita a los usuarios disponibles
 		}
@@ -96,34 +110,43 @@ public class DBDataModel extends AbstractDataModel {
 		
 		for (Map.Entry<Long, Integer> entry : hashWithNumberItemsByUser.entrySet()) {
 			long userIDKey = entry.getKey();
-			int numberOfItems = entry.getValue(); // Añadido por Nacho Palacio 2025-04-15.
+			int numberOfItems = entry.getValue(); // Added by Nacho Palacio 2025-04-15.
 
-			if (numberOfItems > 0) { // Añadido por Nacho Palacio 2025-04-15. Modificado por Nacho Palacio 2025-05-08, antes == 0
+			if (numberOfItems > 0) { // Added by Nacho Palacio 2025-04-15. Modified by Nacho Palacio 2025-05-08, antes == 0
+				// System.out.println("DBDataModel: Loading preferences for user ID " + userIDKey + " with " + numberOfItems + " items.");
 				List<String> listByUser = dataAccess.getUserItemRatingFrom(userIDKey);
+				// System.out.println("DBDataModel: Retrieved " + listByUser.size() + " preferences for user ID " + userIDKey + ".");
+				// System.out.println("DBDataModel: listByUser: " + listByUser);
 				// int numberOfItems = hashWithNumberItemsByUser.get(userIDKey);
 				preferenceArray = new GenericUserPreferenceArray(numberOfItems);
 
-				// Modificado por Nacho Palacio 2025-05-08.
+				// Modified by Nacho Palacio 2025-05-08.
 				for (int k = 0; k < listByUser.size(); k++) {
 					String user_item_rating = listByUser.get(k);
 					String array[] = user_item_rating.split(";");
 					long userID = Long.valueOf(array[0]).longValue();
 					long itemID = Long.valueOf(array[1]).longValue();
 					float rating = Float.valueOf(array[2]).floatValue();
+					// long itemExternalID = Long.valueOf(array[3]).longValue();
 					
 					// Convertir los IDs externos a internos
 					long internalUserID = userID; // Los IDs de usuario ya están en el formato correcto
+					// long internalItemID = ElementIdMapper.convertToRangeId(itemID, ElementIdMapper.CATEGORY_ITEM);
 					long internalItemID = ElementIdMapper.convertToRangeId(itemID, ElementIdMapper.CATEGORY_ITEM);
+
 					
 					preferenceArray.setUserID(k, internalUserID);
-					preferenceArray.setItemID(k, internalItemID);
+					// preferenceArray.setItemID(k, internalItemID);
+					preferenceArray.setItemID(k, itemID); // Modified by Nacho Palacio 2025-10-26
 					preferenceArray.setValue(k, rating);
+					// System.out.println("DBDataModel:   Preference " + k + ": userID=" + internalUserID + ", itemID=" + itemID + " (internal: " + internalItemID + "), rating=" + rating);
 				}
 			} else { 
 				preferenceArray = new GenericUserPreferenceArray(0);
 			}
 			this.preferenceFromUsers.put(userIDKey, preferenceArray);
 		}
+		// System.out.println("DBDataModel: Loaded preferences from " + hashWithNumberItemsByUser.size() + " users.");
 
 		FastByIDMap<Collection<Preference>> prefsForItems = new FastByIDMap<Collection<Preference>>();
 		FastIDSet itemIDSet = new FastIDSet();
@@ -215,6 +238,36 @@ public class DBDataModel extends AbstractDataModel {
 	}
 
 	/**
+	 * Gets the preferences from user sorted by rating in descending order.
+	 * @param userID The user identifier.
+	 * @return PreferenceArray sorted by rating.
+	 * @throws TasteException
+	 */
+	public PreferenceArray getPreferencesFromUserSortedByRating(long userID) throws TasteException {
+		PreferenceArray prefs = getPreferencesFromUser(userID);
+		
+		// Convertir a lista para ordenar
+		List<Preference> prefList = new ArrayList<>();
+		for (int i = 0; i < prefs.length(); i++) {
+			prefList.add(prefs.get(i));
+		}
+		
+		// Ordenar por rating descendente
+		prefList.sort((p1, p2) -> Float.compare(p2.getValue(), p1.getValue()));
+		
+		// Reconstruir PreferenceArray
+		GenericUserPreferenceArray sortedPrefs = new GenericUserPreferenceArray(prefList.size());
+		for (int i = 0; i < prefList.size(); i++) {
+			Preference p = prefList.get(i);
+			sortedPrefs.setUserID(i, p.getUserID());
+			sortedPrefs.setItemID(i, p.getItemID());
+			sortedPrefs.setValue(i, p.getValue());
+		}
+		
+		return sortedPrefs;
+	}
+
+	/**
 	 * Gets the item identifier from user identifier.
 	 *
 	 * @param userID
@@ -274,7 +327,7 @@ public class DBDataModel extends AbstractDataModel {
 	 */
 	@Override
 	public Float getPreferenceValue(long userID, long itemID) throws TasteException {
-		// Modificado por Nacho Palacio 2025-05-08.
+		// Modified by Nacho Palacio 2025-05-08.
 		long internalItemID = ElementIdMapper.isInCorrectRange(itemID, ElementIdMapper.CATEGORY_ITEM) 
                          ? itemID 
                          : ElementIdMapper.convertToRangeId(itemID, ElementIdMapper.CATEGORY_ITEM);
@@ -580,7 +633,7 @@ public class DBDataModel extends AbstractDataModel {
 		return dataAccess;
 	}
 
-	// Añadido por Nacho Palacio 2025-05-08.
+	// Added by Nacho Palacio 2025-05-08.
 	/**
 	 * Convierte un ID externo de ítem a su formato interno.
 	 * @param externalItemId El ID externo del ítem
@@ -598,4 +651,69 @@ public class DBDataModel extends AbstractDataModel {
 	public static long convertInternalToExternalItemId(long internalItemId) {
 		return ElementIdMapper.getBaseId(internalItemId);
 	}
+
+	/**
+     * Obtains an instance from the pool or creates a new one.
+     */
+    public static DBDataModel getFromPool(String dbURL, Database db, int numUsers) throws SQLException {
+        poolLocks.putIfAbsent(dbURL, new Object());
+        
+        synchronized (poolLocks.get(dbURL)) {
+            Queue<DBDataModel> pool = connectionPools.get(dbURL);
+            
+            if (pool != null && !pool.isEmpty()) {
+                DBDataModel model = pool.poll();
+                if (model != null) {
+                    model.fromPool = true;
+                    return model;
+                }
+            }
+        }
+        
+        // No hay conexiones disponibles, crear una nueva
+        DBDataModel newModel = new DBDataModel(dbURL, db, numUsers);
+        newModel.fromPool = false;
+        return newModel;
+    }
+
+    /**
+     * Returns this instance to the pool.
+     */
+    public void returnToPool() {
+        poolLocks.putIfAbsent(dbURL, new Object());
+        
+        synchronized (poolLocks.get(dbURL)) {
+            Queue<DBDataModel> pool = connectionPools.computeIfAbsent(dbURL, k -> new ConcurrentLinkedQueue<>());
+            
+            if (pool.size() < MAX_POOL_SIZE) {
+                pool.offer(this);
+            } else {
+                // Pool lleno, cerrar conexión
+                try {
+                    this.disconnect();
+                } catch (SQLException e) {
+                    System.err.println("Error cerrando conexión excedente: " + e.getMessage());
+                }
+            }
+        }
+    }
+
+    /**
+     * Clears all connection pools, closing all connections.
+     */
+    public static void clearAllPools() {
+        for (Map.Entry<String, Queue<DBDataModel>> entry : connectionPools.entrySet()) {
+            Queue<DBDataModel> pool = entry.getValue();
+            DBDataModel model;
+            while ((model = pool.poll()) != null) {
+                try {
+                    model.disconnect();
+                } catch (SQLException e) {
+                    System.err.println("Error limpiando pool: " + e.getMessage());
+                }
+            }
+        }
+        connectionPools.clear();
+        System.out.println("✅ Todos los pools de conexiones limpiados");
+    }
 }

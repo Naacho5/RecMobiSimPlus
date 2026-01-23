@@ -1299,20 +1299,10 @@ public class MapEditorView {
 	 * Refresh/update visitable buttons when buttons are modified.
 	 */
 	public void refreshVisitableButtons() {
-
-		System.out.println("=== DEBUG refreshVisitableButtons() ==="); // Añadido por Nacho Palacio 2025-07-04
-		System.out.println("📁 RUTAS CONFIGURADAS:");
-		System.out.println("  - Literals.IMAGES_PATH: " + Literals.IMAGES_PATH);
-		System.out.println("  - Literals.LOGO_PATH: " + Literals.LOGO_PATH);
-		System.out.println("  - Literals.VERTEX_URL: " + Literals.VERTEX_URL);
-		System.out.println("  - ICON_SIZE: " + ICON_SIZE);
-		
 		visitableIcons.removeAll();
 		
 		Map<String, Properties> buttons = model.getVisitableObjects();
 
-		System.out.println("📊 Total objetos visitables cargados: " + buttons.size()); // Añadido por Nacho Palacio 2025-07-04
-		
 		for (Map.Entry<String, Properties> entry : buttons.entrySet()) {
 		    JButton visitableButton = new JButton();
 		    visitableButton.setName(EditorLiterals.VISITABLE + EditorLiterals.SEPARATOR + entry.getKey());
@@ -1324,14 +1314,11 @@ public class MapEditorView {
 		    	iconURL = Literals.LOGO_PATH;
 		    }
 
-			// Añadido por Nacho Palacio 2025-07-04
+			// Added by Nacho Palacio 2025-07-04
         	String finalIconURL = iconURL;
 
-			// Añadido por Nacho Palacio 2025-07-04
+			// Added by Nacho Palacio 2025-07-04
 			File iconFile = new File(iconURL);
-			System.out.println("  - Archivo original existe: " + iconFile.exists());
-        	System.out.println("  - Ruta absoluta original: " + iconFile.getAbsolutePath());
-
 			if (!iconFile.exists()) {
 				String fileName = iconURL;
 				if (fileName.contains("\\")) {
@@ -1353,7 +1340,7 @@ public class MapEditorView {
 			}
 
 		    try {
-				// Añadido por Nacho Palacio 2025-07-04
+				// Added by Nacho Palacio 2025-07-04
 				File finalFile = new File(finalIconURL);
 				if (finalFile.exists()) {
 					ImageIcon originalIcon = new ImageIcon(finalIconURL);

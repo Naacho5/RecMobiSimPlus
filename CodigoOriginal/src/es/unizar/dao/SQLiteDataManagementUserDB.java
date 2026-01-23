@@ -52,6 +52,7 @@ public class SQLiteDataManagementUserDB extends DBConnection implements DataMana
 	 */
 	@Override
 	public void connect(String dbURL) throws ClassNotFoundException, SQLException {
+		System.out.println("SQLiteDataManagementUserDB: Connecting to database with url " + dbURL);
 		
 		dbInstance.connect(dbURL);
 		
@@ -204,7 +205,7 @@ public class SQLiteDataManagementUserDB extends DBConnection implements DataMana
 			
 			//initialTimeRecommender = System.currentTimeMillis();
 			// Query
-			statement.executeUpdate("INSERT INTO " + USER_ITEM_CONTEXT_TB + " VALUES('" + user + "','" + item + "','" + context + "','" + rating + "','" + null + "','" + userProvided + "')"); // Operación que consume muchísimo tiempo!!!!
+			statement.executeUpdate("INSERT INTO " + USER_ITEM_CONTEXT_TB + " VALUES('" + user + "','" + item + "','" + context + "','" + rating + "','" + null + "','" + userProvided + "')"); // Operaciï¿½n que consume muchï¿½simo tiempo!!!!
 			 *
 			 */
 			

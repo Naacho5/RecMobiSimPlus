@@ -159,7 +159,7 @@ public class MapPanel extends JPanel implements MouseInputListener {
 		super.paintComponent(g);
 		
 		for (Drawable d: model.getPaintedElements()) {
-			// Añadido por Nacho Palacio 2025-07-04 - Corrección de rutas de iconos
+			// Added by Nacho Palacio 2025-07-04 - Corrección de rutas de iconos
 			String iconURL = d.getUrlIcon();
 			String finalIconURL = iconURL;
 
@@ -237,7 +237,7 @@ public class MapPanel extends JPanel implements MouseInputListener {
 			// Draw room label in first room corner
 			Point roomPoint = r.getCorners().get(0).getVertex_xy();
 			
-			/* Añadido por Nacho Palacio 2025-04-17. */
+			/* Added by Nacho Palacio 2025-04-17. */
 			g.drawString(Long.toString(r.getLabel()), (int) (roomPoint.getX() * model.getZOOM()), (int) ((roomPoint.getY() -1) * model.getZOOM()));
 
 			// Draw subrooms

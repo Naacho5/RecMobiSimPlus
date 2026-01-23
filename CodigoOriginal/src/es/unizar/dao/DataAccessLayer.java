@@ -63,6 +63,10 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 	public DataAccessLayer(String dbURL, Database db) {
 		super(dbURL);
 		dbInstance = db;
+
+		if (db == null) {
+			System.err.println("DataAccessLayer: Database instance is null");
+		}
 		try {
 			connect(dbURL);
 		}
@@ -81,7 +85,6 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 	 * @throws SQLException
 	 */
 	public void connect(String dbURL) throws ClassNotFoundException, SQLException {
-		
 		dbInstance.connect(dbURL);
 		
 		//System.out.println(getConnection() + " -> " + dbURL);
@@ -165,6 +168,56 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 		}
 		
 		return listOfIdItems;
+	}
+
+	/**
+	 * Gets the internal sequential item ID (RecMobisim) for a given ObjectID (MoMA).
+	 * @param objectId The ObjectID (MoMA)
+	 * @return The internal item ID (RecMobisim), or -1 if not found
+	 */
+	public long getInternalItemId(long objectId) {
+		long internalId = -1;
+		try {
+			PreparedStatement select = getConnection().prepareStatement(
+				"SELECT id_item FROM item WHERE id_item_original = ?"
+			);
+			select.setLong(1, objectId);
+			ResultSet resultSet = select.executeQuery();
+			if (resultSet.next()) {
+				internalId = resultSet.getLong("id_item");
+			}
+			resultSet.close();
+			select.close();
+		} catch (SQLException e) {
+			log.log(Level.SEVERE, e.getClass().getName() + ": " + e.getMessage());
+			e.printStackTrace();
+		}
+		return internalId;
+	}
+
+	/**
+	 * Gets the ObjectID (MoMA) for a given internal sequential item ID (RecMobisim).
+	 * @param internalItemId The internal item ID (RecMobisim)
+	 * @return The ObjectID (MoMA), or -1 if not found
+	 */
+	public long getObjectIdFromInternalItemId(long internalItemId) {
+		long objectId = -1;
+		try {
+			PreparedStatement select = getConnection().prepareStatement(
+				"SELECT id_item_original FROM item WHERE id_item = ?"
+			);
+			select.setLong(1, internalItemId);
+			ResultSet resultSet = select.executeQuery();
+			if (resultSet.next()) {
+				objectId = resultSet.getLong("id_item_original");
+			}
+			resultSet.close();
+			select.close();
+		} catch (SQLException e) {
+			log.log(Level.SEVERE, e.getClass().getName() + ": " + e.getMessage());
+			e.printStackTrace();
+		}
+		return objectId;
 	}
 
 	/**
@@ -290,17 +343,26 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 	public List<String> getUserItemRatingFrom(long userID) {
 		List<String> list = new LinkedList<>();
 		try {
-			
+			String dbName = getConnection().getMetaData().getURL();
+        	// System.out.println("[getUserItemRatingFrom] Accediendo a la base de datos: " + dbName);
+
+			// Añadido id_item_internal 2025-10-29
 			// Query
-			PreparedStatement select = getConnection().prepareStatement("SELECT id_user,id_item,rating FROM user_item_context WHERE id_user== ?");
+			// Modified by Nacho Palacio 2025-11-04 (ordenado por rating DESC)
+			// PreparedStatement select = getConnection().prepareStatement("SELECT id_user,id_item,rating,id_item_internal FROM user_item_context WHERE id_user== ? ORDER BY rating DESC");
+			PreparedStatement select = getConnection().prepareStatement("SELECT id_user,id_item,rating FROM user_item_context WHERE id_user=? ORDER BY rating DESC"); // Modified by Nacho Palacio 2025-11-05 (sin id_item_internal)
+			
 			select.setLong(1, userID);
 			ResultSet resultSet = select.executeQuery();
 			
 			while (resultSet.next()) {
 				long userId = resultSet.getLong(1);
 				long itemId = resultSet.getLong(2);
-				float rating = resultSet.getLong(3);
-				list.add(userId + ";" + itemId + ";" + rating);
+				float rating = resultSet.getFloat(3);
+				// long itemIdInternal = resultSet.getLong(4);
+
+				// System.out.println("DataAccessLayer.getUserItemRatingFrom: userId=" + userId + ", itemId=" + itemId + ", rating=" + rating + ", itemIdInternal=" + itemIdInternal);
+				list.add(userId + ";" + itemId + ";" + rating + ";");
 			}
 			
 			resultSet.close();
@@ -324,9 +386,13 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 		ResultSet resultSet = null;
 		List<String> list = new LinkedList<>();
 		try {
-			
+			String dbName = getConnection().getMetaData().getURL();
+        	System.out.println("[getUserItemContextRatingFor] Accediendo a la base de datos: " + dbName);
+
+			// Añadido id_item_internal 2025-10-29
 			// Query
-			PreparedStatement select = getConnection().prepareStatement("SELECT id_user,id_item,id_context,rating FROM user_item_context WHERE id_user== ? ORDER BY rating DESC");
+			// PreparedStatement select = getConnection().prepareStatement("SELECT id_user,id_item,id_context,rating,id_item_internal FROM user_item_context WHERE id_user== ? ORDER BY rating DESC");
+			PreparedStatement select = getConnection().prepareStatement("SELECT id_user,id_item,id_context,rating FROM user_item_context WHERE id_user=? ORDER BY rating DESC"); // Modified by Nacho Palacio 2025-11-05 (sin id_item_internal)
 			select.setLong(1, userID);
 			resultSet = select.executeQuery();
 			
@@ -335,7 +401,8 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 				long itemId = resultSet.getLong(2);
 				long context = resultSet.getLong(3);
 				float rating = resultSet.getLong(4);
-				list.add(userId + ";" + itemId + ";" + context + ";" + rating);
+				// long itemIdInternal = resultSet.getLong(5);
+				list.add(userId + ";" + itemId + ";" + context + ";" + rating + ";");
 			}
 			
 			resultSet.close();
@@ -358,8 +425,10 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 			List<String> notOrdered = new LinkedList<>();
 			
 			// Query
-			PreparedStatement select = getConnection().prepareStatement("SELECT DISTINCT id_user,id_item,id_context,rating FROM user_item_context WHERE id_user== ?");	// Order by random() in SQLite doesn't allow parameters -> Order list afterwards
+			// PreparedStatement select = getConnection().prepareStatement("SELECT DISTINCT id_user,id_item,id_context,rating,id_item_internal FROM user_item_context WHERE id_user== ?");	// Order by random() in SQLite doesn't allow parameters -> Order list afterwards
 																																										// ORDER BY RANDOM(" + Configuration.simulation.getSeed() + ")");
+			
+			PreparedStatement select = getConnection().prepareStatement("SELECT DISTINCT id_user,id_item,id_context,rating FROM user_item_context WHERE id_user=? ORDER BY RANDOM()"); // Modified by Nacho Palacio 2025-11-05 (sin id_item_internal)
 			select.setLong(1, userID);
 			resultSet = select.executeQuery();
 			
@@ -368,14 +437,26 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 				long itemId = resultSet.getLong(2);
 				long context = resultSet.getLong(3);
 				float rating = resultSet.getLong(4);
-				notOrdered.add(userId + ";" + itemId + ";" + context + ";" + rating);
+				// long itemIdInternal = resultSet.getLong(5);
+				notOrdered.add(userId + ";" + itemId + ";" + context + ";" + rating + ";");
+				// System.out.println("✅ RandomRecommendation: Retrieved preference string: " + userId + ";" + itemId + ";" + context + ";" + rating + ";");
 			}
+			// System.out.println("✅ RandomRecommendation: Retrieved " + notOrdered.size() + " preferences for userID "+ userID);
+			// System.out.println("✅ RandomRecommendation: Seed used for random ordering: " + Configuration.simulation.getSeed());
+			// System.out.println("✅ RandomRecommendation: Ordering preferences randomly...");
+
 			
 			resultSet.close();
 			select.close();
 			
 			// Order list by rand
 			list = orderListByRand(notOrdered);
+			// System.out.println("✅ RandomRecommendation: Preferences randomly ordered.");
+			// System.out.println("✅ RandomRecommendation: Final list size: " + list.size());
+			// System.out.println("✅ RandomRecommendation: First 20 preferences in final list:");
+			for (int i = 0; i < Math.min(20, list.size()); i++) {
+				System.out.println("    " + list.get(i));
+			}
 
 		} catch (SQLException e) {
 			log.log(Level.SEVERE, e.getClass().getName() + ": " + e.getMessage());
@@ -389,7 +470,9 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 	// id_user==176 ORDER BY RANDOM() LIMIT 10;
 
 	private List<String> orderListByRand(List<String> notOrdered) {
-		Collections.shuffle(notOrdered, new Random(Configuration.simulation.getSeed()));
+		long variableSeed = System.nanoTime() + Configuration.simulation.getSeed(); // Added by Nacho Palacio 2025-12-09
+		// Collections.shuffle(notOrdered, new Random(Configuration.simulation.getSeed()));
+		Collections.shuffle(notOrdered, new Random(variableSeed)); // Modified by Nacho Palacio 2025-12-09
 		return notOrdered;
 		
 	}
@@ -455,7 +538,7 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 	 * @return A HashMap with the number of items by user.
 	 */
 	public Map<Long, Integer> getHashWithNumberItemsByUser() {
-		/* Añadido por Nacho Palacio 2025-04-15. */
+		/* Added by Nacho Palacio 2025-04-15. */
 		Map<Long, Integer> hashWithNumberItemsByUser = new TreeMap<>();
 		Connection conn = getConnection();
 		try {
@@ -703,7 +786,7 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 	 * @return The item latitude.
 	 */
 	public long getItemLatitude(long itemID) {
-		// Añadido por Nacho Palacio 2025-04-22
+		// Added by Nacho Palacio 2025-04-22
 		long externalItemId = convertToExternalId(itemID, ElementIdMapper.CATEGORY_ITEM);
 
 		long latitude = 0;
@@ -713,7 +796,7 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 			// Query
 			PreparedStatement select = getConnection()
 					.prepareStatement("SELECT latitude_gps FROM item WHERE id_item= ?");
-			select.setInt(1, (int) externalItemId); // Modificado por Nacho Palacio 2025-04-22
+			select.setInt(1, (int) externalItemId); // Modified by Nacho Palacio 2025-04-22
 			resultSet = select.executeQuery();
 			
 			latitude = resultSet.getInt(1);
@@ -733,7 +816,7 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 	 * @return The item longitude.
 	 */
 	public long getItemLongitude(long itemID) {
-		// Añadido por Nacho Palacio 2025-04-22
+		// Added by Nacho Palacio 2025-04-22
 		long externalItemId = convertToExternalId(itemID, ElementIdMapper.CATEGORY_ITEM);
 
 		long latitude = 0;
@@ -743,7 +826,7 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 			// Query
 			PreparedStatement select = getConnection()
 					.prepareStatement("SELECT longitude_gps FROM item WHERE id_item= ?");
-			select.setInt(1, (int) externalItemId); // Modificado por Nacho Palacio 2025-04-22
+			select.setInt(1, (int) externalItemId); // Modified by Nacho Palacio 2025-04-22
 			resultSet = select.executeQuery();
 			
 			latitude = resultSet.getInt(1);
@@ -871,21 +954,62 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 	 *            Context identifier.
 	 * @return ResultSet.
 	 */
+	// @Override
+	// public float getPreferenceFor(long userId, long itemId, long contextId) {
+	// 	float rating = 0;
+	// 	try {
+			
+	// 		// Query
+	// 		PreparedStatement select = getConnection()
+	// 				.prepareStatement("SELECT rating FROM user_item_context WHERE id_user== ? AND id_item== ? AND id_context== ?");
+	// 		select.setInt(1, (int) userId);
+	// 		select.setInt(2, (int) itemId);
+	// 		select.setInt(3, (int) contextId);
+			
+	// 		rating = (float) select.executeQuery().getDouble("rating");
+			
+	// 	} catch (SQLException e) {
+	// 		log.log(Level.SEVERE, e.getClass().getName() + ": " + e.getMessage());
+	// 		e.printStackTrace();
+	// 	}
+		
+	// 	return rating;
+	// }
+
 	@Override
 	public float getPreferenceFor(long userId, long itemId, long contextId) {
 		float rating = 0;
+		
 		try {
+			// Imprimir nombre de la base de datos ANTES del try-with-resources
+			String dbName = getConnection().getMetaData().getURL();
+			// System.out.println("[getPreferenceFor] Accediendo a la base de datos: " + dbName);
 			
-			// Query
-			PreparedStatement select = getConnection()
-					.prepareStatement("SELECT rating FROM user_item_context WHERE id_user== ? AND id_item== ? AND id_context== ?");
-			select.setInt(1, (int) userId);
-			select.setInt(2, (int) itemId);
-			select.setInt(3, (int) contextId);
-			
-			rating = (float) select.executeQuery().getDouble("rating");
-			
+			// PreparedStatement select = getConnection().prepareStatement(
+			// 	"SELECT rating FROM user_item_context WHERE id_user = ? AND id_item_internal = ? AND id_context = ?")
+
+			// PreparedStatement select = getConnection().prepareStatement(
+			// 	"SELECT rating FROM user_item_context WHERE id_user = ? AND id_item_internal = ?") // Modified by Nacho Palacio 2025-10-26
+
+			// Modified by Nacho Palacio 2025-11-05
+			try (PreparedStatement select = getConnection().prepareStatement("SELECT rating FROM user_item_context WHERE id_user=? AND id_item=?")
+			) {
+				select.setLong(1, userId);
+				select.setLong(2, itemId);
+				// select.setLong(3, contextId);
+
+				// System.out.println("[getPreferenceFor] Executing query for userId=" + userId + ", itemId=" + itemId + ", contextId=" + contextId);
+
+				try (ResultSet rs = select.executeQuery()) {
+					if (rs.next()) {
+						rating = rs.getFloat("rating");
+						// System.out.println("[getPreferenceFor] Found rating in database.");
+					}
+					//System.out.println("[getPreferenceFor] Retrieved rating: " + rating);
+				}
+			}
 		} catch (SQLException e) {
+			// System.out.println("[getPreferenceFor] ERROR: userId=" + userId + ", itemId=" + itemId + ", contextId=" + contextId);
 			log.log(Level.SEVERE, e.getClass().getName() + ": " + e.getMessage());
 			e.printStackTrace();
 		}
@@ -907,7 +1031,7 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 				// long itemId = resultSet.getLong(1);
 				// list.add(itemId);
 
-				// Modificado por Nacho Palacio 2025-04-22
+				// Modified by Nacho Palacio 2025-04-22
 				long externalItemId = resultSet.getLong(1);
 				long internalItemId = convertToInternalId(externalItemId, ElementIdMapper.CATEGORY_ITEM);
 				list.add(internalItemId);;
@@ -922,7 +1046,7 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 	}
 
 		/**
-	 * Añadido por Nacho Palacio 2025-04-14. 
+	 * Added by Nacho Palacio 2025-04-14. 
 	 * Ensures the database has enough users for the simulation.
 	 * If there are fewer users than needed, it adds new ones.
 	 * 
@@ -1015,7 +1139,7 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 	}
 
 		/**
-	 * Añadido por Nacho Palacio 2025-04-14.
+	 * Added by Nacho Palacio 2025-04-14.
 	 * Ensures the user has basic preferences in the database.
 	 * This is important for recommendation algorithms to work.
 	 * 
@@ -1102,7 +1226,7 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 		}
 	}
 
-	// Añadido por Nacho Palacio 2025-04-22.
+	// Added by Nacho Palacio 2025-04-22.
 	/**
 	 * Converts an external ID (stored in the database) to an internal ID (used in the model).
 	 * @param externalId ID stored in the database.
