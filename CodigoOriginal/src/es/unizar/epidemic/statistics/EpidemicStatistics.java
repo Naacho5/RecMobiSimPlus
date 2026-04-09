@@ -286,6 +286,23 @@ public class EpidemicStatistics {
     public void setModelSpecificStat(String key, Object value) {
         modelSpecificStats.put(key, value);
     }
+
+    /**
+     * Records the volume of a room.
+     * @param roomId the ID of the room
+     * @param volume the volume of the room in cubic meters
+     */
+    public void recordRoomVolume(int roomId, double volume) {
+        roomStats.computeIfAbsent(roomId, k -> new RoomStatistics(roomId)).setRoomVolume(volume);
+    }
+
+    /**
+     * Records a visit to a room by an infectious user.
+     * @param roomId the ID of the room visited by an infectious user
+     */
+    public void recordInfectiousVisit(int roomId) {
+        roomStats.computeIfAbsent(roomId, k -> new RoomStatistics(roomId)).recordInfectiousVisit();
+    }
     
     /**
      * Prints final statistics to the console.
@@ -351,12 +368,35 @@ public class EpidemicStatistics {
         
         System.out.println("\n" + "=".repeat(60));
     }
+
+    public void printRoomVolumeAnalysis() {
+        System.out.println("\n ROOM VOLUME vs CONCENTRATION ANALYSIS:");
+        System.out.printf("%-8s %-12s %-14s %-14s %-10s%n",
+            "ROOM", "VOLUME(m³)", "AVG_CONC", "MAX_CONC", "INF_VISITS");
+        System.out.println("-".repeat(65));
+
+        roomStats.entrySet().stream()
+            .filter(e -> !e.getValue().aerosolConcentrations.isEmpty())
+            .sorted(Comparator.comparingDouble(e -> e.getValue().roomVolume))
+            .forEach(e -> {
+                RoomStatistics rs = e.getValue();
+                double avg = rs.aerosolConcentrations.stream()
+                    .mapToDouble(Double::doubleValue).average().orElse(0.0);
+                double max = rs.aerosolConcentrations.stream()
+                    .mapToDouble(Double::doubleValue).max().orElse(0.0);
+                System.out.printf("%-8d %-12.1f %-14.6e %-14.6e %-10d%n",
+                    e.getKey(), rs.roomVolume, avg, max, rs.infectiousVisits);
+            });
+    }
     
     
     public static class RoomStatistics {
         private int roomId;
         private int totalContacts = 0;
         protected List<Double> aerosolConcentrations = new ArrayList<>();
+
+        private double roomVolume = 0.0;
+        private int infectiousVisits = 0;
         
         public RoomStatistics(int roomId) {
             this.roomId = roomId;
@@ -396,6 +436,9 @@ public class EpidemicStatistics {
                 System.out.println("     Maximum aerosol concentration: " + String.format("%.2e", maxConcentration));
             }
         }
+
+        public void setRoomVolume(double vol) { this.roomVolume = vol; }
+        public void recordInfectiousVisit() { this.infectiousVisits++; }
     }
     
     public static class HealthStateSnapshot {

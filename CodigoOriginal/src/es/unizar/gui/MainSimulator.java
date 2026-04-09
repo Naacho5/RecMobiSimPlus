@@ -43,6 +43,7 @@ import com.mxgraph.view.mxGraphView;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -54,6 +55,8 @@ import es.unizar.editor.MapEditor;
 import es.unizar.epidemic.general.EpidemicConfiguration;
 import es.unizar.graph.GraphManager;
 import es.unizar.gui.graph.DrawFloorGraph;
+import es.unizar.gui.graph.FloorModel;
+import es.unizar.gui.graph.FloorModelHeadless;
 import es.unizar.gui.simulation.NeglectedEvaluations;
 import es.unizar.gui.simulation.User;
 import es.unizar.gui.simulation.UserRunnable;
@@ -114,7 +117,8 @@ public class MainSimulator {
 	public static File itemFile;
 
 	public static mxGraphComponent graphComponent;
-	public static DrawFloorGraph floor;
+	// public static DrawFloorGraph floor;
+	public static FloorModel floor;
 	public static FloorPanel floorPanel;
 	public static FloorPanelCombined floorPanelCombined;
 	//public GraphForSpecialUser graphSpecialUser;
@@ -134,6 +138,9 @@ public class MainSimulator {
 	private static Map<Pair<Integer,Integer>,Double> timeUsersInRooms;
 	
 	public static UserInfo userInfo;
+
+	public static boolean HEADLESS_MODE = false;
+
 	
 	/* silarri (2022-07-13). */
 	private void stopSimulation()
@@ -158,6 +165,27 @@ public class MainSimulator {
 	 * Launch the application.
 	 */
 	public static void main(String[] args) {
+
+		boolean headless = java.awt.GraphicsEnvironment.isHeadless();
+		HEADLESS_MODE = headless;
+
+		if (HEADLESS_MODE) {
+			db = new DatabaseAccess();
+
+			MainSimulator.floor = new FloorModelHeadless();
+			configureHeadlessLogger();
+			
+			System.out.println("Modo headless detectado. Ejecutando simulación automatizada...");
+			
+			String testType = args.length > 0 ? args[0] : "synthetic";
+			runAutomatedSimulation(testType);
+			
+			System.out.println("Simulation completed.");
+			return;
+		}
+		
+		MainSimulator.floor = new DrawFloorGraph();
+
 		/* Set the Nimbus look and feel */
 		// <editor-fold defaultstate="collapsed" desc=" Look and feel setting
 		// code (optional) ">
@@ -202,6 +230,7 @@ public class MainSimulator {
 				}
 			}
 		});
+		
 	}
 
 	/**
@@ -815,7 +844,7 @@ public class MainSimulator {
 		// });
 		// simulationValidatorMenuItem.setFont(new Font("SansSerif", Font.PLAIN, 16));
 		// simulationMenu.add(simulationValidatorMenuItem);
-		JMenuItem simulationValidatorMenuItem = new JMenuItem("Test Simulación Completa");
+		JMenuItem simulationValidatorMenuItem = new JMenuItem("Test sintéticos");
 		simulationValidatorMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				new Thread(() -> {
@@ -850,17 +879,17 @@ public class MainSimulator {
 		// });
 		// contactComparisonMenuItem.setFont(new Font("SansSerif", Font.PLAIN, 16));
 		// simulationMenu.add(contactComparisonMenuItem);
-		JMenuItem contactComparisonMenuItem = new JMenuItem("Comparar Sintéticas vs Reales");
-		contactComparisonMenuItem.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				new Thread(() -> {
-					MainSimulator.printConsole("Ejecutando comparación entre modelos...", Level.WARNING);
-					es.unizar.epidemic.tests.comparison.ModelComparisonAnalyzer.compare();
-				}).start();
-			}
-		});
-		contactComparisonMenuItem.setFont(new Font("SansSerif", Font.PLAIN, 16));
-		simulationMenu.add(contactComparisonMenuItem);
+		// JMenuItem contactComparisonMenuItem = new JMenuItem("Comparar Sintéticas vs Reales");
+		// contactComparisonMenuItem.addActionListener(new ActionListener() {
+		// 	public void actionPerformed(ActionEvent arg0) {
+		// 		new Thread(() -> {
+		// 			MainSimulator.printConsole("Ejecutando comparación entre modelos...", Level.WARNING);
+		// 			es.unizar.epidemic.tests.comparison.ModelComparisonAnalyzer.compare();
+		// 		}).start();
+		// 	}
+		// });
+		// contactComparisonMenuItem.setFont(new Font("SansSerif", Font.PLAIN, 16));
+		// simulationMenu.add(contactComparisonMenuItem);
 
 		// JMenuItem spatialValidationMenuItem = new JMenuItem("Validar Contactos Espaciales");
 		// spatialValidationMenuItem.addActionListener(new ActionListener() {
@@ -885,29 +914,30 @@ public class MainSimulator {
 		// });
 		// mixContactModelTest.setFont(new Font("SansSerif", Font.PLAIN, 16));
 		// simulationMenu.add(mixContactModelTest);
-		JMenuItem mixContactModelTest = new JMenuItem("Validar Modelo de Contactos Mixto");
+		JMenuItem contactsTestsMenuItem = new JMenuItem("Test 1 contactos");
+		contactsTestsMenuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				new Thread(() -> {
+					MainSimulator.printConsole("Ejecutando prueba 1 de contactos", Level.WARNING);
+					es.unizar.epidemic.tests.contacts.ContactBasedTests.runAll();
+				}).start();
+			}
+		});
+		contactsTestsMenuItem.setFont(new Font("SansSerif", Font.PLAIN, 16));
+		simulationMenu.add(contactsTestsMenuItem);
+		
+		JMenuItem mixContactModelTest = new JMenuItem("Test 2 contactos");
 		mixContactModelTest.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				new Thread(() -> {
-					MainSimulator.printConsole("Ejecutando validación de modo mixto...", Level.WARNING);
-					es.unizar.epidemic.tests.mixedmode.MixedModeValidator.run();
+					MainSimulator.printConsole("Ejecutando prueba 2 de contactos", Level.WARNING);
+					es.unizar.epidemic.tests.contacts.MixedModeTests.run();
 				}).start();
 			}
 		});
 		mixContactModelTest.setFont(new Font("SansSerif", Font.PLAIN, 16));
 		simulationMenu.add(mixContactModelTest);
 
-		JMenuItem contactsTestsMenuItem = new JMenuItem("Prueba 1 contactos");
-		contactsTestsMenuItem.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				new Thread(() -> {
-					MainSimulator.printConsole("Ejecutando tests con contactos reales...", Level.WARNING);
-					es.unizar.epidemic.tests.scenarios.ContactBasedTests.runAll();
-				}).start();
-			}
-		});
-		contactsTestsMenuItem.setFont(new Font("SansSerif", Font.PLAIN, 16));
-		simulationMenu.add(contactsTestsMenuItem);
 		// JMenuItem testModelMenuItem5 = new JMenuItem("Test Escenarios");
 		// testModelMenuItem5.addActionListener(new ActionListener() {
 		// 	public void actionPerformed(ActionEvent arg0) {
@@ -919,6 +949,18 @@ public class MainSimulator {
 		// });
 		// testModelMenuItem5.setFont(new Font("SansSerif", Font.PLAIN, 16));
 		// simulationMenu.add(testModelMenuItem5);
+
+		JMenuItem macroTestsMenuItem = new JMenuItem("Test macro");
+		macroTestsMenuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				new Thread(() -> {
+					MainSimulator.printConsole("Ejecutando tests macro...", Level.WARNING);
+					es.unizar.epidemic.tests.macro.MacroComparisonTests.runAll();
+				}).start();
+			}
+		});
+		macroTestsMenuItem.setFont(new Font("SansSerif", Font.PLAIN, 16));
+		simulationMenu.add(macroTestsMenuItem);
 
 
 		// Separator adicional (opcional, para separar el test de la configuración)
@@ -1141,10 +1183,15 @@ public class MainSimulator {
 	public static void repaintFloorPanelCombined() {
 		
 		// Refresh to update user's positions
-		floor.refreshFloorGraph();
+		// floor.refreshFloorGraph();
 		
-		graphComponent = floor.getRoomGraphComponent();
+		// graphComponent = floor.getRoomGraphComponent();
 		
+		if (floor instanceof DrawFloorGraph) {
+			DrawFloorGraph drawFloor = (DrawFloorGraph) floor;
+			drawFloor.refreshFloorGraph();
+			graphComponent = drawFloor.getRoomGraphComponent();
+		}
 		
 		/*
 		
@@ -1175,22 +1222,42 @@ public class MainSimulator {
 			boolean ifRemoveVertexLabel = removeVertexCheckItem.isSelected();
 			boolean ifRemoveEdges = removeEdgeCheckItem.isSelected();
 			// Draw floor graph
-			graphComponent = floor.drawFloor(roomFile, itemFile, ifRemoveVertexLabel, ifRemoveEdges, 2);
-			graphComponent.setToolTips(true);
-			graphComponent.getViewport().setBackground(new Color(0, 0, 0, 0));
-			graphComponent.getViewport().setOpaque(true);
+			// graphComponent = floor.drawFloor(roomFile, itemFile, ifRemoveVertexLabel, ifRemoveEdges, 2);
+			// graphComponent.setToolTips(true);
+			// graphComponent.getViewport().setBackground(new Color(0, 0, 0, 0));
+			// graphComponent.getViewport().setOpaque(true);
 
-			// Add to graphComponent the floorPanelCombined (that contains the users):
-			floorPanelCombined.removeAll();
-			floorPanelCombined.add(graphComponent);
-			if (gui.isSelected()) {
-				floorPanelCombined.revalidate();
-				floorPanelCombined.repaint();
+			// // Add to graphComponent the floorPanelCombined (that contains the users):
+			// floorPanelCombined.removeAll();
+			// floorPanelCombined.add(graphComponent);
+			// if (gui.isSelected()) {
+			// 	floorPanelCombined.revalidate();
+			// 	floorPanelCombined.repaint();
+			// }
+
+			// // Load the dictionary, the graph of recommendation y gets the paths for number of users.
+			// floor.loadDiccionaryItemLocation();
+			// System.out.println("Dictionary of items loaded.");
+
+			if (floor instanceof DrawFloorGraph) {
+				DrawFloorGraph drawFloor = (DrawFloorGraph) floor;
+				graphComponent = drawFloor.drawFloor(roomFile, itemFile, ifRemoveVertexLabel, ifRemoveEdges, 2);
+				graphComponent.setToolTips(true);
+				graphComponent.getViewport().setBackground(new Color(0, 0, 0, 0));
+				graphComponent.getViewport().setOpaque(true);
+
+				// Add to graphComponent the floorPanelCombined (that contains the users):
+				floorPanelCombined.removeAll();
+				floorPanelCombined.add(graphComponent);
+				if (gui.isSelected()) {
+					floorPanelCombined.revalidate();
+					floorPanelCombined.repaint();
+				}
+
+				// Load the dictionary
+				drawFloor.loadDiccionaryItemLocation();
+				System.out.println("Dictionary of items loaded.");
 			}
-
-			// Load the dictionary, the graph of recommendation y gets the paths for number of users.
-			floor.loadDiccionaryItemLocation();
-			System.out.println("Dictionary of items loaded.");
 
 			// The loaded floors are printed on the console.
 			printConsole("Loaded floors. Ready to start the simulation: Simulation/Start.", Level.WARNING);
@@ -1264,7 +1331,7 @@ public class MainSimulator {
 		
 		int totalItems = itemFile.getNumberOfItems();
 		data.totalItems = totalItems;
-		System.out.println("analizeSystemRangesDirectly: totalItems = " + totalItems);
+		// System.out.println("analizeSystemRangesDirectly: totalItems = " + totalItems);
 		
 		for (int i = 1; i <= totalItems; i++) {
 			try {
@@ -1277,12 +1344,12 @@ public class MainSimulator {
 				// Continuar
 			}
 		}
-		System.out.println("analizeSystemRangesDirectly: minItemId = " + data.minItemId);
-		System.out.println("analizeSystemRangesDirectly: maxItemId = " + data.maxItemId);
+		// System.out.println("analizeSystemRangesDirectly: minItemId = " + data.minItemId);
+		// System.out.println("analizeSystemRangesDirectly: maxItemId = " + data.maxItemId);
 
 		int totalRooms = graphFile.getNumberOfRoom();
 		int totalDoors = 0;
-		System.out.println("analizeSystemRangesDirectly: totalRooms = " + totalRooms);
+		// System.out.println("analizeSystemRangesDirectly: totalRooms = " + totalRooms);
 		
 		for (int roomId = 1; roomId <= totalRooms; roomId++) {
 			int doorsInRoom = graphFile.getNumberOfDoorsByRoom(roomId);
@@ -1303,13 +1370,13 @@ public class MainSimulator {
 			}
 		}
 		data.totalDoors = totalDoors;
-		System.out.println("analizeSystemRangesDirectly: totalDoors = " + totalDoors);
-		System.out.println("analizeSystemRangesDirectly: minDoorId = " + data.minDoorId);
-		System.out.println("analizeSystemRangesDirectly: maxDoorId = " + data.maxDoorId);
+		// System.out.println("analizeSystemRangesDirectly: totalDoors = " + totalDoors);
+		// System.out.println("analizeSystemRangesDirectly: minDoorId = " + data.minDoorId);
+		// System.out.println("analizeSystemRangesDirectly: maxDoorId = " + data.maxDoorId);
 
 		int totalStairs = graphFile.getNumberOfStairs();
 		data.totalStairs = totalStairs;
-		System.out.println("analizeSystemRangesDirectly: totalStairs = " + totalStairs);
+		// System.out.println("analizeSystemRangesDirectly: totalStairs = " + totalStairs);
 		
 		for (int i = 1; i <= totalStairs; i++) {
 			try {
@@ -1336,8 +1403,67 @@ public class MainSimulator {
 
 	// Added by Nacho Palacio 2025-07-20
 	public static DrawFloorGraph getDrawFloorGraph() {
-        return floor;
+        // return floor;
+		if (floor instanceof DrawFloorGraph) {
+			return (DrawFloorGraph) floor;
+		}
+		return null;
     }
+
+	/**
+	 * Runs automated simulation tests.
+	 */
+	public static void runAutomatedSimulation(String testType) {
+		switch (testType.toLowerCase()) {
+			case "synthetic":
+			case "sinteticos":
+				printConsole("Running synthetic tests...", Level.WARNING);
+				es.unizar.epidemic.tests.scenarios.SyntheticScenarioTests.runAll();
+				break;
+				
+			case "contacts1":
+			case "contactos1":
+				printConsole("Running contact test 1...", Level.WARNING);
+				es.unizar.epidemic.tests.contacts.ContactBasedTests.runAll();
+				break;
+				
+			case "contacts2":
+			case "contactos2":
+				printConsole("Running contact test 2...", Level.WARNING);
+				es.unizar.epidemic.tests.contacts.MixedModeTests.run();
+				break;
+				
+			case "macro":
+				printConsole("Running macro tests...", Level.WARNING);
+				es.unizar.epidemic.tests.macro.MacroComparisonTests.runAll();
+				break;
+				
+			default:
+				System.err.println("Unknown test type: " + testType);
+				System.err.println("Valid types: synthetic, contacts1, contacts2, macro");
+				printConsole("Running synthetic tests by default...", Level.WARNING);
+				es.unizar.epidemic.tests.scenarios.SyntheticScenarioTests.runAll();
+				break;
+		}
+	}
+
+	/**
+	 * Configures the logger for headless mode to suppress verbose output.
+	 */
+	private static void configureHeadlessLogger() {
+		// Disable the main console logger
+		log.setUseParentHandlers(false);
+		
+		// Set a higher logging level (only important messages)
+		log.setLevel(Level.WARNING);  // Only WARNING and SEVERE
+		
+		ConsoleHandler handler = new ConsoleHandler();
+		handler.setLevel(Level.WARNING);
+		log.addHandler(handler);
+		
+		System.out.println("[Headless] Logger configured: only WARNING and SEVERE messages will be shown");
+	}
+
 
 	/**
 	 * Clase para almacenar datos de rangos del sistema.

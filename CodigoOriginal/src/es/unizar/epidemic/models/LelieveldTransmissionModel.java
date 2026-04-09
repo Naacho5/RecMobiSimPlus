@@ -224,7 +224,7 @@ public class LelieveldTransmissionModel extends AbstractEpidemicModel {
 
             pNoInfect *= (1.0 - pRoom);
         }
-        
+
         return 1.0 - pNoInfect;
     }
 

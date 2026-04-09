@@ -104,7 +104,6 @@ public class ContactTrajectoryBuilder {
             if (es.unizar.gui.MainSimulator.floor != null) {
                 int roomCount = es.unizar.gui.MainSimulator.floor.getRoomCount();
                 if (roomCount > 0) {
-                    System.out.println("    Rooms obtained from MainSimulator.floor: " + roomCount);
                     return roomCount;
                 }
             }
@@ -121,7 +120,6 @@ public class ContactTrajectoryBuilder {
                 
                 int roomCount = roomFileAccess.getNumberOfRoom();
                 if (roomCount > 0) {
-                    System.out.println("    Rooms obtained from ROOM_FLOOR_COMBINED: " + roomCount);
                     return roomCount;
                 }
             }
@@ -150,26 +148,13 @@ public class ContactTrajectoryBuilder {
             int eventDuration,
             int numRooms) {
         
-        System.out.println("\n" + "=".repeat(80));
-        System.out.println(" GENERATING SIMPLIFIED EVENTS (CIRCULAR ROTATION)");
-        System.out.println("=".repeat(80));
-        System.out.println("    Parameters:");
-        System.out.println("      - Users to process: " + userToCliqueMap.size());
-        System.out.println("      - Simulation duration: " + simulationDuration + "s (" + 
-                         String.format("%.1f", simulationDuration / 3600.0) + " hours)");
-        System.out.println("      - Event duration: " + eventDuration + "s (" + 
-                         String.format("%.1f", eventDuration / 60.0) + " min)");
-        System.out.println("      - Available rooms: " + numRooms);
-        
         Map<Integer, List<UserRoomEvent>> userEvents = new HashMap<>();
         
         // Calculate the number of events
         int numEvents = (int) Math.ceil((double) simulationDuration / eventDuration);
-        System.out.println("      - Events per user: " + numEvents);
         
         // Get unique cliques
         Set<Integer> uniqueCliques = new HashSet<>(userToCliqueMap.values());
-        System.out.println("      - Unique cliques: " + uniqueCliques.size());
         
         // Generate events for each user
         int usersProcessed = 0;
@@ -195,10 +180,6 @@ public class ContactTrajectoryBuilder {
             usersProcessed++;
             usersPerClique.merge(cliqueId, 1, Integer::sum);
         }
-        
-        System.out.println("\n    Events generated:");
-        System.out.println("      - Users processed: " + usersProcessed);
-        System.out.println("      - Total events created: " + (usersProcessed * numEvents));
     
         return userEvents;
     }
@@ -258,16 +239,7 @@ public class ContactTrajectoryBuilder {
         }
         br.close();
         
-        System.out.println("    Minimum date found: " + minDate);
-        System.out.println("    Unique users found: " + uniqueRealUsers.size());
-
         Set<Integer> usersToLoad = priorityUserIds != null ? priorityUserIds : uniqueRealUsers;
-        
-        if (priorityUserIds != null) {
-            System.out.println("    Using " + priorityUserIds.size() + " priority users from cliques");
-        } else {
-            System.out.println("   Warning! No priority users provided, using " + uniqueRealUsers.size() + " from CSV");
-        }
 
         Map<Integer, List<UserRoomEvent>> userRoomEvents = new HashMap<>();
         br = new BufferedReader(new FileReader(csvPath));

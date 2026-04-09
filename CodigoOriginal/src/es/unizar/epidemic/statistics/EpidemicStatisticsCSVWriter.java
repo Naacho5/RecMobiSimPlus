@@ -71,7 +71,6 @@ public class EpidemicStatisticsCSVWriter {
             contactsWriter.flush();
             
             isInitialized = true;
-            System.out.println("[EpidemicStatisticsCSVWriter] Initialized correctly. Directory: " + OUTPUT_DIR);
             
         } catch (IOException e) {
             System.err.println("[EpidemicStatisticsCSVWriter] Error initializing writers: " + e.getMessage());
@@ -167,7 +166,6 @@ public class EpidemicStatisticsCSVWriter {
             if (aerosolWriter != null) aerosolWriter.close();
             if (stateHistoryWriter != null) stateHistoryWriter.close();
             if (contactsWriter != null) contactsWriter.close();
-            System.out.println("[EpidemicStatisticsCSVWriter] All writers closed correctly");
         } catch (IOException e) {
             System.err.println("[EpidemicStatisticsCSVWriter] Error closing writers: " + e.getMessage());
         }

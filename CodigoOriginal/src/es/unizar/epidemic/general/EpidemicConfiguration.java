@@ -21,7 +21,7 @@ public class EpidemicConfiguration {
     private boolean enableVaccination = false;
 
     private double maxTransmissionDistance = 6.5;     // meters  
-    private double baseTransmissionProbability = 0.1; // 7%
+    private double baseTransmissionProbability = 0.1; // 10%
     private int minContactDuration = 300;              // seconds
 
     private double defaultVentilationRate = 3.0;          // h⁻¹
@@ -45,6 +45,9 @@ public class EpidemicConfiguration {
     private double depositionProbability = 0.5;          // 0-1
     
     private static EpidemicConfiguration instance;
+
+    private String recommendationAlgorithm = "Completely-random (FULLY-RAND)"; // Default
+
     
     /**
      * Gets the singleton instance of EpidemicConfiguration.
@@ -330,6 +333,15 @@ public class EpidemicConfiguration {
         return totalUsers;
     }
 
+    /**
+     * Gets the recommendation algorithm name.
+     * 
+     * @return recommendation algorithm
+     */
+    public String getRecommendationAlgorithm() {
+        return recommendationAlgorithm;
+    }
+
 
     // SETTERS
     /**
@@ -584,6 +596,15 @@ public class EpidemicConfiguration {
      */
     public void setTotalUsers(int totalUsers) {
         this.totalUsers = totalUsers;
+    }
+
+    /**
+     * Sets the recommendation algorithm name.
+     * 
+     * @param recommendationAlgorithm recommendation algorithm name
+     */
+    public void setRecommendationAlgorithm(String recommendationAlgorithm) {
+        this.recommendationAlgorithm = recommendationAlgorithm;
     }
 
     /**

@@ -49,7 +49,6 @@ public class EpidemicIterationsBinaryWriter {
             currentOffset = 4; // After header
             isInitialized = true;
             
-            System.out.println("[EpidemicIterationsBinaryWriter] Initialized. File: " + OUTPUT_FILE);
         } catch (IOException e) {
             System.err.println("[EpidemicIterationsBinaryWriter] Error initializing: " + e.getMessage());
             e.printStackTrace();

@@ -20,7 +20,7 @@ public class SimpleProximityModel extends AbstractEpidemicModel {
     
     // Simple model parameters
     private double maxTransmissionDistance = 6.5;    // meters
-    private double baseTransmissionProbability = 0.1; // 5% base probability
+    private double baseTransmissionProbability = 0.1; // 10% base probability
     private int minContactDuration = 300;             // seconds
     
     public SimpleProximityModel() {

@@ -4,6 +4,7 @@ import java.io.*;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -56,8 +57,8 @@ public class RiskAwareRecommendation {
             List<Long> favoriteArtworks
     ) throws IOException {
 
-        System.out.println("RiskAwareRecommendation.recommend():");
-        System.out.println("    userId: " + userId);
+        // System.out.println("RiskAwareRecommendation.recommend():");
+        // System.out.println("    userId: " + userId);
         
         if (visitedArtworks == null) {
             visitedArtworks = new ArrayList<>();
@@ -77,8 +78,8 @@ public class RiskAwareRecommendation {
         
         Set<Long> visitedOriginalsSet = new HashSet<>(visitedOriginals);
 
-        System.out.println("[RiskAwareRecommendation] Items already visited (sequential): " + visitedArtworks.size());
-        System.out.println("[RiskAwareRecommendation] Items already visited (original): " + visitedOriginals.size());
+        // System.out.println("[RiskAwareRecommendation] Items already visited (sequential): " + visitedArtworks.size());
+        // System.out.println("[RiskAwareRecommendation] Items already visited (original): " + visitedOriginals.size());
 
         // Translate favoriteArtworks from sequential IDs to original ones
         List<Long> favoriteOriginals = new ArrayList<>();
@@ -104,21 +105,29 @@ public class RiskAwareRecommendation {
         Gson gson = new Gson();
         String inputJson = gson.toJson(input);
 
+        // System.out.println("[RiskAwareRecommendation] 📤 Sending to Python:");
+        // System.out.println(inputJson);
+
         // Launch Python process
         ProcessBuilder pb = new ProcessBuilder("python3", pythonScriptPath);
-        pb.environment().put("PYTHONPATH", "/home/nacho/universidad/cuarto/TFG/RecMobiSimPlus/Backups/moma.recommender-main-snapshot20251005/moma.recommender-main/");
-        pb.redirectErrorStream(true);
+        // pb.environment().put("PYTHONPATH", "/home/nacho/universidad/cuarto/TFG/RecMobiSimPlus/Backups/moma.recommender-main-snapshot20251005/moma.recommender-main/");
+        pb.environment().put("PYTHONPATH", "../../Backups/moma.recommender-main-snapshot20251005/moma.recommender-main/");
+        // pb.redirectErrorStream(true);
         
         Process process = null;
         StringBuilder output = new StringBuilder();
+        StringBuilder errorOutput = new StringBuilder();
+        
         
         try {
             process = pb.start();
+            // System.out.println("[RiskAwareRecommendation] 🐍 Python process started.");
 
             try (OutputStream os = process.getOutputStream();
                  BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os))) {
                 writer.write(inputJson);
                 writer.flush();
+                // System.out.println("[RiskAwareRecommendation] 📤 JSON sent to Python.");
             } 
 
             // Read the response
@@ -130,13 +139,94 @@ public class RiskAwareRecommendation {
                 }
             }
 
+            // System.out.println("[RiskAwareRecommendation] ⏳ Waiting for Python to finish...");
+            boolean finished = process.waitFor(30, TimeUnit.SECONDS);
+            
+            if (!finished) {
+                System.err.println("⚠️ Python process timeout (30s) - User " + userId);
+                process.destroyForcibly();
+                throw new IOException("Python process timeout (30s)");
+            }
+
             // Wait for the process to finish
             int exitCode = process.waitFor();
             if (exitCode != 0) {
                 System.err.println("[RiskAwareRecommendation] Warning! Python ended with code: " + exitCode);
+                throw new IOException("Python process failed with exit code: " + exitCode);
             }
 
-        } catch (InterruptedException e) {
+            // System.out.println("[RiskAwareRecommendation] ✅ Python process completed successfully.");
+
+        } 
+
+        // try {
+        //     process = pb.start();
+
+        //     final InputStream stdout = process.getInputStream();
+        //     final InputStream stderr = process.getErrorStream();
+
+        //     // Escribir input JSON
+        //     try (OutputStream os = process.getOutputStream();
+        //         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os))) {
+        //         writer.write(inputJson);
+        //         writer.flush();
+        //     } 
+
+        //     // ✅ NUEVO: Leer STDOUT y STDERR en hilos separados
+        //     Thread stdoutReader = new Thread(() -> {
+        //         try (BufferedReader reader = new BufferedReader(new InputStreamReader(stdout))) {
+        //             String line;
+        //             while ((line = reader.readLine()) != null) {
+        //                 output.append(line).append("\n");
+        //             }
+        //         } catch (IOException e) {
+        //             e.printStackTrace();
+        //         }
+        //     });
+
+        //     Thread stderrReader = new Thread(() -> {
+        //         try (BufferedReader reader = new BufferedReader(new InputStreamReader(stderr))) {
+        //             String line;
+        //             while ((line = reader.readLine()) != null) {
+        //                 errorOutput.append(line).append("\n");
+        //             }
+        //         } catch (IOException e) {
+        //             e.printStackTrace();
+        //         }
+        //     });
+
+        //     stdoutReader.start();
+        //     stderrReader.start();
+
+        //     // Esperar a que termine el proceso
+        //     int exitCode = process.waitFor();
+            
+        //     // Esperar a que terminen los threads de lectura
+        //     stdoutReader.join(5000);
+        //     stderrReader.join(5000);
+
+        //     // ✅ NUEVO: Mostrar STDOUT y STDERR por separado
+        //     if (output.length() > 0) {
+        //         System.out.println("[RiskAwareRecommendation] 📥 STDOUT from Python:");
+        //         System.out.println(output.toString());
+        //     }
+
+        //     if (errorOutput.length() > 0) {
+        //         System.err.println("[RiskAwareRecommendation] 🔴 STDERR from Python:");
+        //         System.err.println(errorOutput.toString());
+        //     }
+
+        //     if (exitCode != 0) {
+        //         String errorMsg = String.format(
+        //             "Python ended with code %d\nSTDERR:\n%s\nSTDOUT:\n%s",
+        //             exitCode, errorOutput.toString(), output.toString()
+        //         );
+        //         throw new IOException(errorMsg);
+        //     }
+
+        // }
+        
+        catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IOException("Python process interrupted", e);
         } finally {
@@ -199,9 +289,9 @@ public class RiskAwareRecommendation {
                 recommendedItems.add(new es.unizar.util.GenericRecommendedItem(itemIdOriginal, score));
             }
 
-            System.out.println("[RiskAwareRecommendation] Items from Python: " + path.size() +
-                    ", Filtered (already visited): " + skippedCount +
-                    ", Valid items: " + recommendedItems.size());
+            // System.out.println("[RiskAwareRecommendation] Items from Python: " + path.size() +
+            //         ", Filtered (already visited): " + skippedCount +
+            //         ", Valid items: " + recommendedItems.size());
 
         } catch (Exception e) {
             throw new IOException("Error parsing Python recommender response: " + output, e);
@@ -280,7 +370,6 @@ public class RiskAwareRecommendation {
         
         cachedOrigToSeq = origToSeq;
         cachedSeqToOrig = seqToOrig;
-        System.out.println("[RiskAwareRecommendation] ✅ Translation maps loaded: " + origToSeq.size() + " items");
     }
 
     /**

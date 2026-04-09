@@ -22,7 +22,10 @@ import java.util.Map;
 public class SyntheticScenarioTests {
     
     private static final String[] MODELS = {"SIMPLE_PROXIMITY", "AEROSOL_PENG", "AEROSOL_LELIEVELD"};
-    
+    private static final String RESULTS_DIR = "./results/synthetic/";
+
+    private static String executionTimestamp;
+
     /**
      * Runs all synthetic scenario tests.
      * Executes comprehensive testing with synthetic trajectories, running multiple
@@ -31,6 +34,11 @@ public class SyntheticScenarioTests {
      */
     public static void runAll() {
         System.out.println("\n🔬 EXECUTING SYNTHETIC TESTS\n");
+
+        new File(RESULTS_DIR).mkdirs();
+        
+        executionTimestamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss")
+            .format(new java.util.Date());
         
         List<Scenarios.TestScenario> scenarios = Scenarios.getAllScenarios();
         
@@ -47,6 +55,8 @@ public class SyntheticScenarioTests {
         System.out.println("=".repeat(80));
         
         runMultipleConfigurations(scenario);
+
+        generatePlotsAutomatically();
     }
     
     /**
@@ -62,7 +72,7 @@ public class SyntheticScenarioTests {
         
         System.out.println("🔬 Executing " + configurations.size() + " different configurations...\n");
         
-        Map<String, Map<String, SimulationResult>> allResults = new HashMap<>();
+        Map<String, Map<String, Map<String, SimulationResult>>> resultsByDuration = new HashMap<>();
         
         for (int i = 0; i < configurations.size(); i++) {
             EpidemicConfiguration config = configurations.get(i);
@@ -75,11 +85,13 @@ public class SyntheticScenarioTests {
             applyConfiguration(config);
             
             Map<String, SimulationResult> configResults = runAllModelsWithConfig(baseScenario, configName, i+1);
-            allResults.put(configName, configResults);
+        
+            String durationKey = String.format("%dusers_%dmin", 
+                config.getTotalUsers(), 
+                config.getSimulationDurationSeconds() / 60);
             
-            System.out.println("\n COMPARISON FOR: " + configName);
-            System.out.println("-".repeat(60));
-            SimulationUtils.compareModelResults(configResults, configName);
+            resultsByDuration.putIfAbsent(durationKey, new HashMap<>());
+            resultsByDuration.get(durationKey).put(configName, configResults);
             
             System.out.println("\n");
         }
@@ -88,7 +100,13 @@ public class SyntheticScenarioTests {
         System.out.println("🏆 FINAL COMPARISON BETWEEN ALL CONFIGURATIONS");
         System.out.println("=".repeat(100));
         
-        compareAllConfigurations(allResults);
+        for (Map.Entry<String, Map<String, Map<String, SimulationResult>>> entry : resultsByDuration.entrySet()) {
+            String durationKey = entry.getKey();
+            Map<String, Map<String, SimulationResult>> durationResults = entry.getValue();
+            
+            System.out.println("\n📁 Generating CSV for: " + durationKey);
+            compareAllConfigurations(durationResults, durationKey);
+        }
     }
     
     /**
@@ -102,87 +120,87 @@ public class SyntheticScenarioTests {
      */
     private static List<EpidemicConfiguration> createTestConfigurations() {
         List<EpidemicConfiguration> configurations = new ArrayList<>();
-        int simulationDurationSeconds = 5000;
-        int[] visitorNumber = {100};
+        int [] simulationDurationSeconds = {1800, 3600, 7200, 10800, 14400};
+        int[] visitorNumber = {100, 200, 500};
         
-        for (int visitors : visitorNumber) {
-            System.out.println("🔢 Preparing configurations for " + visitors + " visitors...");
-            
-            // *** 1. BASELINE CONFIGURATION (Control) ***
-            EpidemicConfiguration baseline = EpidemicConfiguration.getInstance().clone();
-            baseline.setConfigName("Baseline_Control");
-            baseline.setMaskComplianceRate(0.1);
-            baseline.setDefaultVentilationRate(3.0);
-            baseline.setVirusDecayRate(0.62);
-            baseline.setInitialInfectedUsers(5);
-            baseline.setSuperSpreaderProbability(0.0);
-            baseline.setSimulationDurationSeconds(simulationDurationSeconds);
-            baseline.setTotalUsers(visitors);
-            configurations.add(baseline);
+        for (int simulationDuration : simulationDurationSeconds) {
+            for (int visitors : visitorNumber) {
+                System.out.println("🔢 Preparing configurations for " + visitors + " visitors...");
+                
+                // *** 1. BASELINE CONFIGURATION (Control) ***
+                EpidemicConfiguration baseline = EpidemicConfiguration.getInstance().clone();
+                baseline.setConfigName("Baseline_Control");
+                // baseline.setRecommendationAlgorithm("Risk-Aware (Risk-Aware)");
+                baseline.setMaskComplianceRate(0.1);
+                baseline.setDefaultVentilationRate(3.0);
+                baseline.setVirusDecayRate(0.62);
+                baseline.setInitialInfectedUsers(1);
+                baseline.setSuperSpreaderProbability(0.0);
+                baseline.setSimulationDurationSeconds(simulationDuration);
+                baseline.setTotalUsers(visitors);
+                configurations.add(baseline);
+                
+                // *** 2. HIGH VENTILATION ***
+                EpidemicConfiguration highVent = baseline.clone();
+                highVent.setConfigName("High_Ventilation");
+                highVent.setDefaultVentilationRate(12.0);
+                configurations.add(highVent);
+                
+                // *** 3. MANDATORY MASKS ***
+                EpidemicConfiguration masks = baseline.clone();
+                masks.setConfigName("Mandatory_Masks");
+                masks.setMaskComplianceRate(0.95);
+                configurations.add(masks);
+                
+                // *** 4. IMMUNE POPULATION ***
+                EpidemicConfiguration immune = baseline.clone();
+                immune.setConfigName("High_Immunity");
+                immune.setImmunePopulationFraction(1.0);
+                configurations.add(immune);
 
-            // // *** 2. HIGH VENTILATION ***
-            // EpidemicConfiguration highVent = baseline.clone();
-            // highVent.setConfigName("High_Ventilation");
-            // highVent.setDefaultVentilationRate(12.0);
-            // configurations.add(highVent);
-            
-            // // *** 3. MANDATORY MASKS ***
-            // EpidemicConfiguration masks = baseline.clone();
-            // masks.setConfigName("Mandatory_Masks");
-            // masks.setMaskComplianceRate(0.95);
-            // configurations.add(masks);
-            
-            // // *** 4. IMMUNE POPULATION ***
-            // EpidemicConfiguration immune = baseline.clone();
-            // immune.setConfigName("High_Immunity");
-            // immune.setImmunePopulationFraction(1.0);
-            // configurations.add(immune);
+                // *** 5. SUPERSPREADER EVENT ***
+                EpidemicConfiguration superEvent = baseline.clone();
+                superEvent.setConfigName("SuperSpreader_Event");
+                superEvent.setSuperSpreaderProbability(1.0);
+                superEvent.setMaskComplianceRate(0.0);
+                configurations.add(superEvent);
+                
+                // *** 6. POOR VENTILATION ***
+                EpidemicConfiguration poorVent = baseline.clone();
+                poorVent.setConfigName("Poor_Ventilation");
+                poorVent.setDefaultVentilationRate(0.8);
+                configurations.add(poorVent);
+                
+                // *** 7. RESISTANT VIRUS ***
+                EpidemicConfiguration resistantVirus = baseline.clone();
+                resistantVirus.setConfigName("Resistant_Virus");
+                resistantVirus.setVirusDecayRate(0.1);
+                configurations.add(resistantVirus);
 
-            // // *** 5. SUPERSPREADER EVENT ***
-            // EpidemicConfiguration superEvent = baseline.clone();
-            // superEvent.setConfigName("SuperSpreader_Event");
-            // superEvent.setInitialInfectedUsers(5);
-            // superEvent.setSuperSpreaderProbability(1.0);
-            // superEvent.setMaskComplianceRate(0.0);
-            // configurations.add(superEvent);
-            
-            // // *** 6. POOR VENTILATION ***
-            // EpidemicConfiguration poorVent = baseline.clone();
-            // poorVent.setConfigName("Poor_Ventilation");
-            // poorVent.setDefaultVentilationRate(0.8);
-            // configurations.add(poorVent);
-            
-            // // *** 7. RESISTANT VIRUS ***
-            // EpidemicConfiguration resistantVirus = baseline.clone();
-            // resistantVirus.setConfigName("Resistant_Virus");
-            // resistantVirus.setVirusDecayRate(0.1);
-            // configurations.add(resistantVirus);
-
-            // // *** 8. COMBINED MEASURES ***
-            // EpidemicConfiguration combined = baseline.clone();
-            // combined.setConfigName("Combined_Measures");
-            // combined.setMaskComplianceRate(0.85);
-            // combined.setDefaultVentilationRate(8.0);
-            // combined.setImmunePopulationFraction(0.40);
-            // configurations.add(combined);
-            
-            // // *** 9. PESSIMISTIC SCENARIO ***
-            // EpidemicConfiguration pessimistic = baseline.clone();
-            // pessimistic.setConfigName("Worst_Case");
-            // pessimistic.setDefaultVentilationRate(0.5);
-            // pessimistic.setMaskComplianceRate(0.05);
-            // pessimistic.setInitialInfectedUsers(12);
-            // pessimistic.setVirusDecayRate(0.1);
-            // configurations.add(pessimistic);
-            
-            // // *** 10. OPTIMISTIC SCENARIO ***
-            // EpidemicConfiguration optimistic = baseline.clone();
-            // optimistic.setConfigName("Best_Case");
-            // optimistic.setDefaultVentilationRate(15.0);
-            // optimistic.setMaskComplianceRate(0.98);
-            // optimistic.setImmunePopulationFraction(0.70);
-            // optimistic.setInitialInfectedUsers(2);
-            // configurations.add(optimistic);
+                // *** 8. COMBINED MEASURES ***
+                EpidemicConfiguration combined = baseline.clone();
+                combined.setConfigName("Combined_Measures");
+                combined.setMaskComplianceRate(0.85);
+                combined.setDefaultVentilationRate(8.0);
+                combined.setImmunePopulationFraction(0.40);
+                configurations.add(combined);
+                
+                // *** 9. PESSIMISTIC SCENARIO ***
+                EpidemicConfiguration pessimistic = baseline.clone();
+                pessimistic.setConfigName("Worst_Case");
+                pessimistic.setDefaultVentilationRate(0.5);
+                pessimistic.setMaskComplianceRate(0.05);
+                pessimistic.setVirusDecayRate(0.1);
+                configurations.add(pessimistic);
+                
+                // *** 10. OPTIMISTIC SCENARIO ***
+                EpidemicConfiguration optimistic = baseline.clone();
+                optimistic.setConfigName("Best_Case");
+                optimistic.setDefaultVentilationRate(15.0);
+                optimistic.setMaskComplianceRate(0.98);
+                optimistic.setImmunePopulationFraction(0.70);
+                configurations.add(optimistic);
+            }
         }
         
         return configurations;
@@ -202,6 +220,7 @@ public class SyntheticScenarioTests {
         
         currentConfig.setConfigName(config.getConfigName());
         currentConfig.setSelectedModel(config.getSelectedModel());
+        currentConfig.setRecommendationAlgorithm(config.getRecommendationAlgorithm());
         currentConfig.setInitialInfectedUsers(config.getInitialInfectedUsers());
         currentConfig.setMaskComplianceRate(config.getMaskComplianceRate());
         currentConfig.setDefaultVentilationRate(config.getDefaultVentilationRate());
@@ -263,32 +282,45 @@ public class SyntheticScenarioTests {
      * 
      * @param allResults nested map: configuration name -> model name -> simulation result
      */
-    private static void compareAllConfigurations(Map<String, Map<String, SimulationResult>> allResults) {
-        File resultsDir = new File("./results");
-        if (!resultsDir.exists()) {
-            resultsDir.mkdirs();
+    private static void compareAllConfigurations(
+            Map<String, Map<String, SimulationResult>> allResults,
+            String durationKey) {
+        
+        int numUsers = 0;
+        int durationSec = 0;
+
+        for (Map<String, SimulationResult> modelResults : allResults.values()) {
+            for (SimulationResult result : modelResults.values()) {
+                if (result != null && result.totalUsers > 0) {
+                    numUsers = result.totalUsers;
+                    durationSec = EpidemicConfiguration.getInstance()
+                        .getSimulationDurationSeconds();
+                    break;
+                }
+            }
+            if (numUsers > 0) break;
         }
         
-        String timestamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date());
-        String csvFilename = String.format("./results/comparison_all_configs_%s.csv", timestamp);
-        
+        String csvFilename = String.format("%scomparison_%s_%s.csv", 
+            RESULTS_DIR, durationKey, executionTimestamp);
+
         try (FileWriter csvWriter = new FileWriter(csvFilename)) {
-            csvWriter.append("MODELO,CONFIGURACION,TASA_ATAQUE_PCT,INFECTIVOS,METRICA_ESPECIFICA,RIESGO_INDIVIDUAL,TIEMPO_EJECUCION_SEG\n");
-            
+            csvWriter.append("epidemic_model;configuration;num_users;duration_sec;attack_rate_global;infectious;specific_metric;individual_risk;execution_time_sec\n");
+        
             for (String model : MODELS) {
                 System.out.println("\n🔬 ANALYSIS FOR MODEL: " + model);
                 System.out.println("━".repeat(90));
                 
                 if (model.equals("SIMPLE_PROXIMITY")) {
                     System.out.printf("%-20s %-12s %-12s %-12s %-12s %-15s\n", 
-                        "CONFIGURATION", "ATTACK RATE", "INFECTIOUS", "CONTACTS", "INFEC.CONT", "TIME (sec)");
+                        "configuration", "attack_rate_global", "infectious", "contacts", "infec_cont", "time_sec");
                 } 
                 else if (model.equals("AEROSOL_PENG")) {
                     System.out.printf("%-20s %-12s %-12s %-28s %-12s %-15s\n",
-                        "CONFIGURATION", "ATTACK RATE", "INFECTIOUS", "CONCENTR. (quanta/m³)", "INDIV. RISK", "TIME (sec)");
+                        "configuration", "attack_rate_global", "infectious", "concentr_quanta_m3", "indiv_risk", "time_sec");
                 } else if (model.equals("AEROSOL_LELIEVELD")) {
                     System.out.printf("%-20s %-12s %-12s %-28s %-12s %-15s\n",
-                        "CONFIGURATION", "ATTACK RATE", "INFECTIOUS", "CONCENTR. (RNA copies/m³)", "INDIV. RISK", "TIME (sec)");
+                        "configuration", "attack_rate_global", "infectious", "concentr_rna_copies_m3", "indiv_risk", "time_sec");
                 }
                 System.out.println("-".repeat(110));
                 
@@ -303,9 +335,12 @@ public class SyntheticScenarioTests {
                         double attackRate = result.attackRate * 100;
                         double timeSec = result.executionTimeMs / 1000.0;
                         
+                        numUsers = result.totalUsers;
+                        durationSec = result.simulationDurationSeconds;
+
                         if (model.equals("SIMPLE_PROXIMITY")) {
-                            csvWriter.append(String.format("%s,%s,%.2f,%d,%d,%d,%.2f\n",
-                                model, configName, attackRate, totalInfectious,
+                            csvWriter.append(String.format("%s;%s;%d;%d;%.2f;%d;%d;%d;%.2f\n",
+                                model, configName, numUsers, durationSec, attackRate, totalInfectious,
                                 result.totalContacts, result.infectiousContacts, timeSec));
                             
                             System.out.printf("%-20s %-12.2f %-12d %-12d %-12d %-15.2f\n",
@@ -313,8 +348,8 @@ public class SyntheticScenarioTests {
                                 result.totalContacts, result.infectiousContacts, timeSec);
                         } 
                         else {
-                            csvWriter.append(String.format("%s,%s,%.2f,%d,%.6f,%.2f,%.2f\n",
-                                model, configName, attackRate, totalInfectious,
+                            csvWriter.append(String.format("%s;%s;%d;%d;%.2f;%d;%.6f;%.2f;%.2f\n",
+                                model, configName, numUsers, durationSec, attackRate, totalInfectious,
                                 result.averageConcentration, result.individualRisk, timeSec));
                             
                             System.out.printf("%-20s %-12.2f %-12d %-28.6f %-12.2f %-15.2f\n",
@@ -344,8 +379,46 @@ public class SyntheticScenarioTests {
             System.out.println("\n✅ Results saved to: " + csvFilename);
             
         } catch (IOException e) {
-            System.err.println(" Error writing CSV: " + e.getMessage());
+            System.err.println("❌ Error writing CSV: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Automatically generates plots after test execution.
+     */
+    private static void generatePlotsAutomatically() {
+        System.out.println("\n📊 Generating plots automatically for current test...");
+        System.out.println("   Timestamp: " + executionTimestamp);
+        
+        String scriptPath = "./results/synthetic/compare_synthetic_mode.py";
+        
+        try {
+            ProcessBuilder pb = new ProcessBuilder("python3", scriptPath, executionTimestamp);
+            pb.directory(new File("."));
+            pb.redirectErrorStream(true);
+            
+            Process process = pb.start();
+        
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    System.out.println("   " + line);
+                }
+            }
+            
+            int exitCode = process.waitFor();
+            if (exitCode == 0) {
+                System.out.println("✅ Plots generated successfully");
+            } else {
+                System.err.println("⚠️  Plot generation failed (exit code: " + exitCode + ")");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("⚠️  Could not auto-generate plots: " + e.getMessage());
+            System.out.println("   📌 You can generate them manually:");
+            System.out.println("      python3 " + scriptPath + " " + executionTimestamp);
         }
     }
     

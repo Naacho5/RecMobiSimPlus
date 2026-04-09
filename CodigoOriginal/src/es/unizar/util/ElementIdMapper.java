@@ -536,7 +536,6 @@ public class ElementIdMapper {
         
         // Verificar si ya está configurado
         if (isDynamicallyConfigured) {
-            System.out.println("Warning!  ElementIdMapper ya está configurado dinámicamente - omitiendo reconfiguración");
             return;
         }
         
@@ -642,16 +641,6 @@ public class ElementIdMapper {
             SEPARATOR_ID_START = CORNER_ID_START + 1000;
             USER_ID_START = SEPARATOR_ID_START + 1000;
         }
-
-        // Imprimir rangos
-        System.out.println("Items empiezan en: " + systemData.minItemId);
-        System.out.println("Items acaban en: " + systemData.maxItemId);
-        System.out.println("Puertas empiezan en: " + systemData.minDoorId);
-        System.out.println("Puertas acaban en: " + systemData.maxDoorId);
-
-        System.out.println("El numero total de items es: " + systemData.totalItems);
-        System.out.println("El numero total de puertas es: " + systemData.totalDoors);
-        System.out.println("El numero total de puertas invisibles es: " + systemData.totalInvisibleDoors);
     }
 
     /**

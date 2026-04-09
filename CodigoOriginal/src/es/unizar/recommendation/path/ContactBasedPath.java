@@ -76,14 +76,14 @@ public class ContactBasedPath extends Path {
             currentRoom = effectiveRoom;
 
             // DEBUG
-            System.out.println("\n--- EVENT " + (eventIndex + 1) + "/" + events.size() + " ---");
-            System.out.println("   - Event: " + currentEvent);
-            System.out.println("   - Current room: " + currentRoom);
-            System.out.println("   - UserId: " + currentEvent.userId);
-            System.out.println("   - Start time: " + currentEvent.startTime + "s");
-            System.out.println("   - End time: " + currentEvent.endTime + "s");
-            System.out.println("   - Accumulated current time: " + currentTime + "s");
-            System.out.println("   - Maximum allowed time: " + inputTime + "s");
+            // System.out.println("\n--- EVENT " + (eventIndex + 1) + "/" + events.size() + " ---");
+            // System.out.println("   - Event: " + currentEvent);
+            // System.out.println("   - Current room: " + currentRoom);
+            // System.out.println("   - UserId: " + currentEvent.userId);
+            // System.out.println("   - Start time: " + currentEvent.startTime + "s");
+            // System.out.println("   - End time: " + currentEvent.endTime + "s");
+            // System.out.println("   - Accumulated current time: " + currentTime + "s");
+            // System.out.println("   - Maximum allowed time: " + inputTime + "s");
             
             roomVisited.add(currentRoom);
             LinkedList<Long> itemsByRoom = (LinkedList<Long>) itemsDoorVisited_cloned.get(currentRoom);
@@ -93,10 +93,7 @@ public class ContactBasedPath extends Path {
                 itemsByRoom = new LinkedList<>();
                 itemsDoorVisited_cloned.put(currentRoom, itemsByRoom);
             }
-            else {
-                System.out.println("      - Elements in cache: " + itemsByRoom.size() + " for room " + currentRoom);
-            }
-            
+
             itemsByRoom = convertAndValidateItems(itemsByRoom, "room_" + currentRoom, numberOfItemsInMuseum);
             
             // Added by Nacho Palacio 2025-12-03
@@ -144,11 +141,11 @@ public class ContactBasedPath extends Path {
                 }
 
                 // Event progress log
-                System.out.println("    Event " + (eventIndex+1) + ":");
-                System.out.println("      - Event time: " + timeInRoom + "s");
-                System.out.println("      - Time consumed (path): " + (currentTime - startTimeInRoom) + "s");
-                System.out.println("      - Generated items: " + itemVisited.size());
-                System.out.println("      - Difference: " + (timeInRoom - (currentTime - startTimeInRoom)) + "s");
+                // System.out.println("    Event " + (eventIndex+1) + ":");
+                // System.out.println("      - Event time: " + timeInRoom + "s");
+                // System.out.println("      - Time consumed (path): " + (currentTime - startTimeInRoom) + "s");
+                // System.out.println("      - Generated items: " + itemVisited.size());
+                // System.out.println("      - Difference: " + (timeInRoom - (currentTime - startTimeInRoom)) + "s");
             }
 
             // Perform transition between rooms when event ends
@@ -216,11 +213,11 @@ public class ContactBasedPath extends Path {
         
         finalPath = eraseRepeatedObjects(finalPath);
 
-        System.out.println("   📤 Path after cleaning: " + finalPath);
+        // System.out.println("   📤 Path after cleaning: " + finalPath);
 
         // Remove the last comma
         if (finalPath.length() >= 2) {
-            System.out.println("   📤 Final path: " + finalPath.substring(0, finalPath.length() - 2));
+            // System.out.println("   📤 Final path: " + finalPath.substring(0, finalPath.length() - 2));
             return finalPath.substring(0, finalPath.length() - 2);
         }
 

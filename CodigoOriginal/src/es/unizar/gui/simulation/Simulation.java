@@ -20,12 +20,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.concurrent.atomic.AtomicLongArray;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
+import org.apache.batik.apps.rasterizer.Main;
 import org.apache.mahout.cf.taste.common.TasteException;
 import org.apache.mahout.cf.taste.impl.common.FastIDSet;
 import org.apache.mahout.cf.taste.impl.common.LongPrimitiveIterator;
@@ -182,56 +187,82 @@ public class Simulation {
 	public long stopTime = 0;
 
 	// Array that save the current user position o his/her path.
-	public int[] userPositionInPath;
+	// public int[] userPositionInPath;
+	public AtomicIntegerArray userPositionInPath;
 	// Items that are being watched by users.
-	public long[] itemsBeingWatched;
+	// public long[] itemsBeingWatched;
+	public AtomicLongArray itemsBeingWatched;
 	// Save the next location in an iteration.
-	public String[] locationNextIteration;
+	// public String[] locationNextIteration;
+	public AtomicReferenceArray<String> locationNextIteration;
 	public List<Long> itemUpdated;
-	public boolean[] voting;
+	// public boolean[] voting;
+	public AtomicReferenceArray<Boolean> voting;
 	public boolean isChangedItemByRecommender;
 	public List<String> oldPathUserSpecial = new LinkedList<>();
 	// Count when the users finish.
 	public int finish = 0;
 	public int numberItemsPropagated;
-	public Map<Long, Integer> numberOfReceivedItems;
-	public static Map<Integer, List<Long>> itemRatedOfUsers;
-	public static Map<Integer, List<Long>> itemObservedOfUsers = new HashMap<>();
-	public static Map<Integer, List<String>> actualPathTraveled = new HashMap<>();
-	public Map<Integer, List<Float>> userRatings = new HashMap<>();
-	public List<String> path;
+	// public Map<Long, Integer> numberOfReceivedItems;
+	public final ConcurrentHashMap<Long, AtomicInteger> numberOfReceivedItems = new ConcurrentHashMap<>();
+	// public static Map<Integer, List<Long>> itemRatedOfUsers;
+	public static final ConcurrentHashMap<Integer, List<Long>> itemRatedOfUsers = new ConcurrentHashMap<>();
+	// public static Map<Integer, List<Long>> itemObservedOfUsers = new HashMap<>();
+	public static final ConcurrentHashMap<Integer, List<Long>> itemObservedOfUsers = new ConcurrentHashMap<>();
+	// public static Map<Integer, List<String>> actualPathTraveled = new HashMap<>();
+	public static final ConcurrentHashMap<Integer, List<String>> actualPathTraveled = new ConcurrentHashMap<>();
+	// public Map<Integer, List<Float>> userRatings = new HashMap<>();
+	public static final ConcurrentHashMap<Integer, List<Float>> userRatings = new ConcurrentHashMap<>();
+	// public List<String> path;
 	public String locationStartVertex;
-	public HashMap<Long, Integer> countItemsTTPByUser;
+	// public HashMap<Long, Integer> countItemsTTPByUser;
+	public final ConcurrentHashMap<Long, AtomicInteger> countItemsTTPByUser = new ConcurrentHashMap<>();
 
-	public double[] availableTimeOfUsers;
-	public int[] currentTimeOfUsers;
+	// public double[] availableTimeOfUsers;
+	public AtomicLongArray availableTimeOfUsers;
+	// public int[] currentTimeOfUsers;
+	public AtomicIntegerArray currentTimeOfUsers;
 	public int[] moodOfUsers;
 
 	public int[] userTimesUpdatedPath;
-	
+
 	/**
 	 * Statistics.
 	 */
-	public Map<Long, PredictedRatingsInfo> predictedRatings;
-	public Set<Long> idUsersWatchingSameItem;
+	// public Map<Long, PredictedRatingsInfo> predictedRatings;
+	public final ConcurrentHashMap<Long, PredictedRatingsInfo> predictedRatings = new ConcurrentHashMap<>();
+	// public Set<Long> idUsersWatchingSameItem;
+	public final Set<Long> idUsersWatchingSameItem = ConcurrentHashMap.newKeySet();
 	public List<DistancesBetweenUsersAndTime> distancesBetweenUsers;
 	public List<DistancesBetweenUsersAndTime> completedDistancesBetweenUsers;
 	public Map<Pair<Integer, Integer>, Double> timeUsersInRoom = new HashMap<>();
 	public Map<Integer, Pair<Integer, Long>> userCurrentRoomEntry = new HashMap<>();
+    public CSVWriter csvWriterUsersWatching;
+    public CSVWriter csvWriterRatings;
+
 
 
 	/*
 	 * Contacts.
 	 */
-	public Map<Integer, List<Integer>> cliqueUserMapping;  // Mapping clique -> users
-    public Map<Integer, Integer> initialSusceptiblesByClique; // Mapping clique -> initial susceptibles
-	
+	public Map<Integer, List<Integer>> cliqueUserMapping;
+    public Map<Integer, Integer> initialSusceptiblesByClique;
+	public Map<Integer, Integer> initialInfectedByClique = new HashMap<>();
+	private String csvPath = "/home/nacho/universidad/cuarto/TFG/RecMobiSimPlus/CodigoOriginal/src/es/unizar/epidemic/data/contactosFinal.csv";
+	private String cliquesJsonPath = "/home/nacho/universidad/cuarto/TFG/RecMobiSimPlus/CodigoOriginal/src/es/unizar/epidemic/data/cliques.json";
+
+
     private static final int EVENT_DURATION_SECONDS = 240;
     private static final int NUM_ROOMS = 26;
-    private Map<Integer, Integer> userToCliqueMap;
+    public Map<Integer, Integer> userToCliqueMap;
 	private boolean mixCliqueAndIndependentUsers = false;
     private double independentUserRatio = 0.3; // 30% by default
-    
+
+	/*
+	 * Concurrency.
+	 */
+	public final AtomicInteger countFinishedSpecialUsers = new AtomicInteger(0);
+
 
 	/*
 	 * Cached objects for optimization.
@@ -239,7 +270,9 @@ public class Simulation {
 	private ShortestTrajectoryStrategy cachedTrajectoryStrategy = null;
     private SimpleWeightedGraph<Long, DefaultWeightedEdge> lastUsedGraph = null;
 
-	
+	private String pythonScriptPath ="../../Backups/moma.recommender-main-snapshot20251005/moma.recommender-main/src/recommender/recommender_bridge.py";
+
+
 	// =========== Logger ================================:
 	public static final Logger log = Logger.getLogger(Literals.DEBUG_MESSAGES);
 	public static final Logger logRecommender = Logger.getLogger("RECOMMENDER");
@@ -249,36 +282,34 @@ public class Simulation {
 	public Simulation(int timeAvailableUser, int delayObservingPainting, double timeForIteration, double screenRefreshTime, double timeForThePaths, double userVelocity, double kmToPixel, int ttl,
 			int timeOnStairs, int minimumTimeToUpdateRecommendation, int communicationRange, int maxKnowledgeBaseSize, int communicationBandwidth, int latencyOfTransmission, int numberOfSpecialUser,
 			int numberOfNonSpecialUser, String nonSpecialUserPaths, String pathStrategy, String recommendationAlgorithm, float thresholdRecommendation, int howMany, String propagationStrategy,
-			double probabilityUserDisobedience, int numberVoteReceived, double thresholdSimilarity, String networkType, int timeToChangeMood, boolean useFixedSeed, long seed, boolean manualSimulation, 
+			double probabilityUserDisobedience, int numberVoteReceived, double thresholdSimilarity, String networkType, int timeToChangeMood, boolean useFixedSeed, long seed, boolean manualSimulation,
 			boolean mixCliqueAndIndependent, double independentRatio) {
-		
+
 		MainSimulator.printConsole("Creating simulation", Level.WARNING);
 		currentTime();
-		
-		// Logger configuration 
+
+		// Logger configuration
 		logRecommender.setUseParentHandlers(false);
 		// logRecommender.setLevel(Literals.DEBUG_DEFAULT_LEVEL);
 
 		log.setLevel(Level.OFF);
 		logRecommender.setLevel(Level.OFF);
-		
+
 		DebugFormatter df = new DebugFormatter();
 		ConsoleHandler ch = new ConsoleHandler();
 		ch.setFormatter(df);
 		// If not, log messages under INFO level aren't printed in console
 		ch.setLevel(Literals.DEBUG_DEFAULT_LEVEL);
 		logRecommender.addHandler(ch);
-		
+
 		// Just set filter if the level specified is lower than severe
 		// SEVERE = Skip printing only times (adds delay for every message check)
 		if (!Literals.DEBUG_DEFAULT_LEVEL.equals(Level.SEVERE))
 			logRecommender.setFilter(new DebugFilter());
-		
+
 		// Simulation:
 		this.timeAvailableUser = timeAvailableUser;
 		this.delayObservingPainting = delayObservingPainting;
-		System.out.println("delayObservingPainting: " + delayObservingPainting);
-		
 		this.timeForIteration = timeForIteration;
 		this.screenRefreshTime = screenRefreshTime;
 		this.timeForThePaths = timeForThePaths;
@@ -297,18 +328,15 @@ public class Simulation {
 		} else {
 			this.simulationSeed = new Seed();
 		}
-		
+
 		MainSimulator.printConsole("Using seed: " + getSeed(), Level.WARNING);
 		//log.log(Level.SEVERE, "Using seed: " + getSeed());
-		
+
 		random = new Random(getSeed());
 
 		// Experiment:
 		this.numberOfSpecialUser = numberOfSpecialUser;
 		this.numberOfNonSpecialUser = numberOfNonSpecialUser;
-		System.out.println("Number of special users: " + numberOfSpecialUser);
-		System.out.println("Number of non-special users: " + numberOfNonSpecialUser);
-
 		this.nonSpecialUserPaths = nonSpecialUserPaths;
 		this.pathStrategy = pathStrategy;
 		this.recommendationAlgorithm = recommendationAlgorithm;
@@ -324,12 +352,12 @@ public class Simulation {
 		this.numberOfUser = numberOfSpecialUser + numberOfNonSpecialUser;
 		this.userList = new ArrayList<User>(numberOfUser);
 		this.ended = new ArrayList<User>();
-		
+
 		// Non-RS users:
 		boolean isSpecialUser = false;
 		for (int i = 0; i < numberOfNonSpecialUser; i++) {
 			int userID = i + 1;
-			
+
 			try {
 				User user = new User(userID, isSpecialUser);
 				this.userList.add(user);
@@ -337,14 +365,14 @@ public class Simulation {
 				log.log(Level.SEVERE, e.toString());
 				log.log(Level.SEVERE, "Special/non-RS user image files not correct");
 			}
-			
+
 		}
 		// RS users:
 		isSpecialUser = true;
 		int specialUser = numberOfNonSpecialUser;
 		for (int i = numberOfNonSpecialUser; i < numberOfUser; i++) {
 			specialUser += 1;
-			
+
 			try {
 				User user = new User(specialUser, isSpecialUser);
 				this.userList.add(user);
@@ -353,42 +381,55 @@ public class Simulation {
 				log.log(Level.SEVERE, "Special/non-RS user image files not correct");
 			}
 		}
-		
+
 		// User available time for iteration in seconds.
-		this.availableTimeOfUsers = new double[this.numberOfUser];
-		Arrays.fill(availableTimeOfUsers, 0.0); // Initially the availableTime for all users is 0.
-		
+		// this.availableTimeOfUsers = new double[this.numberOfUser];
+		// Arrays.fill(availableTimeOfUsers, 0.0); // Initially the availableTime for all users is 0.
+		this.availableTimeOfUsers = new AtomicLongArray(this.numberOfUser);
+
 		// User current time in the simulation.
-		this.currentTimeOfUsers = new int[this.numberOfUser];
-		Arrays.fill(currentTimeOfUsers, 0); // Initially the currentTime for all users is 0.
-	
+		// this.currentTimeOfUsers = new int[this.numberOfUser];
+		// Arrays.fill(currentTimeOfUsers, 0); // Initially the currentTime for all users is 0.
+		this.currentTimeOfUsers = new AtomicIntegerArray(this.numberOfUser);
+
+
 		// Initialize the mood of users.
 		this.moodOfUsers = new int[this.numberOfUser];
 		initializeMoodOfUsers();
 
 		// Array that save the current user position o his/her path.
-		this.userPositionInPath = new int[this.numberOfUser];
+		// this.userPositionInPath = new int[this.numberOfUser];
+		this.userPositionInPath = new AtomicIntegerArray(this.numberOfUser);
 		// Items that are being watched by users.
-		this.itemsBeingWatched = new long[this.numberOfUser];
+		// this.itemsBeingWatched = new long[this.numberOfUser];
+		this.itemsBeingWatched = new AtomicLongArray(this.numberOfUser);
 		// Save the next location in an iteration.
-		this.locationNextIteration = new String[this.numberOfUser];
-		this.voting = new boolean[this.numberOfUser];
+		// this.locationNextIteration = new String[this.numberOfUser];
+		this.locationNextIteration = new AtomicReferenceArray<>(this.numberOfUser);
+		// this.voting = new boolean[this.numberOfUser];
+		this.voting = new AtomicReferenceArray<>(this.numberOfUser);
+		for (int i = 0; i < this.numberOfUser; i++) {
+			voting.set(i, false);
+		}
 		this.isChangedItemByRecommender = false;
 		this.itemUpdated = new LinkedList<>();
 		this.numberItemsPropagated = 0;
-		this.numberOfReceivedItems = new HashMap<Long, Integer>();
-		Simulation.itemRatedOfUsers = new HashMap<Integer, List<Long>>();
-		this.path = new LinkedList<>();
+		// this.numberOfReceivedItems = new HashMap<Long, Integer>();
+		// Simulation.itemRatedOfUsers = new HashMap<Integer, List<Long>>();
+		// this.path = new LinkedList<>();
 		this.locationStartVertex = null;
 
 		this.userTimesUpdatedPath = new int[this.numberOfUser]; // DEBUG
 
-		this.countItemsTTPByUser = new HashMap<>();
+		// this.countItemsTTPByUser = new HashMap<>();
+		// for (int userPosition = 1; userPosition <= userList.size(); userPosition++) {
+		// 	countItemsTTPByUser.put((long) userPosition, 1);
+		// }
 		for (int userPosition = 1; userPosition <= userList.size(); userPosition++) {
-			countItemsTTPByUser.put((long) userPosition, 1);
+			countItemsTTPByUser.put((long) userPosition, new AtomicInteger(1));
 		}
 
-		Simulation.actualPathTraveled = new HashMap<>();
+		// Simulation.actualPathTraveled = new HashMap<>();
 		for (int i = 1; i <= numberOfUser; i++) {
 			actualPathTraveled.put(i, new ArrayList<>());
 		}
@@ -401,62 +442,96 @@ public class Simulation {
 		try {
 			dataInstanceMuseumDB = new Database();
 			dataModelMuseumDB = new DBDataModel(Literals.SQL_DRIVER + Literals.DB_ALL_USERS_PATH, dataInstanceMuseumDB, this.numberOfUser-1);
-			System.out.println("Creating dataModelMuseumDB with path: " + Literals.SQL_DRIVER + Literals.DB_ALL_USERS_PATH);
 		} catch (SQLException ex) {
 			Logger.getLogger(Simulation.class.getName()).log(Level.SEVERE, null, ex);
 		}
 
 		// Build a graph for the RS user.
 		graphSpecialUser = new GraphForSpecialUser();
-		
+
 		// Object to access to data from graph file (GRAPH_FLOOR_COMBINED):
 		dataAccessGraphFile = new DataAccessGraphFile(new File(Literals.GRAPH_FLOOR_COMBINED));
 
 		// Get the number of items from dataAccessItemFile (in graph RS user)
 		this.numberOfITems = graphSpecialUser.accessItemFile.getNumberOfItems();
-		System.out.println("number of items in museum: " + this.numberOfITems);
-		
-		
+
 		/*
 		 * Statistics
 		 */
-		
-		// Predicted ratings
-		predictedRatings = new HashMap<Long, PredictedRatingsInfo>();
-		try {
-			// Create CSV Writter
-			FileWriter output = new FileWriter(Literals.CSV_RATINGS);
-			csvWriter = new CSVWriter(output, ';', CSVWriter.NO_QUOTE_CHARACTER, CSVWriter.DEFAULT_ESCAPE_CHARACTER, CSVWriter.DEFAULT_LINE_END);
-			
-			// Write header
-	        String[] header = { "id_item", "Rating", "Rating predicted", "Time (seconds)" };
-	        csvWriter.writeNext(header);
-	        
-	        csvWriter.close();
-		}
-		catch (IOException ioexception) {
-			MainSimulator.printConsole(ioexception.getMessage(), Level.SEVERE);
-			ioexception.printStackTrace();
-		}
-		
-		// Number users watching same item
-		idUsersWatchingSameItem = new HashSet<>();
-		try {
-			// Create CSV Writter
-			FileWriter output = new FileWriter(Literals.CSV_USERS_SAME_ITEM);
-			csvWriter = new CSVWriter(output, ';', CSVWriter.NO_QUOTE_CHARACTER, CSVWriter.DEFAULT_ESCAPE_CHARACTER, CSVWriter.DEFAULT_LINE_END);
-			
-			// Write header
-	        String[] header = { "id_item", "Number of users", "Rating", "Time (seconds)" };
-	        csvWriter.writeNext(header);
-	        
-	        csvWriter.close();
-		}
-		catch (IOException ioexception) {
-			MainSimulator.printConsole(ioexception.getMessage(), Level.SEVERE);
-			ioexception.printStackTrace();
-		}
-		
+
+		// // Predicted ratings
+		// predictedRatings = new HashMap<Long, PredictedRatingsInfo>();
+		// try {
+		// 	// Create CSV Writter
+		// 	FileWriter output = new FileWriter(Literals.CSV_RATINGS);
+		// 	csvWriter = new CSVWriter(output, ';', CSVWriter.NO_QUOTE_CHARACTER, CSVWriter.DEFAULT_ESCAPE_CHARACTER, CSVWriter.DEFAULT_LINE_END);
+
+		// 	// Write header
+	    //     String[] header = { "id_item", "Rating", "Rating predicted", "Time (seconds)" };
+	    //     csvWriter.writeNext(header);
+
+	    //     csvWriter.close();
+		// }
+		// catch (IOException ioexception) {
+		// 	MainSimulator.printConsole(ioexception.getMessage(), Level.SEVERE);
+		// 	ioexception.printStackTrace();
+		// }
+
+		// // Number users watching same item
+		// idUsersWatchingSameItem = new HashSet<>();
+		// try {
+		// 	// Create CSV Writter
+		// 	FileWriter output = new FileWriter(Literals.CSV_USERS_SAME_ITEM);
+		// 	csvWriter = new CSVWriter(output, ';', CSVWriter.NO_QUOTE_CHARACTER, CSVWriter.DEFAULT_ESCAPE_CHARACTER, CSVWriter.DEFAULT_LINE_END);
+
+		// 	// Write header
+	    //     String[] header = { "id_item", "Number of users", "Rating", "Time (seconds)" };
+	    //     csvWriter.writeNext(header);
+
+	    //     csvWriter.close();
+		// }
+		// catch (IOException ioexception) {
+		// 	MainSimulator.printConsole(ioexception.getMessage(), Level.SEVERE);
+		// 	ioexception.printStackTrace();
+		// }
+
+        // predictedRatings = new HashMap<Long, PredictedRatingsInfo>();
+        try {
+            FileWriter output = new FileWriter(Literals.CSV_RATINGS, false);
+            this.csvWriterRatings = new CSVWriter(output, ';', CSVWriter.NO_QUOTE_CHARACTER,
+                                                CSVWriter.DEFAULT_ESCAPE_CHARACTER, CSVWriter.DEFAULT_LINE_END);
+
+            String[] header = { "id_item", "Rating", "Rating predicted", "Time (seconds)" };
+            this.csvWriterRatings.writeNext(header);
+            this.csvWriterRatings.flush();
+        } catch (IOException ioexception) {
+            System.err.println("❌ CRÍTICO: No se pudo inicializar csvWriterRatings");
+            System.err.println("   Ruta: " + Literals.CSV_RATINGS);
+            System.err.println("   Error: " + ioexception.getMessage());
+            MainSimulator.printConsole("CRÍTICO: csvWriterRatings NO inicializado: " + ioexception.getMessage(), Level.SEVERE);
+            ioexception.printStackTrace();
+            this.csvWriterRatings = null; // Asegurar que sea explícitamente null
+        }
+
+        // idUsersWatchingSameItem = new HashSet<>(); //  initialization moved to field declaration
+
+        try {
+            FileWriter output = new FileWriter(Literals.CSV_USERS_SAME_ITEM, false);
+            this.csvWriterUsersWatching = new CSVWriter(output, ';', CSVWriter.NO_QUOTE_CHARACTER,
+                                                    CSVWriter.DEFAULT_ESCAPE_CHARACTER, CSVWriter.DEFAULT_LINE_END);
+
+            String[] header = {"item_id", "num_users_watching", "rating", "timestamp"};
+            this.csvWriterUsersWatching.writeNext(header);
+            this.csvWriterUsersWatching.flush();
+        } catch (IOException ioexception) {
+            System.err.println("❌ CRÍTICO: No se pudo inicializar csvWriterUsersWatching");
+            System.err.println("   Ruta: " + Literals.CSV_USERS_SAME_ITEM);
+            System.err.println("   Error: " + ioexception.getMessage());
+            MainSimulator.printConsole("CRÍTICO: csvWriterUsersWatching NO inicializado: " + ioexception.getMessage(), Level.SEVERE);
+            ioexception.printStackTrace();
+            this.csvWriterUsersWatching = null; // Asegurar que sea explícitamente null
+        }
+
 		distancesBetweenUsers = new ArrayList<DistancesBetweenUsersAndTime>();
 		completedDistancesBetweenUsers = new ArrayList<DistancesBetweenUsersAndTime>();
 
@@ -464,9 +539,29 @@ public class Simulation {
 
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			System.out.println("\n=== Shutdown Hook: Finalizing EpidemicStatistics ===");
-			
+
 			try {
 				es.unizar.epidemic.statistics.EpidemicStatistics.getInstance().endSimulation();
+
+                if (this.csvWriterUsersWatching != null) {
+                    try {
+                        this.csvWriterUsersWatching.flush();
+                        this.csvWriterUsersWatching.close();
+                        System.out.println("   ✅ CSV writer (users watching) closed");
+                    } catch (IOException e) {
+                        System.err.println("   ⚠️ Error closing CSV writer (users watching): " + e.getMessage());
+                    }
+                }
+
+                if (this.csvWriterRatings != null) {
+                    try {
+                        this.csvWriterRatings.flush();
+                        this.csvWriterRatings.close();
+                        System.out.println("   ✅ CSV writer (ratings) closed");
+                    } catch (IOException e) {
+                        System.err.println("   ⚠️ Error closing CSV writer (ratings): " + e.getMessage());
+                    }
+                }
 
 				EpidemicModel epidemicModel = this.epidemicManager.getEpidemicModel();
 				if (epidemicModel != null) {
@@ -485,11 +580,11 @@ public class Simulation {
 
 		this.mixCliqueAndIndependentUsers = mixCliqueAndIndependent;
         this.independentUserRatio = independentRatio;
-        
-        System.out.println(" Mixed mode: " + 
+
+        System.out.println(" Mixed mode: " +
             (mixCliqueAndIndependentUsers ? "ENABLED" : "DISABLED"));
         if (mixCliqueAndIndependentUsers) {
-            System.out.println("    Independent users ratio: " + 
+            System.out.println("    Independent users ratio: " +
                 (independentUserRatio * 100) + "%");
         }
 	}
@@ -505,16 +600,16 @@ public class Simulation {
 	 * contact trajectory modes fail.
 	 */
 	public void initializeUsers() {
+		System.out.println("initializeUsers called");
 		MainSimulator.printConsole("Initializing users: ", Level.WARNING);
 
 		if (mixCliqueAndIndependentUsers) {
 			System.out.println("\n" + "=".repeat(80));
 			System.out.println(" MIXED MODE ACTIVATED");
 			System.out.println("=".repeat(80));
-			
+
 			try {
 				initializeUsersWithMixedMode();
-				System.out.println("   ✅ Users initialized in mixed mode");
 				return;
 			} catch (Exception e) {
 				System.err.println("    Error in mixed mode: " + e.getMessage());
@@ -524,16 +619,16 @@ public class Simulation {
 		}
 
 		Configuration.ContactTrajectoryMode mode = Configuration.ContactTrajectoryMode.DISABLED;
-		
+
 		if (Configuration.instance != null) {
 			mode = Configuration.instance.getContactTrajectoryMode();
 		}
-		
+
 		System.out.println("\n" + "=".repeat(80));
 		System.out.println(" INITIALIZING USERS");
 		System.out.println("    Selected mode: " + mode.getDisplayName());
 		System.out.println("=".repeat(80));
-		
+
 		switch (mode) {
 			case SIMPLIFIED_ROTATION:
 				System.out.println("    Using SIMPLIFIED model (circular rotation)");
@@ -547,7 +642,7 @@ public class Simulation {
 					System.err.println("   Fallback to traditional mode...");
 				}
 				break;
-				
+
 			case COMPLEX_REAL_EVENTS:
 				System.out.println("    Using COMPLEX model (real events from CSV)");
 				try {
@@ -560,7 +655,7 @@ public class Simulation {
 					System.err.println("   Fallback to traditional mode...");
 				}
 				break;
-				
+
 			case DISABLED:
 			default:
 				System.out.println("    Using TRADITIONAL mode");
@@ -579,7 +674,7 @@ public class Simulation {
 
 		// Get the non-special and RS user paths. The non-RS user path is obtained from generated path file (e.g., nearest_non_special_user_paths.txt), by using the strategy (Nearest,
 		// Random or Exhaustive) specified in the Configuration form. While the RS user path (initially null) is generated with the recommender specified in the Configuration form.
-		
+
 		graphSpecialUser.getPathsFromFile();
 		String edge = null;
 		for (int i = 0; i < userList.size(); i++) {
@@ -589,17 +684,17 @@ public class Simulation {
 				long startVertex = dataAccessGraphFile.getRandomDoor();
 
 				// The RS user path is updated with the hybrid recommendation algorithm.
-		
+
 				// Added by Nacho Palacio 2025-06-10
 				if (ElementIdMapper.isInCorrectRange(startVertex, ElementIdMapper.CATEGORY_DOOR)) {
 					long externalStartVertex = ElementIdMapper.getBaseId(startVertex);
 					startVertex = externalStartVertex;
 				}
-				
+
 				updateSpecialUserPath(startVertex, startVertex, false, 0, false, currentUser);
 			}
 
-			path = graphSpecialUser.paths.get(i);
+			List<String> path = graphSpecialUser.paths.get(i);
 
 			// Added by Nacho Palacio 2025-04-24
 			if (path == null || path.isEmpty() || (path.size() == 1 && path.get(0).isEmpty())) {
@@ -611,7 +706,8 @@ public class Simulation {
 
 			MainSimulator.printConsole("Path of user " + (i + 1) + ": " + path, Level.WARNING);
 			// Get the current edge.
-			edge = path.get(this.userPositionInPath[i]);
+			// edge = path.get(this.userPositionInPath[i]);
+			edge = path.get(this.userPositionInPath.get(i));
 
 			if (edge != null) {
 				String[] array = cleanEdge(edge);
@@ -625,20 +721,26 @@ public class Simulation {
 					v1External = ElementIdMapper.getBaseId(v1);
 				} else if (ElementIdMapper.isInCorrectRange(v1, ElementIdMapper.CATEGORY_DOOR)) {
 					v1External = ElementIdMapper.getBaseId(v1);
-				}	
+				}
 
 				// Gets the position user where he/she will start the simulation.
 				currentUser.getRoomOfTheUser();
 				// Stores the initial location of the current user.
-				locationNextIteration[i] = MainSimulator.floor.diccionaryItemLocation.get(v1External);
+				// locationNextIteration[i] = MainSimulator.floor.getItemLocation(v1External);
+				locationNextIteration.set(i, MainSimulator.floor.getItemLocation(v1External));
 
-				if (locationNextIteration[i] == null && i > 0) {
+				// if (locationNextIteration[i] == null && i > 0) {
+				// 	System.out.println("Warning! Null location for user " + currentUser.userID + ". Using previous user's location.");
+				// 	locationNextIteration[i] = locationNextIteration[i-1];
+				// }
+				if (locationNextIteration.get(i) == null && i > 0) {
 					System.out.println("Warning! Null location for user " + currentUser.userID + ". Using previous user's location.");
-					locationNextIteration[i] = locationNextIteration[i-1];
+					locationNextIteration.set(i, locationNextIteration.get(i-1));
 				}
 
 				// Initialize the user start position.
-				currentUser.move(locationNextIteration[i], currentUser.room);
+				// currentUser.move(locationNextIteration[i], currentUser.room);
+				currentUser.move(locationNextIteration.get(i), currentUser.room);
 			}
 		}
 
@@ -646,84 +748,82 @@ public class Simulation {
 			epidemicManager.initializeEpidemicSystem(getAllUsers()); // Added by Nacho Palacio 2025-07-15
 		}
 	}
-	
+
 	/**
      * Initializes users with simplified contact trajectories using circular room rotation model.
      * Selects users from complete cliques, builds user-to-clique mappings, generates synthetic
      * room events with circular rotation pattern, creates paths from events, and initializes
      * epidemic system with one infected user per clique.
      * Added by Nacho Palacio 2025-12-03
-     * 
+     *
      * @throws Exception if cliques file not found or initialization fails
      */
     private void initializeUsersWithSimplifiedRotation() throws Exception {
         System.out.println("\n" + "=".repeat(80));
         System.out.println(" INITIALIZATION WITH SIMPLIFIED MODEL (CIRCULAR ROTATION)");
         System.out.println("=".repeat(80));
-        
+
         String cliquesJsonPath = "../src/es/unizar/epidemic/data/cliques.json";
-        
+
         java.io.File cliquesFile = new java.io.File(cliquesJsonPath);
         if (!cliquesFile.exists()) {
             System.err.println(" Cliques file not found: " + cliquesJsonPath);
             throw new RuntimeException("Cliques file not found");
         }
-        
-        System.out.println("\n STEP 1: Selecting users from cliques...");
-        ContactTrajectoryBuilder.SelectedUsersResult selectionResult = 
+
+        ContactTrajectoryBuilder.SelectedUsersResult selectionResult =
             ContactTrajectoryBuilder.selectUsersFromCompleteCliquesWithCliques(
-                cliquesJsonPath, 
+                cliquesJsonPath,
                 this.numberOfUser
             );
-        
+
         if (selectionResult == null || selectionResult.cliques == null) {
             throw new RuntimeException("Error selecting cliques");
         }
-        
+
         List<List<String>> selectedCliques = selectionResult.cliques;
-        System.out.println("   ✅ Selected cliques: " + selectedCliques.size());
-        System.out.println("   ✅ Selected users: " + selectionResult.users.size());
-        
-        System.out.println("\n STEP 2: Building user -> clique mapping...");
         this.userToCliqueMap = ContactTrajectoryBuilder.buildUserToCliqueMapFromSelectedCliques(
             selectedCliques);
-        System.out.println("   ✅ Mapped users: " + userToCliqueMap.size());
-        
-        System.out.println("\n STEP 3: Generating events with circular rotation...");
+
         long simulationDuration = (long) this.timeAvailableUser * 3600;
-        
-        Map<Integer, List<ContactTrajectoryBuilder.UserRoomEvent>> userTrajectories = 
+
+        Map<Integer, List<ContactTrajectoryBuilder.UserRoomEvent>> userTrajectories =
             ContactTrajectoryBuilder.buildUserRoomEvents(
                 userToCliqueMap,
                 simulationDuration,
                 EVENT_DURATION_SECONDS,
                 NUM_ROOMS
             );
-        
-        System.out.println("   ✅ Generated trajectories: " + userTrajectories.size());
-        
+
         int userLimit = Math.min(this.numberOfUser, userTrajectories.size());
-        
-        if (this.availableTimeOfUsers == null || this.availableTimeOfUsers.length != userLimit) {
-            this.availableTimeOfUsers = new double[userLimit];
-            Arrays.fill(availableTimeOfUsers, 0.0);
-            
-            this.currentTimeOfUsers = new int[userLimit];
-            Arrays.fill(currentTimeOfUsers, 0);
-            
+
+        // if (this.availableTimeOfUsers == null || this.availableTimeOfUsers.length != userLimit) {
+		if (this.availableTimeOfUsers == null || this.availableTimeOfUsers.length() != userLimit) {
+            // this.availableTimeOfUsers = new double[userLimit];
+            // Arrays.fill(availableTimeOfUsers, 0.0);
+			this.availableTimeOfUsers = new AtomicLongArray(userLimit);
+
+            // this.currentTimeOfUsers = new int[userLimit];
+            // Arrays.fill(currentTimeOfUsers, 0);
+			this.currentTimeOfUsers = new AtomicIntegerArray(userLimit);
+
             this.moodOfUsers = new int[userLimit];
             initializeMoodOfUsers();
-            
-            this.userPositionInPath = new int[userLimit];
-            this.itemsBeingWatched = new long[userLimit];
-            this.locationNextIteration = new String[userLimit];
-            this.voting = new boolean[userLimit];
+
+        	// this.userPositionInPath = new int[userLimit];
+			this.userPositionInPath = new AtomicIntegerArray(userLimit);
+            // this.itemsBeingWatched = new long[userLimit];
+			this.itemsBeingWatched = new AtomicLongArray(userLimit);
+            // this.locationNextIteration = new String[userLimit];
+			this.locationNextIteration = new AtomicReferenceArray<>(userLimit);
+            // this.voting = new boolean[userLimit];
+			this.voting = new AtomicReferenceArray<>(userLimit);
         }
-        
+
         if (this.userList == null) {
             this.userList = new ArrayList<>();
         }
-        
+
         if (this.userList.size() != userLimit) {
             this.userList.clear();
             for (int i = 1; i <= userLimit; i++) {
@@ -731,48 +831,45 @@ public class Simulation {
             }
             System.out.println("   ✅ Created " + userLimit + " users");
         }
-        
-        System.out.println("\n STEP 6: Configuring ElementIdMapper...");
+
         configureElementIdMapperForCurrentScenario();
-        
-        System.out.println("\n STEP 7: Assigning trajectories and generating paths...");
-        
+
         int pathsGenerated = 0;
         int pathsSkipped = 0;
-        
+
         while (graphSpecialUser.paths.size() < userLimit) {
             graphSpecialUser.paths.add(new LinkedList<String>());
         }
-        
-        for (Map.Entry<Integer, List<ContactTrajectoryBuilder.UserRoomEvent>> entry : 
+
+        for (Map.Entry<Integer, List<ContactTrajectoryBuilder.UserRoomEvent>> entry :
                 userTrajectories.entrySet()) {
-            
+
             int userId = entry.getKey();
-            
+
             if (userId <= 0 || userId > userList.size()) {
                 pathsSkipped++;
                 continue;
             }
-            
+
             User user = userList.get(userId - 1);
-            
+
             if (user == null) {
                 pathsSkipped++;
                 continue;
             }
-            
+
             List<ContactTrajectoryBuilder.UserRoomEvent> events = entry.getValue();
             user.setContactTrajectory(events);
-            
+
             try {
                 ContactBasedPath path = new ContactBasedPath(
-                    userTrajectories, 
+                    userTrajectories,
                     userId
                 );
-                
+
                 int firstRoom = events.get(0).roomId;
                 long startDoorId = -1;
-                
+
                 try {
                     int numDoors = path.accessGraphFile.getNumDoorsByRoom(firstRoom);
                     if (numDoors > 0) {
@@ -786,33 +883,35 @@ public class Simulation {
                 } catch (Exception e) {
                     System.err.println("       Error obtaining initial vertex: " + e.getMessage());
                 }
-                
+
                 String completePath = "";
                 if (startDoorId > 0) {
                     completePath = path.generatePath(startDoorId);
 				}
-                
+
                 if (completePath != null && !completePath.isEmpty()) {
                     user.pathList = pathStringToList(completePath);
                     user.pathString = completePath;
-                    
+
                     if (user.pathList != null && !user.pathList.isEmpty()) {
                         String firstEdge = user.pathList.get(0);
                         String[] edgeParts = cleanEdge(firstEdge);
-                        
+
                         if (edgeParts.length >= 2) {
                             try {
                                 long firstVertex = Long.parseLong(edgeParts[0]);
                                 String vertexLocation = getVertexLocation(firstVertex);
-                                
+
                                 if (vertexLocation != null && !vertexLocation.isEmpty()) {
                                     String[] xy = vertexLocation.split(", ");
                                     if (xy.length >= 2) {
                                         user.x = Double.parseDouble(xy[0]);
                                         user.y = Double.parseDouble(xy[1]);
-                                        
-                                        int userIndex = userId - 1;
-                                        locationNextIteration[userIndex] = vertexLocation;
+
+                                        // int userIndex = userId - 1;
+                                        // locationNextIteration[userIndex] = vertexLocation;
+										int userIndex = userId - 1;
+										locationNextIteration.set(userIndex, vertexLocation);
 										user.move(vertexLocation, firstRoom);
                                     }
                                 }
@@ -820,10 +919,10 @@ public class Simulation {
                             }
                         }
                     }
-                    
+
                     int userIndex = userId - 1;
                     graphSpecialUser.paths.set(userIndex, user.pathList);
-                    
+
                     pathsGenerated++;
                 } else {
 					System.out.println("       User " + userId + " could not generate path, using fallback");
@@ -832,7 +931,7 @@ public class Simulation {
                     graphSpecialUser.paths.set(userId - 1, user.pathList);
                     pathsSkipped++;
                 }
-                
+
             } catch (Exception e) {
                 user.pathList = createFallbackPath(userId);
                 user.pathString = String.join(", ", user.pathList);
@@ -840,25 +939,14 @@ public class Simulation {
                 pathsSkipped++;
             }
         }
-        
-        System.out.println("   ✅ Paths generados: " + pathsGenerated);
-        System.out.println("   Warning! Paths con fallback: " + pathsSkipped);
-        
-        System.out.println("\n STEP 8: Initializing coincidence tracker...");
-        this.cliqueUserMapping = buildCliqueUserMappingFromSelectedCliques(selectedCliques);
-        this.coincidenceTracker = new es.unizar.epidemic.data.InterCliqueCoincidenceTracker(
-            cliqueUserMapping
-        );
-        System.out.println("   ✅ Tracker initialized");
-        
-        System.out.println("\n STEP 9: Initializing epidemic system...");
+
+		this.cliqueUserMapping = buildCliqueUserMappingFromSelectedCliques(selectedCliques);
+		initializeCoincidenceTracker();
+
         epidemicManager.initializeEpidemicSystem(getAllUsers());
         infectOneUserPerClique(selectedCliques);
         recordInitialSusceptiblesByClique();
-        System.out.println("   ✅ Epidemic system initialized");
-        
-        printSimplifiedAssignmentSummary(selectedCliques, userTrajectories);
-        
+
         System.out.println("\n" + "=".repeat(80));
         System.out.println("✅ INITIALIZATION COMPLETED (SIMPLIFIED MODEL)");
         System.out.println("=".repeat(80) + "\n");
@@ -869,7 +957,7 @@ public class Simulation {
 	 * Uses actual contact events extracted from "contactosFinal.csv" to build
 	 * realistic user trajectories based on observed clique behavior. Selects
 	 * complete cliques, maps users to cliques, and generates paths from real events.
-	 * 
+	 *
 	 * @throws Exception if CSV or JSON files not found, or initialization fails
 	 */
 	private void initializeUsersWithComplexEvents() throws Exception {
@@ -877,45 +965,31 @@ public class Simulation {
 		System.out.println(" COMPLEX MODEL: REAL EVENTS FROM CSV");
 		System.out.println("=".repeat(80));
 
-		
-		String csvPath = "/home/nacho/universidad/cuarto/TFG/RecMobiSimPlus/CodigoOriginal/src/es/unizar/epidemic/data/contactosFinal.csv";
-		String cliquesJsonPath = "/home/nacho/universidad/cuarto/TFG/RecMobiSimPlus/CodigoOriginal/src/es/unizar/epidemic/data/cliques.json";
-		
 		File csvFile = new File(csvPath);
 		File jsonFile = new File(cliquesJsonPath);
-		
+
 		if (!csvFile.exists()) {
 			throw new FileNotFoundException("Contacts CSV not found: " + csvPath);
 		}
 		if (!jsonFile.exists()) {
 			throw new FileNotFoundException("Cliques JSON not found: " + cliquesJsonPath);
 		}
-		
-		System.out.println("\n STEP 1: Files verified");
-		System.out.println("   - CSV: " + csvFile.getAbsolutePath());
-		System.out.println("   - JSON: " + jsonFile.getAbsolutePath());
-		
-		System.out.println("\n STEP 2: Selecting cliques for " + numberOfUser + " users...");
-		
-		ContactTrajectoryBuilder.SelectedUsersResult result = 
+
+		ContactTrajectoryBuilder.SelectedUsersResult result =
 			ContactTrajectoryBuilder.selectUsersFromCompleteCliquesWithCliques(cliquesJsonPath, numberOfUser);
-		
+
 		Set<Integer> priorityUsers = result.users;
 		List<List<String>> selectedCliques = result.cliques;
-		
+
 		if (selectedCliques == null || selectedCliques.isEmpty()) {
 			throw new Exception("Could not load cliques from: " + cliquesJsonPath);
 		}
-		
-		System.out.println("   ✅ Users selected: " + priorityUsers.size());
-		System.out.println("   ✅ Cliques selected: " + selectedCliques.size());
-		
-		System.out.println("\n STEP 3: Building user-clique mapping...");
+
 		Map<Integer, Integer> userToCliqueMapLocal = new HashMap<>();
-		
+
 		for (int cliqueIndex = 0; cliqueIndex < selectedCliques.size(); cliqueIndex++) {
 			List<String> clique = selectedCliques.get(cliqueIndex);
-			
+
 			for (String userIdStr : clique) {
 				try {
 					int realUserId = Integer.parseInt(userIdStr);
@@ -926,23 +1000,17 @@ public class Simulation {
 				}
 			}
 		}
-		
+
 		this.userToCliqueMap = userToCliqueMapLocal;
-		
-		System.out.println("   ✅ Users mapped: " + userToCliqueMapLocal.size());
-		
-		System.out.println("\n STEP 4: Building trajectories from CSV...");
-		System.out.println("    Rooms are taken DIRECTLY from CSV (zona_basica)");
-		
-		Map<Integer, List<ContactTrajectoryBuilder.UserRoomEvent>> userTrajectories = 
+
+		Map<Integer, List<ContactTrajectoryBuilder.UserRoomEvent>> userTrajectories =
 			ContactTrajectoryBuilder.buildUserRoomEventsFromCSV(
-				csvPath, 
-				numberOfUser, 
+				csvPath,
+				numberOfUser,
 				priorityUsers,
 				null
 			);
-		
-		System.out.println("    Trajectories generated for priority users: " + priorityUsers.size());
+
 		for (Integer userTrajectory : userTrajectories.keySet()) {
 			System.out.print(userTrajectory + " ");
 		}
@@ -969,26 +1037,12 @@ public class Simulation {
 				for (ContactTrajectoryBuilder.UserRoomEvent e : events) {
 					e.roomId = newRoomId;
 				}
-				System.out.println("Warning! User " + entry.getKey() + ": all events were in a room without items (" + roomId + "). Reassigned to " + newRoomId);
 			}
 		}
-		
+
 		if (userTrajectories == null || userTrajectories.isEmpty()) {
 			throw new Exception("Could not generate trajectories from CSV");
 		}
-		
-		System.out.println("   ✅ Trajectories generated: " + userTrajectories.size() + " users");
-		
-		System.out.println("\n STEP 5: Complex model - spatial validator DISABLED");
-		System.out.println("    Las habitaciones vienen directamente del CSV");
-		
-		System.out.println("\n STEP 6: Generating navigable paths...");
-
-		System.out.println("userList IDs:");
-		for (User u : userList) System.out.print(u.userID + " ");
-		System.out.println("\nuserTrajectories keys:");
-		for (Integer uid : userTrajectories.keySet()) System.out.print(uid + " ");
-		System.out.println();
 
 		int pathsGenerated = 0;
 		int pathsSkipped = 0;
@@ -999,33 +1053,33 @@ public class Simulation {
 
 		for (Map.Entry<Integer, List<ContactTrajectoryBuilder.UserRoomEvent>> entry : userTrajectories.entrySet()) {
 			int userId = entry.getKey();
-			
+
 			if (userId <= 0 || userId > userList.size()) {
 				System.err.println("   Warning! userId " + userId + " out of range [1-" + userList.size() + "]");
 				pathsSkipped++;
 				continue;
 			}
-			
+
 			User user = userList.get(userId - 1);
-			
+
 			if (user == null) {
 				System.err.println("   Warning! User " + userId + " is null in array");
 				pathsSkipped++;
 				continue;
 			}
-			
+
 			List<ContactTrajectoryBuilder.UserRoomEvent> events = entry.getValue();
 			user.setContactTrajectory(events);
-			
+
 			try {
 				ContactBasedPath path = new ContactBasedPath(
-					userTrajectories, 
+					userTrajectories,
 					userId
 				);
 
 				int firstRoom = events.get(0).roomId;
 				long startDoorId = -1;
-				
+
 				try {
 					int numDoors = path.accessGraphFile.getNumDoorsByRoom(firstRoom);
 					if (numDoors > 0) {
@@ -1039,7 +1093,7 @@ public class Simulation {
 				} catch (Exception e) {
 					System.err.println("       Error obtaining initial vertex: " + e.getMessage());
 				}
-				
+
 				String completePath = "";
 				if (startDoorId > 0) {
 					completePath = path.generatePath(startDoorId);
@@ -1048,24 +1102,26 @@ public class Simulation {
 				if (completePath != null && !completePath.isEmpty()) {
 					user.pathList = pathStringToList(completePath);
 					user.pathString = completePath;
-					
+
 					if (user.pathList != null && !user.pathList.isEmpty()) {
 						String firstEdge = user.pathList.get(0);
 						String[] edgeParts = cleanEdge(firstEdge);
-						
+
 						if (edgeParts.length >= 2) {
 							try {
 								long firstVertex = Long.parseLong(edgeParts[0]);
 								String vertexLocation = getVertexLocation(firstVertex);
-								
+
 								if (vertexLocation != null && !vertexLocation.isEmpty()) {
 									String[] xy = vertexLocation.split(", ");
 									if (xy.length >= 2) {
 										user.x = Double.parseDouble(xy[0]);
 										user.y = Double.parseDouble(xy[1]);
-										
+
+										// int userIndex = userId - 1;
+										// locationNextIteration[userIndex] = vertexLocation;
 										int userIndex = userId - 1;
-										locationNextIteration[userIndex] = vertexLocation;
+										locationNextIteration.set(userIndex, vertexLocation);
 										user.move(vertexLocation, user.room);
 									}
 								}
@@ -1077,21 +1133,14 @@ public class Simulation {
 					else {
 						System.out.println("   Warning! User " + userId + " pathList empty after generating path");
 					}
-
-					System.out.printf(
-						"User %3d | Initial room: %3d | Initial position: (%.2f, %.2f)\n",
-						user.userID,
-						(events != null && !events.isEmpty() ? events.get(0).roomId : -1),
-						user.x,
-						user.y
-					);
-					
 					int userIndex = userId - 1;
-					
-					if (locationNextIteration[userIndex] == null || locationNextIteration[userIndex].isEmpty()) {
+
+					// if (locationNextIteration[userIndex] == null || locationNextIteration[userIndex].isEmpty()) {
+					if (locationNextIteration.get(userIndex) == null || locationNextIteration.get(userIndex).isEmpty()) {
 						String fallbackLocation = getFallbackLocationForRoom(firstRoom);
-						locationNextIteration[userIndex] = fallbackLocation;
-						
+						// locationNextIteration[userIndex] = fallbackLocation;
+						locationNextIteration.set(userIndex, fallbackLocation);
+
 						try {
 							String[] xy = fallbackLocation.split(", ");
 							if (xy.length >= 2) {
@@ -1102,76 +1151,79 @@ public class Simulation {
 							user.x = 500.0;
 							user.y = 500.0;
 						}
-						
+
 						System.out.println("    User " + userId + ": locationNextIteration initialized to " + fallbackLocation);
 					}
-					
+
 					if (user.pathList == null || user.pathList.isEmpty()) {
 						user.pathList = createFallbackPath(userId);
 						user.pathString = String.join(", ", user.pathList);
 					}
-					
+
 					graphSpecialUser.paths.set(userIndex, user.pathList);
 					pathsGenerated++;
-					
+
 				} else {
 					System.err.println("    Error generating path for user " + userId + ", using fallback");
 
 					user.pathList = createFallbackPath(userId);
 					user.pathString = String.join(", ", user.pathList);
-					
+
 					int userIndex = userId - 1;
 					// Fallback
-					if (locationNextIteration[userIndex] == null) {
-						locationNextIteration[userIndex] = "500.0, 500.0";
+					// if (locationNextIteration[userIndex] == null) {
+					// 	locationNextIteration[userIndex] = "500.0, 500.0";
+					// 	user.x = 500.0;
+					// 	user.y = 500.0;
+					// }
+					if (locationNextIteration.get(userIndex) == null) {
+						locationNextIteration.set(userIndex, "500.0, 500.0");
 						user.x = 500.0;
 						user.y = 500.0;
 					}
-					
+
+
 					graphSpecialUser.paths.set(userIndex, user.pathList);
 					pathsSkipped++;
 				}
-				
+
 			} catch (Exception e) {
 				System.err.println("    Error generando path para usuario " + userId + ": " + e.getMessage());
-				
+
 				user.pathList = createFallbackPath(userId);
 				user.pathString = String.join(", ", user.pathList);
-				
+
 				int userIndex = userId - 1;
-				
+
 				// Fallback
-				if (locationNextIteration[userIndex] == null) {
-					locationNextIteration[userIndex] = "500.0, 500.0";
+				// if (locationNextIteration[userIndex] == null) {
+				// 	locationNextIteration[userIndex] = "500.0, 500.0";
+				// 	user.x = 500.0;
+				// 	user.y = 500.0;
+				// }
+				if (locationNextIteration.get(userIndex) == null) {
+					locationNextIteration.set(userIndex, "500.0, 500.0");
 					user.x = 500.0;
 					user.y = 500.0;
 				}
-				
+
 				graphSpecialUser.paths.set(userIndex, user.pathList);
 				pathsSkipped++;
 			}
 		}
 
-		System.out.println("\n    Paths generados: " + pathsGenerated + "/" + userTrajectories.size());
-		if (pathsSkipped > 0) {
-			System.out.println("   Warning! Paths con fallback: " + pathsSkipped);
-		}
-		
-		System.out.println("\n STEP 7: Infecting one user per clique...");
-		
 		try {
 			infectOneUserPerClique(selectedCliques);
-			
+
 			this.cliqueUserMapping = buildCliqueUserMappingFromSelectedCliques(selectedCliques);
 			recordInitialSusceptiblesByClique();
-			
-			System.out.println("   ✅ Initial infection completed");
+
 		} catch (Exception e) {
 			System.err.println("   Warning! Error in initial infection: " + e.getMessage());
 		}
 
 		initializeCoincidenceTracker();
-		
+
 		System.out.println("\n" + "=".repeat(80));
 		System.out.println("✅ INITIALIZATION COMPLETED (COMPLEX MODEL)");
 		System.out.println("   - Users: " + pathsGenerated);
@@ -1188,112 +1240,121 @@ public class Simulation {
 	 * Creates separate trajectories for each user type and initializes epidemic
 	 * system accordingly.
 	 * Added by Nacho Palacio 2025-01-15
-	 * 
+	 *
 	 * @throws Exception if initialization of clique or independent users fails
 	 */
 	private void initializeUsersWithMixedMode() throws Exception {
 		System.out.println("\n" + "=".repeat(80));
 		System.out.println(" INITIALIZATION IN MIXED MODE");
 		System.out.println("=".repeat(80));
-		
+
 		int totalUsers = this.numberOfUser;
 		int independentUsers = (int) Math.ceil(totalUsers * independentUserRatio);
 		int cliqueUsers = totalUsers - independentUsers;
-		
-		System.out.println("\n USER DISTRIBUTION:");
-		System.out.println("   - Total users: " + totalUsers);
-		System.out.println("   - Users in cliques: " + cliqueUsers + " (" + 
-						String.format("%.1f", (1.0 - independentUserRatio) * 100) + "%)");
-		System.out.println("   - Independent users: " + independentUsers + " (" + 
-						String.format("%.1f", independentUserRatio * 100) + "%)");
-		
+
 		String cliquesJsonPath = "../src/es/unizar/epidemic/data/cliques.json";
-		
+
 		File cliquesFile = new File(cliquesJsonPath);
 		if (!cliquesFile.exists()) {
 			throw new FileNotFoundException("Cliques file not found: " + cliquesJsonPath);
 		}
-		
-		System.out.println("\n STEP 2: Selecting cliques...");
-		ContactTrajectoryBuilder.SelectedUsersResult selectionResult = 
+
+		ContactTrajectoryBuilder.SelectedUsersResult selectionResult =
 			ContactTrajectoryBuilder.selectUsersFromCompleteCliquesWithCliques(
-				cliquesJsonPath, 
+				cliquesJsonPath,
 				cliqueUsers
 			);
-		
+
 		if (selectionResult == null || selectionResult.cliques == null) {
 			throw new Exception("Could not select cliques");
 		}
-		
+
 		List<List<String>> selectedCliques = selectionResult.cliques;
-		System.out.println("   ✅ Cliques selected: " + selectedCliques.size());
-		System.out.println("   ✅ Users in cliques: " + selectionResult.users.size());
-		
-		System.out.println("\n STEP 3: Building user -> clique mapping...");
-		Map<Integer, Integer> userToCliqueMapLocal = 
+
+		Map<Integer, Integer> userToCliqueMapLocal =
 			ContactTrajectoryBuilder.buildUserToCliqueMapFromSelectedCliques(selectedCliques);
-		
+
 		this.userToCliqueMap = new HashMap<>(userToCliqueMapLocal);
-		System.out.println("   ✅ Users mapped to cliques: " + userToCliqueMapLocal.size());
-		
-		System.out.println("\n STEP 4: Generating trajectories for clique users...");
 		long simulationDuration = (long) this.timeAvailableUser * 3600; // Convertir horas a segundos
-		
-		Map<Integer, List<ContactTrajectoryBuilder.UserRoomEvent>> cliqueTrajectories = 
-			ContactTrajectoryBuilder.buildUserRoomEvents(
+
+		// Configuration.ContactTrajectoryMode contactMode = Configuration.ContactTrajectoryMode.DISABLED;
+		Configuration.ContactTrajectoryMode contactMode = Configuration.ContactTrajectoryMode.SIMPLIFIED_ROTATION;
+
+		if (Configuration.instance != null) {
+			contactMode = Configuration.instance.getContactTrajectoryMode();
+		}
+
+		Map<Integer, List<ContactTrajectoryBuilder.UserRoomEvent>> cliqueTrajectories;
+
+		if (contactMode == Configuration.ContactTrajectoryMode.COMPLEX_REAL_EVENTS) {
+			Set<Integer> cliqueUserIds = new HashSet<>(userToCliqueMapLocal.keySet());
+			cliqueTrajectories = ContactTrajectoryBuilder.buildUserRoomEventsFromCSV(
+				csvPath,
+				cliqueUsers,
+				cliqueUserIds,
+				null
+			);
+
+		} else {
+			cliqueTrajectories = ContactTrajectoryBuilder.buildUserRoomEvents(
 				userToCliqueMapLocal,
 				simulationDuration,
 				EVENT_DURATION_SECONDS,
 				NUM_ROOMS
 			);
-		
-		System.out.println("   ✅ Clique trajectories generated: " + cliqueTrajectories.size());
-		
-		System.out.println("\n STEP 5: Creating independent users...");
-		
+		}
+
 		Set<Integer> cliqueUserIds = new HashSet<>(cliqueTrajectories.keySet());
-		
+
 		int maxCliqueId = cliqueUserIds.stream().max(Integer::compare).orElse(0);
 		List<Integer> independentUserIds = new ArrayList<>();
-		
+
 		for (int i = 0; i < independentUsers; i++) {
 			int independentId = maxCliqueId + 1 + i;
 			independentUserIds.add(independentId);
-			
+
 			this.userToCliqueMap.put(independentId, -1);
 		}
-		
-		System.out.println("   ✅ Independent user IDs: " + independentUserIds.size());
-		System.out.println("      Range: " + (maxCliqueId + 1) + " - " + (maxCliqueId + independentUsers));
-		
+
 		int userLimit = cliqueUsers + independentUsers;
 
-		if (this.availableTimeOfUsers == null || this.availableTimeOfUsers.length != userLimit) {
-			this.availableTimeOfUsers = new double[userLimit];
-			Arrays.fill(this.availableTimeOfUsers, this.timeAvailableUser * 3600.0);
-			
-			this.currentTimeOfUsers = new int[userLimit];
-			Arrays.fill(this.currentTimeOfUsers, 0);
-			
+		// if (this.availableTimeOfUsers == null || this.availableTimeOfUsers.length != userLimit) {
+		if (this.availableTimeOfUsers == null || this.availableTimeOfUsers.length() != userLimit) {
+			// this.availableTimeOfUsers = new double[userLimit];
+			// Arrays.fill(this.availableTimeOfUsers, this.timeAvailableUser * 3600.0);
+			this.availableTimeOfUsers = new AtomicLongArray(userLimit);
+
+			// this.currentTimeOfUsers = new int[userLimit];
+			// Arrays.fill(this.currentTimeOfUsers, 0);
+			this.currentTimeOfUsers = new AtomicIntegerArray(userLimit);
+
 			this.moodOfUsers = new int[userLimit];
 			initializeMoodOfUsers();
-			
-			this.userPositionInPath = new int[userLimit];
-			Arrays.fill(this.userPositionInPath, 0);
-			
-			this.itemsBeingWatched = new long[userLimit];
-			Arrays.fill(this.itemsBeingWatched, 0L);
-			
-			this.locationNextIteration = new String[userLimit];
-			
-			this.voting = new boolean[userLimit];
-			Arrays.fill(this.voting, false);
+
+			// this.userPositionInPath = new int[userLimit];
+			// Arrays.fill(this.userPositionInPath, 0);
+			this.userPositionInPath = new AtomicIntegerArray(userLimit);
+
+			// this.itemsBeingWatched = new long[userLimit];
+			// Arrays.fill(this.itemsBeingWatched, 0L);
+			this.itemsBeingWatched = new AtomicLongArray(userLimit);
+
+			//this.locationNextIteration = new String[userLimit];
+			this.locationNextIteration = new AtomicReferenceArray<>(userLimit);
+
+			// this.voting = new boolean[userLimit];
+			// Arrays.fill(this.voting, false);
+
+			this.voting = new AtomicReferenceArray<>(userLimit);
+			for (int i = 0; i < this.numberOfUser; i++) {
+				voting.set(i, false);
+			}
 		}
-		
+
 		if (this.userList == null) {
 			this.userList = new ArrayList<>();
 		}
-		
+
 		if (this.userList.size() != userLimit) {
 			this.userList.clear();
 			for (int i = 0; i < userLimit; i++) {
@@ -1301,49 +1362,44 @@ public class Simulation {
 				this.userList.add(user);
 			}
 		}
-		
-		System.out.println("\n STEP 8: Configuring ElementIdMapper...");
+
 		configureElementIdMapperForCurrentScenario();
-		
-		System.out.println("\n STEP 9: Generating navigable paths...");
-		
+
 		while (graphSpecialUser.paths.size() < userLimit) {
 			graphSpecialUser.paths.add(new ArrayList<>());
 		}
-		
+
 		int pathsGenerated = 0;
 		int pathsSkipped = 0;
-		
-		System.out.println("\n STEP 9.1: Generating paths for clique users...");
 
-		for (Map.Entry<Integer, List<ContactTrajectoryBuilder.UserRoomEvent>> entry : 
+		for (Map.Entry<Integer, List<ContactTrajectoryBuilder.UserRoomEvent>> entry :
 				cliqueTrajectories.entrySet()) {
-			
+
 			int userId = entry.getKey();
 			List<ContactTrajectoryBuilder.UserRoomEvent> events = entry.getValue();
-			
+
 			if (userId <= 0 || userId > userLimit) {
 				System.err.println("    User " + userId + " out of range, skipping...");
 				pathsSkipped++;
 				continue;
 			}
-			
+
 			User user = userList.get(userId - 1);
-			
+
 			if (user == null) {
 				System.err.println("    User " + userId + " is null, skipping...");
 				pathsSkipped++;
 				continue;
 			}
-			
+
 			user.setContactTrajectory(events);
-			
+
 			try {
 				ContactBasedPath path = new ContactBasedPath(
 					cliqueTrajectories,
 					userId
 				);
-				
+
 				// Get the start door
 				int firstRoom = events.get(0).roomId;
 				long startDoorId = -1;
@@ -1357,78 +1413,77 @@ public class Simulation {
 				} catch (Exception e) {
 					System.err.println("    Error obtaining initial door: " + e.getMessage());
 				}
-				
+
 				String completePath = "";
 				if (startDoorId > 0) {
 					completePath = path.generatePath(startDoorId);
 				}
-				
+
 				if (completePath != null && !completePath.isEmpty()) {
 					user.pathList = pathStringToList(completePath);
 					user.pathString = completePath;
-					
+
 					if (user.pathList != null && !user.pathList.isEmpty()) {
 						String firstEdge = user.pathList.get(0);
 						String[] coords = cleanEdge(firstEdge);
 						long v1 = Long.parseLong(coords[0]);
-						
-						String location = MainSimulator.floor.diccionaryItemLocation.get(v1);
+
+						String location = MainSimulator.floor.getItemLocation(v1);
 						if (location != null) {
 							user.move(location, firstRoom);
-							
-							System.out.println("   ✅ Usuario " + userId + " posicionado en habitación " + 
-											firstRoom + " (" + location + ")");
+
 						} else {
 							System.err.println("    Sin ubicación para vértice " + v1);
 						}
 					}
-					
+
 					int userIndex = userId - 1;
-					if (locationNextIteration[userIndex] == null || locationNextIteration[userIndex].isEmpty()) {
-						locationNextIteration[userIndex] = user.x + ", " + user.y;
+					// if (locationNextIteration[userIndex] == null || locationNextIteration[userIndex].isEmpty()) {
+					if (locationNextIteration.get(userIndex) == null || locationNextIteration.get(userIndex).isEmpty()) {
+						// locationNextIteration[userIndex] = user.x + ", " + user.y;
+						locationNextIteration.set(userIndex, user.x + ", " + user.y);
 					}
-					
+
 					graphSpecialUser.paths.set(userIndex, user.pathList);
 					pathsGenerated++;
-					
+
 				} else {
 					System.err.println("    Empty path for user " + userId + ", using fallback");
-					
+
 					user.pathList = createFallbackPath(userId);
 					user.pathString = String.join(", ", user.pathList);
-					
+
 					int userIndex = userId - 1;
-					locationNextIteration[userIndex] = "100.0, 100.0";
+					// locationNextIteration[userIndex] = "100.0, 100.0";
+					locationNextIteration.set(userIndex, "100.0, 100.0");
 					user.x = 100.0;
 					user.y = 100.0;
-					
+
 					graphSpecialUser.paths.set(userIndex, user.pathList);
 					pathsSkipped++;
 				}
-				
+
 			} catch (Exception e) {
 				System.err.println("    Error generating path for user " + userId + ": " + e.getMessage());
 				e.printStackTrace();
-				
+
 				user.pathList = createFallbackPath(userId);
 				user.pathString = String.join(", ", user.pathList);
-				
+
 				int userIndex = userId - 1;
-				locationNextIteration[userIndex] = "100.0, 100.0";
+				// locationNextIteration[userIndex] = "100.0, 100.0";
+				locationNextIteration.set(userIndex, "100.0, 100.0");
 				user.x = 100.0;
 				user.y = 100.0;
-				
+
 				graphSpecialUser.paths.set(userIndex, user.pathList);
 				pathsSkipped++;
 			}
 		}
 
-		System.out.println("   ✅ Clique paths generated: " + pathsGenerated);
 		if (pathsSkipped > 0) {
 			System.out.println("    Paths with fallback: " + pathsSkipped);
 		}
-		
-		System.out.println("\n STEP 9.2: Generating random paths for independent users...");
 
 		RandomPath randomPathGenerator = new RandomPath();
 
@@ -1439,120 +1494,101 @@ public class Simulation {
 		for (int independentId : independentUserIds) {
 			try {
 				User user = userList.get(independentId - 1);
-				
+
 				if (user == null) {
 					System.err.println("    Independent user " + independentId + " is null");
 					continue;
 				}
-				
+
 				long startDoor = dataAccessGraphFile.getRandomDoor();
 				String randomPath = randomPathGenerator.generatePath(startDoor);
-				
+
 				if (randomPath != null && !randomPath.isEmpty()) {
 					user.pathList = pathStringToList(randomPath);
 					user.pathString = randomPath;
-					
+
 					if (user.pathList != null && !user.pathList.isEmpty()) {
 						String firstEdge = user.pathList.get(0);
 						String[] coords = cleanEdge(firstEdge);
 						long v1 = Long.parseLong(coords[0]);
-						
+
 						int firstRoom = getRoom(v1);
-						String location = MainSimulator.floor.diccionaryItemLocation.get(v1);
-						
+						String location = MainSimulator.floor.getItemLocation(v1);
+
 						if (location != null) {
 							user.move(location, firstRoom);
-							
-							System.out.println("   ✅ Independent user " + independentId + 
-											" positioned in room " + firstRoom + 
-											" (" + location + ")");
+
 						} else {
 							// Fallback
-							System.err.println("    No location for vertex " + v1 + 
+							System.err.println("    No location for vertex " + v1 +
 											", using fallback");
 							user.x = 100.0;
 							user.y = 100.0;
 							user.room = 1;
 						}
 					}
-					
+
 					int userIndex = independentId - 1;
-					if (locationNextIteration[userIndex] == null || 
-						locationNextIteration[userIndex].isEmpty()) {
-						locationNextIteration[userIndex] = user.x + ", " + user.y;
+					// if (locationNextIteration[userIndex] == null ||
+					// 	locationNextIteration[userIndex].isEmpty()) {
+					// 	locationNextIteration[userIndex] = user.x + ", " + user.y;
+					// }
+					if (locationNextIteration.get(userIndex) == null ||
+						locationNextIteration.get(userIndex).isEmpty()) {
+						locationNextIteration.set(userIndex, user.x + ", " + user.y);
 					}
-					
+
 					graphSpecialUser.paths.set(userIndex, user.pathList);
 					independentPathsGenerated++;
-					
+
 				} else {
 					// Fallback
-					System.err.println("    Empty path for independent user " + 
+					System.err.println("    Empty path for independent user " +
 									independentId + ", using fallback");
-					
+
 					user.pathList = createFallbackPath(independentId);
 					user.pathString = String.join(", ", user.pathList);
-					
+
 					int userIndex = independentId - 1;
-					locationNextIteration[userIndex] = "100.0, 100.0";
+					// locationNextIteration[userIndex] = "100.0, 100.0";
+					locationNextIteration.set(userIndex, "100.0, 100.0");
 					user.x = 100.0;
 					user.y = 100.0;
 					user.room = 1;
-					
+
 					graphSpecialUser.paths.set(userIndex, user.pathList);
 				}
-				
+
 			} catch (Exception e) {
-				System.err.println("    Error generating path for independent user " + 
+				System.err.println("    Error generating path for independent user " +
 								independentId + ": " + e.getMessage());
 				e.printStackTrace();
 			}
 		}
 
-		System.out.println("   ✅ Independent paths generated: " + independentPathsGenerated);
-		System.out.println("\n STEP 10: Initializing epidemic system...");
 		epidemicManager.initializeEpidemicSystem(getAllUsers());
-		
+
 		// Infect one user per clique
 		infectOneUserPerClique(selectedCliques);
-		
-		System.out.println("\n STEP 11: Configuring coincidence tracker...");
 
 		this.cliqueUserMapping = buildCliqueUserMappingFromSelectedCliques(selectedCliques);
 
 		List<Integer> independentUsersList = new ArrayList<>(independentUserIds);
+
 		this.cliqueUserMapping.put(-1, independentUsersList);
-
-		System.out.println("    Users in cliques: " + 
-						cliqueUserMapping.values().stream()
-							.filter(list -> !list.isEmpty())
-							.mapToInt(List::size)
-							.sum());
-		System.out.println("    Independent users: " + independentUsersList.size());
-
-		this.coincidenceTracker = new InterCliqueCoincidenceTracker(cliqueUserMapping);
-
+		initializeCoincidenceTracker();
 		recordInitialSusceptiblesByClique();
 
-		System.out.println("   ✅ Tracker inicializado");
-		
-		printMixedModeAssignmentSummary(
-			cliqueUsers, 
-			independentUsers, 
-			selectedCliques, 
-			independentUserIds
-		);
-		
 		System.out.println("\n" + "=".repeat(80));
 		System.out.println("✅ INITIALIZATION IN MIXED MODE COMPLETED");
 		System.out.println("=".repeat(80) + "\n");
 	}
 
-	
+
 	////////////////////////////////////////////////////////
 	// AUXILIARY INITIALIZATION METHODS
 	////////////////////////////////////////////////////////
-	
+
 	/**
 	 * Configures ElementIdMapper for the current scenario.
 	 * Analyzes system ranges from graph and item files to set up proper
@@ -1564,20 +1600,37 @@ public class Simulation {
 		try {
 			DataAccessGraphFile tempGraphFile = new DataAccessGraphFile(new File(es.unizar.util.Literals.GRAPH_FLOOR_COMBINED));
 			DataAccessItemFile tempItemFile = new DataAccessItemFile(new File(es.unizar.util.Literals.ITEM_FLOOR_COMBINED));
-			
+
 			MainSimulator.SystemRangeData systemData = MainSimulator.analyzeSystemRangesDirectly(tempGraphFile, tempItemFile);
 
 			ElementIdMapper.configureDynamicRanges(systemData);
-			
-			System.out.println("   ✅ ElementIdMapper configured:");
-			System.out.println("      - DOOR_ID_START: " + ElementIdMapper.DOOR_ID_START);
-			System.out.println("      - minDoorId: " + systemData.minDoorId);
-			System.out.println("      - maxDoorId: " + systemData.maxDoorId);
-			
 		} catch (Exception e) {
 			System.err.println("    Error configuring ElementIdMapper: " + e.getMessage());
 			e.printStackTrace();
 		}
+	}
+
+	/**
+	 * Resets the static state of the simulation.
+	 */
+	public static void resetStaticSimulationState() {
+		// System.out.println("\n--- Resetting static simulation state ---");
+		// System.out.println("   Clearing static collections...");
+		// System.out.println("      - itemRatedOfUsers size before clear: " + itemRatedOfUsers.size());
+		// System.out.println("      - itemObservedOfUsers size before clear: " + itemObservedOfUsers.size());
+		// System.out.println("      - actualPathTraveled size before clear: " + actualPathTraveled.size());
+		// System.out.println("      - userRatings size before clear: " + userRatings.size());
+
+		itemRatedOfUsers.clear();
+		itemObservedOfUsers.clear();
+		actualPathTraveled.clear();
+		userRatings.clear();
+
+		// System.out.println("   ✅ Static simulation state reset");
+		// System.out.println("      - itemRatedOfUsers cleared: " + itemRatedOfUsers.size());
+		// System.out.println("      - itemObservedOfUsers cleared: " + itemObservedOfUsers.size());
+		// System.out.println("      - actualPathTraveled cleared: " + actualPathTraveled.size());
+		// System.out.println("      - userRatings cleared: " + userRatings.size());
 	}
 
 
@@ -1587,24 +1640,26 @@ public class Simulation {
 
 	/**
 	 * Updates the position of users.
-	 * 
+	 *
 	 * @param stateOfUsers       Map of user IDs to their states.
 	 * @param timeUsersInRooms   Map of (userID, roomID) pairs to time spent.
 	 */
-	public synchronized void updateUsers(Map<Integer,UserInfo.UserState> stateOfUsers,Map<Pair<Integer,Integer>,Double> timeUsersInRooms) {
+	public void updateUsers(Map<Integer,UserInfo.UserState> stateOfUsers,
+										Map<Pair<Integer,Integer>,Double> timeUsersInRooms) {
+
 		if (graphSpecialUser.paths == null || graphSpecialUser.paths.isEmpty()) {
 			System.err.println(" ERROR: graphSpecialUser.paths is NULL or EMPTY");
-			System.err.println("   - Size of paths: " + 
+			System.err.println("   - Size of paths: " +
 							(graphSpecialUser.paths == null ? "NULL" : graphSpecialUser.paths.size()));
 			System.err.println("   - Size of userList: " + userList.size());
 			return;
 		}
-		
+
 		if (graphSpecialUser.paths.size() < userList.size()) {
 			System.err.println("Warning! WARNING: graphSpecialUser.paths has fewer elements than userList");
 			System.err.println("   - paths.size(): " + graphSpecialUser.paths.size());
 			System.err.println("   - userList.size(): " + userList.size());
-			
+
 			// Fallback
 			while (graphSpecialUser.paths.size() < userList.size()) {
 				int userId = graphSpecialUser.paths.size() + 1;
@@ -1630,16 +1685,6 @@ public class Simulation {
 				e.printStackTrace();
 			}
 
-			EpidemicModel epidemicModel = this.epidemicManager.getEpidemicModel();
-			if (epidemicModel != null && epidemicModel instanceof AbstractEpidemicModel) {
-				AbstractEpidemicModel abstractModel = (AbstractEpidemicModel) epidemicModel;
-				System.out.println("\n WRITER DIAGNOSTIC:");
-				System.out.println("   - Writer null: " + (abstractModel.iterationsWriter == null));
-				if (abstractModel.iterationsWriter != null) {
-					System.out.println("   - Writer ready: " + abstractModel.iterationsWriter.isReady());
-					System.out.println("   - Total records: " + abstractModel.iterationsWriter.getTotalRecords());
-				}
-			}
 			System.out.println("\n--- SIMULATION FINISHED: DURATION COMPLETED ---");
 
 			printFinalEpidemicStatistics();
@@ -1659,33 +1704,33 @@ public class Simulation {
 		log.log(Level.FINE, " -TIEMPO TOTAL MENSAJE INICIO: " + (finalTimeTotal - initialTimeTotal));
 
 		initialTimeTotal = System.currentTimeMillis();
-		int countFinishedSpecialUsers = 0;
+		countFinishedSpecialUsers.set(0);
 
-		
+
 		int validationIntervalIterations = getIterationsForSimulatedSeconds(1000);
 		if (simulationIterationCounter % validationIntervalIterations == 0 && simulationIterationCounter > 0) {
-			System.out.println("\n RUNTIME VALIDATION (Iteration " + 
+			System.out.println("\n RUNTIME VALIDATION (Iteration " +
 							simulationIterationCounter + "):");
-			
+
 			Map<Integer, Integer> usersPerRoom = new HashMap<>();
 			int usersMoving = 0;
 			int usersFinished = 0;
-			
+
 			for (User user : userList) {
 				if (user.hasFinishedVisit) {
 					usersFinished++;
 					continue;
 				}
-				
+
 				if (user.room > 0) {
 					usersPerRoom.put(user.room, usersPerRoom.getOrDefault(user.room, 0) + 1);
 				}
-				
+
 				if (user.x > 0 && user.y > 0) {
 					usersMoving++;
 				}
 			}
-			
+
 			System.out.println("    Active users: " + (userList.size() - usersFinished));
 			System.out.println("    Moving users: " + usersMoving);
 			System.out.println("    Finished users: " + usersFinished);
@@ -1695,10 +1740,10 @@ public class Simulation {
 		if (Configuration.instance != null) {
 			try {
 				Configuration.ContactTrajectoryMode mode = Configuration.instance.getContactTrajectoryMode();
-				
+
 				if (mode != Configuration.ContactTrajectoryMode.DISABLED) {
 					long currentTime = getCurrentSimulationTime();
-					
+
 					for (User user : userList) {
 						// Rotational model
 						if (mode == Configuration.ContactTrajectoryMode.SIMPLIFIED_ROTATION) {
@@ -1715,14 +1760,14 @@ public class Simulation {
 							if (trajectory != null && !trajectory.isEmpty()) {
 								for (ContactTrajectoryBuilder.UserRoomEvent event : trajectory) {
 									if (currentTime >= event.startTime && currentTime < event.endTime) {
-										
+
 										if (event.roomId < 1 || event.roomId > MainSimulator.floor.getRoomCount()) {
 											System.err.println("Warning! User " + user.userID + " has invalid room: " + event.roomId);
 											continue;
 										}
-										
+
 										user.room = event.roomId;
-										
+
 										break;
 									}
 								}
@@ -1736,551 +1781,72 @@ public class Simulation {
 			}
 		}
 
-		// Create a new array equivalent to the user list in order to operate
+		// Paralelization START
+
+		List<Future<UserProcessingResult>> futures = new ArrayList<>();
+		ExecutorService executor = Executors.newFixedThreadPool(4);
+
 		for (int batchStart = 0; batchStart < userList.size(); batchStart += BATCH_SIZE) {
-    		int batchEnd = Math.min(batchStart + BATCH_SIZE, userList.size());
-			
-			// Loop for each user still left (that hasn't finished)
+			int batchEnd = Math.min(batchStart + BATCH_SIZE, userList.size());
+
 			for (int userIdx = batchStart; userIdx < batchEnd; userIdx++) {
-				// New userPosition -> Equivalent to previous loop's variable
-				User u = userList.get(userIdx);
-				int userPosition = u.userID - 1;
+				final int finalUserIdx = userIdx;
+				final User currentUser = userList.get(userIdx);
 
-				if (userIdx >= graphSpecialUser.paths.size()) {
-					System.err.println("   Warning! User " + u.userID + 
-									" without path in graphSpecialUser.paths, skipping");
+				if (finalUserIdx >= graphSpecialUser.paths.size()) {
+					System.err.println("   ⚠️ User " + currentUser.userID + " sin path, skipping");
 					continue;
 				}
 
-				
-				initialTime = System.currentTimeMillis();
-				
-				User currentUser = Configuration.simulation.userList.get(userPosition);
+				// ✅ Crear tarea paralela para este usuario
+				Future<UserProcessingResult> future = executor.submit(() -> {
+					return processUserParallel(currentUser, finalUserIdx, stateOfUsers, timeUsersInRooms);
+				});
 
-				availableTimeOfUsers[userPosition] += Configuration.simulation.getTimeForIterationInSecond();
-				if (currentUser.hasFinishedVisit) {
-					if (simulationIterationCounter <= 2) {
-						System.out.println("   - User " + u.userID + " has already finished visit - SKIP");
-					}
-					log.log(Level.FINEST, "Skipping user's " + currentUser.userID + " iteration");
-					continue;
-				}
-
-				MainSimulator.printConsole("User: " + currentUser.userID, Level.INFO);
-				MainSimulator.printConsole("Available time for iteration in seconds: " + availableTimeOfUsers[userPosition], Level.INFO);
-
-				finalTime = System.currentTimeMillis();
-				log.log(Level.FINE, "   Usuario: " + currentUser.userID + " iterando");
-				log.log(Level.INFO, "   Tiempo en repintar: " + (finalTime - initialTime));
-				
-				if (currentUser.hasFinishedVisit) {
-					log.log(Level.FINEST, "Skipping user's " + currentUser.userID + " iteration"); // -> Working
-					continue;
-				}
-				
-				long lastV2 = -1;
-				double visitDuration = 0;
-				
-				if (availableTimeOfUsers[userPosition] <= 0) {
-					int roomOfUser = currentUser.room;
-					Pair<Integer,Integer> user_room = new Pair<Integer,Integer>(currentUser.userID,MainSimulator.floor.roomLabels.get(roomOfUser));
-					Double pastTime = timeUsersInRooms.get(user_room);
-					timeUsersInRooms.put(user_room,pastTime == null ? timeForIteration : pastTime + timeForIteration);
-				}
-				// The user will be moving while he has time available.
-				while ((availableTimeOfUsers[userPosition] > 0) && (currentTimeOfUsers[userPosition] < getTimeAvailableUserInSecond())) {
-					
-					// Added by Nacho Palacio 2025-06-11
-					int previousRoomOfUser = currentUser.room;
-					if (Configuration.instance != null) {
-						if (Configuration.instance.isUseContactTrajectoriesEnabled() && 
-							userToCliqueMap != null && 
-							userToCliqueMap.containsKey(currentUser.userID)) {
-							
-							int cliqueId = userToCliqueMap.get(currentUser.userID);
-							long currentSimTimeSeconds = getCurrentSimulationTime();
-							int calculatedRoom = ContactTrajectoryBuilder.getRoomForCliqueAtTime(
-								cliqueId, 
-								currentSimTimeSeconds, 
-								EVENT_DURATION_SECONDS, 
-								NUM_ROOMS
-							);
-							currentUser.room = calculatedRoom;
-						} else {
-							// Obtain room from physical position
-							getUserRoomWithAdjustment(currentUser);
-							
-						}
-					}
-					else {
-						// Se obtiene la habitación de la posición física
-						getUserRoomWithAdjustment(currentUser);
-					}
-					
-					log.log(Level.FINEST, "   TENGO TIEMPO TODAV�A: " + availableTimeOfUsers[userPosition]);
-					// The current path.
-					if (graphSpecialUser.paths.size() == 0) {
-						System.out.println("   graphSpecialUser.paths.size() == 0 -> BREAK" );
-						// break;
-					}
-
-					path = graphSpecialUser.paths.get(userPosition);
-					
-					// Added by Nacho Palacio 2025-05-11
-					if (path == null) {
-						continue;
-					}
-
-					// If the path has not finished.
-					if ((path.size() - 1) >= userPositionInPath[userPosition]) {
-						
-						log.log(Level.FINEST, "   Path NO acabado");
-						
-						// The current edge.
-						String edge = path.get(userPositionInPath[userPosition]);
-						String[] array = cleanEdge(edge);
-						// The vertices. (V1 = CURRENT ITEM; V2 = NEXT ITEM TO VISIT)
-						long v1 = 1;
-						long v2 = 1;
-						
-						try {
-							v1 = Long.valueOf(array[0]).longValue();
-							v2 = Long.valueOf(array[1]).longValue();
-						}
-						catch (Exception e) {
-							//e.printStackTrace();
-						}
-						
-						MainSimulator.printConsole("It is moved from item: " + v1 + " to " + v2, Level.INFO);
-						itemsBeingWatched[userPosition] = v2;
-
-						// Next idea: When the RS user sees the last available item to visit in the current room (the item has been voted and in the rest of the recommended path there is no other
-						// item to visit in that room), the path is updated by using the recommendation algorithm.
-						initialTime = System.currentTimeMillis();
-						
-						if (currentUser.isSpecialUser) {
-							if (ElementIdMapper.isInCorrectRange(v1, ElementIdMapper.CATEGORY_ITEM) &&
-								ElementIdMapper.isInCorrectRange(v2, ElementIdMapper.CATEGORY_DOOR)) { // Modified by Nacho Palacio 2025-11-03
-								if (!itemUpdated.contains(v1)) {
-									// The path is updated with the recommendation algorithm to see if it suggests another item within the same room.
-									long startVertex = v1;
-									long endVertex = v2;
-									// The RS user path is updated with the recommendation algorithm.
-									long initialTimeSpecial = 0, finalTimeSpecial = 0;
-									
-									initialTimeSpecial = System.currentTimeMillis();
-
-									updateSpecialUserPath(endVertex, endVertex, false, 0, false, currentUser); // Modified by Nacho Palacio 2025-11-03
-
-									finalTimeSpecial = System.currentTimeMillis();
-									
-									
-									if (itemUpdated.isEmpty()) {
-										itemUpdated.add(v1);
-									} else {
-										if (!itemUpdated.contains(v1)) {
-											itemUpdated.add(v1);
-										}
-									}
-
-									// The current edge.
-									path = graphSpecialUser.paths.get(userPosition);
-									// edge = path.get(userPositionInPath[userPosition]);
-									userPositionInPath[userPosition] = 0; // Added by Nacho Palacio 2025-11-04
-									edge = path.get(0); // Modified by Nacho Palacio 2025-11-03
-									array = cleanEdge(edge);
-									v1 = Long.valueOf(array[0]).longValue();
-									v2 = Long.valueOf(array[1]).longValue();
-									itemsBeingWatched[userPosition] = v2;
-									
-									// Check users watching same item as RS user
-									checkUsersWatchingSameItem(itemsBeingWatched[userPosition]);
-									
-									finalTime = System.currentTimeMillis();
-									log.log(Level.FINE, "      *** Tiempo en updateSpecialUserPath: " + (finalTimeSpecial - initialTimeSpecial));
-									log.log(Level.INFO, "      Tiempo en actualizar ruta (usuario especial tiene m�s cosas que ver en la sala): " + (finalTime - initialTime));
-								}
-							}
-						}
-
-						// Initial point.
-						String location_v1 = MainSimulator.floor.diccionaryItemLocation.get(v1);
-						// Final point.
-
-						String location_v2 = MainSimulator.floor.diccionaryItemLocation.get(v2);
-
-						if (location_v1 == null) {
-							if (ElementIdMapper.isInCorrectRange(v1, ElementIdMapper.CATEGORY_ITEM)) {
-								long v1External = ElementIdMapper.getBaseId(v1);
-								location_v1 = MainSimulator.floor.diccionaryItemLocation.get(v1External);
-							} else if (ElementIdMapper.isInCorrectRange(v1, ElementIdMapper.CATEGORY_DOOR)) {
-								long v1External = ElementIdMapper.getBaseId(v1);
-								location_v1 = MainSimulator.floor.diccionaryItemLocation.get(v1External);
-							}
-							
-							// Default
-							if (location_v1 == null) {
-								location_v1 = "500.0, 500.0";
-							}
-						}
-  
-						if (location_v2 == null) {
-							if (ElementIdMapper.isInCorrectRange(v2, ElementIdMapper.CATEGORY_ITEM)) {
-								long v2External = ElementIdMapper.getBaseId(v2);
-								location_v2 = MainSimulator.floor.diccionaryItemLocation.get(v2External);
-							} else if (ElementIdMapper.isInCorrectRange(v2, ElementIdMapper.CATEGORY_DOOR)) {
-								long v2External = ElementIdMapper.getBaseId(v2);
-								location_v2 = MainSimulator.floor.diccionaryItemLocation.get(v2External);
-							}
-							
-							// Default
-							if (location_v2 == null) {
-								location_v2 = "500.0, 500.0";
-							}
-						}
-
-						// If it is an item (not a door).
-						long internalV2 = ElementIdMapper.getBaseId(v2);
-						if (internalV2 <= this.numberOfITems) { // Modified by Nacho Palacio 2025-10-17 antes: if (v2 <= this.numberOfITems) {
-
-							// Register the item as observed
-							if (itemObservedOfUsers.containsKey(currentUser.userID)) {
-								List<Long> observedList = itemObservedOfUsers.get(currentUser.userID);
-								if (!observedList.contains(internalV2)) {
-									observedList.add(internalV2);
-								}
-							} else {
-								List<Long> observedList = new LinkedList<>();
-								observedList.add(internalV2);
-								itemObservedOfUsers.put(currentUser.userID, observedList);
-							}
-
-							// Generate rating. If the user has time and was rating an item, then he or she is done rating.
-							if ((availableTimeOfUsers[userPosition] >= 0) && (voting[userPosition] == true)) {
-								
-								log.log(Level.FINEST, "      ITEM " + v2 + " SIENDO VOTADO");
-								long id_user = currentUser.userID;
-								long user = id_user;
-								long item = itemsBeingWatched[userPosition];
-								long itemExternal = ElementIdMapper.getBaseId(item);
-
-								initialTime = System.currentTimeMillis();
-								long context = getCurrentContext(currentUser);
-								finalTime = System.currentTimeMillis();
-								log.log(Level.INFO, "      Tiempo en obtener el contexto: " + (finalTime - initialTime));
-								
-								initialTime = System.currentTimeMillis();
-								
-								float rating = generateRating(user, item, itemExternal, context);
-								
-								userRatings.computeIfAbsent((int) user, k -> new ArrayList<>()).add(rating); // Added by Nacho Palacio 2025-10-18
-
-								finalTime = System.currentTimeMillis();
-								log.log(Level.INFO, "      Tiempo en generar valoración: " + (finalTime - initialTime));
-
-								u.totalObservationTime += getDelayObservingPaintingInSecond();
-								u.totalItemsObserved += 1;
-
-								String location = currentUser.x + ", " + currentUser.y;
-								InformationToPropagate informationToPropagate = new InformationToPropagate(id_user, user, item, context, rating, Configuration.simulation.getTtl(), location,
-										currentTimeOfUsers[currentUser.userID - 1]);
-
-								if (!isChangedItemByRecommender) {
-									initialTime = System.currentTimeMillis();
-									
-									long initialTimeRecommender = 0, finalTimeRecommender = 0;
-									initialTimeRecommender = System.currentTimeMillis();
-									// The generated rating is inserted into the database (db_user.db) of the RS user.
-									specialUserListenTheInformation(informationToPropagate, currentUser); // Lot of time consumed
-									finalTimeRecommender = System.currentTimeMillis();
-									
-									// Update item stats
-									if (currentUser.isSpecialUser && Literals.COMPILE_ITEM_STATS) {
-										updateSpecialUserItemStatistics(informationToPropagate);
-									}
-									
-									logRecommender.log(Level.INFO, "[specialUserListenTheInformation]: " + (finalTimeRecommender - initialTimeRecommender));
-									
-									initialTimeRecommender = System.currentTimeMillis();
-									// Increased time: for the RS user to arrive at the item and observe it.
-									currentTimeOfUsers[currentUser.userID - 1] += getCurrentTime(location_v1, location_v2) + Configuration.simulation.getDelayObservingPaintingInSecond();
-									if (itemRatedOfUsers.containsKey(currentUser.userID)) {
-										List<Long> itemList = itemRatedOfUsers.get(currentUser.userID);
-										itemList.add(item);
-										itemRatedOfUsers.put(currentUser.userID, itemList);
-									} else {
-										List<Long> itemList = new LinkedList<>();
-										itemList.add(item);
-										itemRatedOfUsers.put(currentUser.userID, itemList);
-									}
-									finalTimeRecommender = System.currentTimeMillis();
-									
-									logRecommender.log(Level.INFO, "[currentTimeOfUsers]: " + (finalTimeRecommender - initialTimeRecommender));
-
-									initialTimeRecommender = System.currentTimeMillis();
-									// The information to be propagated is inserted in a db_p2p_queue_user_XXX.db.
-									if (Configuration.simulation.getNetworkType().equalsIgnoreCase("Peer To Peer (P2P)")) {
-										dataManagementQueueDBList_P2P.get(userPosition).insertInformation(informationToPropagate);
-									}
-									finalTimeRecommender = System.currentTimeMillis();
-									
-									logRecommender.log(Level.INFO, "[currentTimeOfUsers]: " + (finalTimeRecommender - initialTimeRecommender));
-									
-									finalTime = System.currentTimeMillis();
-									log.log(Level.INFO, "      IS CHANGED BY RECOMMENDER: " + (finalTime - initialTime));
-
-								} else {
-									// If the item to rate by user has been changed by the recommender (after the user is in the item), then the user should not rate on it. This would avoid rating the
-									// wrong item.
-									voting[userPosition] = false;
-									isChangedItemByRecommender = false;
-								}
-
-								voting[userPosition] = false;
-							}
-
-						} else {
-							// The value is changed to false because the item that was going to be rated is pending for the next iteration, but when this method finishes the recommender
-							// is updated, which changes the item (by another item) that was going to be rated, but as voting[i] = true; and casually the next item is a door,
-							// so this item will not be rated and the user will not walk. Hence, it is set to false to ensure that you can enter the next if.
-							voting[userPosition] = false;
-						}
-
-						/**
-						 * MOVEMENT
-						 */
-						// If the user is not rating, it is because he is still moving.
-						if (voting[userPosition] == false) {
-							initialTime = System.currentTimeMillis();
-							long initialTimeMovement = System.currentTimeMillis();
-							long finalTimeMovement;
-							
-							// If the current location is v2, it is because the user arrived at the destination item.
-							
-							String cur = locationNextIteration[userPosition];
-							String dst = location_v2;
-							String[] curParts = cur.split(",\\s*");
-							String[] dstParts = dst.split(",\\s*");
-							if (curParts.length >= 2 && dstParts.length >= 2) {
-								if (locationNextIteration[userPosition].equalsIgnoreCase(location_v2)) {
-
-									UserInfo.UserState ui = stateOfUsers.get(currentUser.userID);
-									if(v2 <= this.numberOfITems && ui != null) {
-										ui.action = "Observing item";
-										ui.item = v2;
-									}
-
-									// Added by Nacho Palacio 2025-11-06
-									String edgeTraveled = "(" + v1 + " : " + v2 + ")";
-									actualPathTraveled.computeIfAbsent(currentUser.userID, k -> new ArrayList<>()).add(edgeTraveled);
-									
-									// Moving to other item.
-									userPositionInPath[userPosition] += 1;
-									// If is a RS user.
-									if (currentUser.isSpecialUser) {
-										// The path traveled is stored.
-										// Before the user goes to another item, consider the problem of user disobedience.
-										specialUserDisobedience(currentUser);
-									}
-									// The time to go from one door (or stairs) to another is increased.
-									if (v2 > this.numberOfITems) {
-										if ((this.pathStrategyUsed != null && this.pathStrategyUsed.checkDoorsConnectedByStairs(v1, v2)) || checkDoorsConnectedByStairs(v1, v2)) {
-											currentTimeOfUsers[userPosition] += getTimeOnStairs();
-										} else {
-											currentTimeOfUsers[userPosition] += getCurrentTime(location_v1, location_v2);
-										}
-									}
-									
-									finalTimeMovement = System.currentTimeMillis();
-									log.log(Level.INFO, "      - TIME MOVING ARRIVED DESTINATION ITEM: " + (finalTimeMovement - initialTimeMovement));
-		//							moveTime = finalTimeMovement - initialTimeMovement;
-								} else {
-									initialTimeMovement = System.currentTimeMillis();
-									// If it is a door of stairs, then the next movement of the user will be directly to the door input of stairs.
-									boolean connectedStairs = false;
-									try {
-										connectedStairs = (this.pathStrategyUsed == null) ? checkDoorsConnectedByStairs(v1, v2) : this.pathStrategyUsed.checkDoorsConnectedByStairs(v1, v2);
-									}
-									catch (Exception e) {
-										e.printStackTrace();
-									}
-									
-									if (connectedStairs) {
-										locationStartVertex = locationNextIteration[userPosition];
-										locationNextIteration[userPosition] = location_v2;
-									} else {
-										// If the user has not arrived at v2, and it is not a door of stairs, then the user will move to the next position in the direction of v2.
-										locationStartVertex = locationNextIteration[userPosition];
-										long timeNextMovementInit = System.currentTimeMillis();
-										locationNextIteration[userPosition] = nextMovement(locationNextIteration[userPosition], location_v2, currentUser, (int) v2);
-										
-										long timeNextMovementEnd = System.currentTimeMillis();
-										log.log(Level.FINE, "      - *** NEXT MOVEMENT: " + (timeNextMovementEnd - timeNextMovementInit));
-									}
-
-									finalTimeMovement = System.currentTimeMillis();
-									log.log(Level.INFO, "      - CHANGING LOCATIONS: " + (finalTimeMovement - initialTimeMovement));
-									
-									initialTimeMovement = System.currentTimeMillis();
-									int room = getRoom(v2);
-
-									finalTimeMovement = System.currentTimeMillis();
-									log.log(Level.FINE, "      - GET ROOM: " + (finalTimeMovement - initialTimeMovement));
-									
-									initialTimeMovement = System.currentTimeMillis();
-
-									currentUser.move(locationNextIteration[userPosition], room);
-									
-									finalTimeMovement = System.currentTimeMillis();
-									
-									if (!(Configuration.instance != null && 
-                                          Configuration.instance.isUseContactTrajectoriesEnabled() && 
-                                          userToCliqueMap != null && 
-                                          userToCliqueMap.containsKey(currentUser.userID))) {
-                                        
-                                        getUserRoomWithAdjustment(currentUser);
-                                    }
-									
-									int roomOfUser = currentUser.room;
-
-									updateUserRoomEntry(currentUser, previousRoomOfUser, roomOfUser); // Added by Nacho Palacio 2025-12-16
-
-									if(roomOfUser > -1) {
-										UserInfo.UserState ui = stateOfUsers.get(currentUser.userID);
-										if(ui == null) {
-											ui = new UserInfo.UserState(MainSimulator.floor.roomLabels.get(roomOfUser));
-											stateOfUsers.put(currentUser.userID,ui);
-										} else {
-											ui.room = MainSimulator.floor.roomLabels.get(roomOfUser);
-										}
-										
-		//								UserInfo.UserState ui = stateOfUsers.get(currentUser.userID);
-										ui.action = "Moving";
-		//								ui.item = null;
-										Pair<Integer,Integer> user_room = new Pair<Integer,Integer>(currentUser.userID,MainSimulator.floor.roomLabels.get(roomOfUser));
-										Double pastTime = timeUsersInRooms.get(user_room);
-										timeUsersInRooms.put(user_room,pastTime == null ? timeForIteration : pastTime + timeForIteration);
-										
-										if(MainSimulator.db.isConnected() && registerSimInDB) {
-											if(previousRoomOfUser != roomOfUser) {
-												MainSimulator.db.registerVisit(MainSimulator.floor.roomLabels.get(roomOfUser), currentUser.userID, currentUser.isSpecialUser);
-												visitDuration = 0;
-											}
-											MainSimulator.db.addPositionToPath(currentUser.userID,locationNextIteration[userPosition],MainSimulator.floor.roomLabels.get(roomOfUser));
-											visitDuration += timeForIteration;
-											if(v2 != lastV2) {
-												MainSimulator.db.registerItemObservation(room, currentUser.userID, (int)v2);
-												MainSimulator.db.registerVisitDuration(MainSimulator.floor.roomLabels.get(roomOfUser), currentUser.userID, visitDuration);
-											}
-										}
-									}
-									
-									log.log(Level.FINE, "      - FUNCI�N MOVE: " + (finalTimeMovement - initialTimeMovement));
-								}
-							}
-							else {
-								System.out.println("Warning! parsing has failed");
-							}
-							
-							finalTime = System.currentTimeMillis();
-							log.log(Level.INFO, "    - TIME MOVING: " + (finalTime - initialTime));
-						}
-						else {
-							int roomOfUser = currentUser.room;
-							Pair<Integer,Integer> user_room = new Pair<Integer,Integer>(currentUser.userID,MainSimulator.floor.roomLabels.get(roomOfUser));
-							Double pastTime = timeUsersInRooms.get(user_room);
-							timeUsersInRooms.put(user_room,pastTime == null ? timeForIteration : pastTime + timeForIteration);
-
-						}
-						lastV2 = v2;
-
-					} else {
-						System.out.println("User " + currentUser.userID + " has FINISHED his/her PATH.");
-						initialTime = System.currentTimeMillis();
-						log.log(Level.INFO, "   Path Se ha acabado");
-						// If the RS user's path ends and he still has time for the visit, then the user's path is updated with the recommender.
-						if (currentUser.isSpecialUser /*&& userTimesUpdatedPath[userPosition] < 10*/) {
-							userTimesUpdatedPath[userPosition]++;
-							try {
-								String start = cleanEdge(path.get(path.size() - 1))[0];
-								String end = cleanEdge(path.get(path.size() - 1))[1];
-								long startVertex = Long.valueOf(start).longValue();
-								long endVertex = Long.valueOf(end).longValue();
-								boolean finishPath = true;
-
-								// The RS user path is updated with the recommendation algorithm.
-								updateSpecialUserPath(startVertex, endVertex, false, 0, finishPath, currentUser);
-
-								// Reset path position
-								userPositionInPath[userPosition] = 0; // Added by Nacho Palacio 2025-11-04
-							}
-							catch (Exception e) {
-								e.printStackTrace();
-								currentTimeOfUsers[userPosition] = Configuration.simulation.getTimeAvailableUserInSecond();
-								countFinishedSpecialUsers++;
-								
-								// Add the RS user to the finished users
-								currentUser.hasFinishedVisit = true;
-								this.ended.add(u);
-							}
-							path = graphSpecialUser.paths.get(userPosition);
-
-							// Added by Nacho Palacio 2025-11-04
-							if (path == null || path.isEmpty()) {
-								currentUser.hasFinishedVisit = true;
-								this.ended.add(currentUser);
-								break;
-							}
-
-						} else {
-							finish++;
-							// MainSimulator.printConsole("[The user " + currentUser.userID + " has finished his visit]", Level.WARNING);
-							availableTimeOfUsers[userPosition] = 0;
-							
-							// Non-RS user has finished the visit
-							currentUser.hasFinishedVisit = true;
-							// Add the user to the "ended" (visit) list
-							this.ended.add(u);
-							// MainSimulator.printConsole("Remaining: " + (userList.size() - this.ended.size()) + " users", Level.WARNING);
-						}
-
-						// Modified by Nacho Palacio 2025-05-10
-						UserInfo.UserState ui = stateOfUsers.get(currentUser.userID);
-						if (ui != null) {
-							ui.action = "Finished";
-							ui.item = null;
-						} else {
-							ui = new UserInfo.UserState(MainSimulator.floor.roomLabels.get(currentUser.room));
-							ui.action = "Finished";
-							ui.item = null;
-							stateOfUsers.put(currentUser.userID, ui);
-						}
-						
-						finalTime = System.currentTimeMillis();
-						log.log(Level.INFO, "    Tiempo en actualizar PATH de " + (userPosition+1) + " (acabado): " + (finalTime - initialTime));
-					}
-				}
-				
-				initialTime = System.currentTimeMillis();
-				
-				// If RS users consumed the time of the visit, then the visit will be terminated for all users.
-				MainSimulator.printConsole("Current time: " + currentTimeOfUsers[userPosition] + "/ " + Configuration.simulation.getTimeAvailableUserInSecond(), Level.INFO);
-				if (currentTimeOfUsers[userPosition] >= Configuration.simulation.getTimeAvailableUserInSecond() && currentUser.isSpecialUser) {
-					countFinishedSpecialUsers++;
-					
-					// Add the RS user to the finished users
-					currentUser.hasFinishedVisit = true;
-					this.ended.add(u);
-				}
-				
-				finalTime = System.currentTimeMillis();
-				log.log(Level.FINE, "   Tiempo en imprimir tiempos en consola: " + (finalTime - initialTime));
+				futures.add(future);
 			}
 		}
 
+		// Wait until all tasks are done and collect results
+
+		for (Future<UserProcessingResult> future : futures) {
+			try {
+				UserProcessingResult result = future.get(60, TimeUnit.SECONDS);
+
+				if (result.error != null) {
+					System.err.println("❌ Error procesando usuario " + result.userId +
+									": " + result.error.getMessage());
+					continue;
+				}
+
+				if (result.hasFinished && result.isSpecialUser) {
+					// System.out.println(" updateUsers - Usuario " + result.userId + " ha terminado su visita");
+					countFinishedSpecialUsers.incrementAndGet();
+				}
+
+			} catch (TimeoutException e) {
+				System.err.println("⚠️ Timeout procesando usuario");
+			} catch (Exception e) {
+				System.err.println("❌ Error procesando usuario: " + e.getMessage());
+				e.printStackTrace();
+			}
+		}
+
+		executor.shutdown();
+		try {
+			if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+				executor.shutdownNow();
+			}
+		} catch (InterruptedException e) {
+			executor.shutdownNow();
+			Thread.currentThread().interrupt();
+		}
+
+		// Paralelization END
+
 		finalTimeTotal = System.currentTimeMillis();
 		log.log(Level.INFO, " -TIEMPO TOTAL BUCLE: " + (finalTimeTotal - initialTimeTotal));
-		
+
 		initialTimeTotal = System.currentTimeMillis();
 
 		if (coincidenceTracker != null) {
@@ -2298,21 +1864,718 @@ public class Simulation {
 			currentTime();
 
 			disconnect();
-			return; 
+			return;
 		}
 
 		// The criterion for stopping the simulation is that all users have finished their time.
-		if (countFinishedSpecialUsers >= getNumberOfSpecialUser() && getNumberOfSpecialUser() > 0) {
-			// The thread is killed because the visit is over.
-			MainSimulator.userRunnable.setRunning(false);
-			MainSimulator.printConsole("[Finished visits]", Level.WARNING);
+		// if (countFinishedSpecialUsers.get() >= getNumberOfSpecialUser() && getNumberOfSpecialUser() > 0) {
+		// 	// The thread is killed because the visit is over.
+		// 	MainSimulator.userRunnable.setRunning(false);
+		// 	MainSimulator.printConsole("[Finished visits]", Level.WARNING);
+		// 	currentTime();
+		// 	System.out.println("\n--- SIMULATION FINISHED: ALL USERS HAVE COMPLETED THEIR VISITS ---");
+
+		// 	disconnect();
+
+		// }
+		int totalFinishedUsers = countFinishedSpecialUsers.get() +
+        (int) userList.stream()
+            .filter(u -> !u.isSpecialUser && u.hasFinishedVisit)
+            .count();
+		if (totalFinishedUsers >= numberOfUser) {
+			System.out.println("\n--- SIMULATION FINISHED: ALL USERS HAVE COMPLETED THEIR VISITS ---");
+			try {
+				exportMetricsForPythonRecommender(timeUsersInRooms, String.valueOf(numberOfUser));
+			} catch (Exception e) {
+				System.err.println("Error exporting metrics: " + e.getMessage());
+			}
+
+			// EpidemicModel epidemicModel = this.epidemicManager.getEpidemicModel();
+			// if (epidemicModel != null && epidemicModel instanceof AbstractEpidemicModel) {
+			// 	((AbstractEpidemicModel) epidemicModel).recordStatisticsAtEnd(this);
+			// }
+
+			MainSimulator.printConsole("[Finished visits - ALL USERS]", Level.WARNING);
 			currentTime();
-			
+
+			printFinalEpidemicStatistics();
+
 			disconnect();
-			
+
+			MainSimulator.userRunnable.setRunning(false);
+			MainSimulator.printConsole("[Simulation finished]", Level.WARNING);
+			MainSimulator.printConsole("Final statistics: " + getInfectionStatistics(), Level.WARNING);
+			currentTime();
+			return;
 		}
-		
+
 		finalTimeTotal = System.currentTimeMillis();
+	}
+
+	/**
+	 * Clase auxiliar para almacenar resultados del procesamiento paralelo
+	 */
+	private static class UserProcessingResult {
+		int userId;
+		boolean hasFinished;
+		boolean pathUpdated;
+		boolean isSpecialUser;
+		Exception error;
+
+		UserProcessingResult(int userId) {
+			this.userId = userId;
+			this.hasFinished = false;
+			this.pathUpdated = false;
+			this.isSpecialUser = false;
+			this.error = null;
+		}
+	}
+
+	/**
+	 * Processes a single user in parallel.
+	 *
+	 * @param currentUser user to process
+	 * @param userIdx     index of the user
+	 * @param stateOfUsers map of user states
+	 * @param timeUsersInRooms map of time spent by users in rooms
+	 * @return UserProcessingResult with processing outcome
+	 */
+	private UserProcessingResult processUserParallel(User currentUser, int userIdx,
+													Map<Integer,UserInfo.UserState> stateOfUsers,
+													Map<Pair<Integer,Integer>,Double> timeUsersInRooms) {
+
+		UserProcessingResult result = new UserProcessingResult(currentUser.userID);
+		result.isSpecialUser = currentUser.isSpecialUser;
+
+		try {
+			int userPosition = currentUser.userID - 1;
+
+			long initialTime = System.currentTimeMillis();
+
+			// availableTimeOfUsers[userPosition] += Configuration.simulation.getTimeForIterationInSecond();
+			long timeToAdd = (long)(Configuration.simulation.getTimeForIterationInSecond());
+			availableTimeOfUsers.addAndGet(userPosition, timeToAdd);
+
+			if (currentUser.hasFinishedVisit) {
+				if (simulationIterationCounter <= 2) {
+					System.out.println("   - User " + currentUser.userID + " has already finished visit - SKIP");
+				}
+				log.log(Level.FINEST, "Skipping user's " + currentUser.userID + " iteration");
+				result.hasFinished = true;
+				return result;
+			}
+
+			MainSimulator.printConsole("User: " + currentUser.userID, Level.INFO);
+			// MainSimulator.printConsole("Available time for iteration in seconds: " +
+			// 						availableTimeOfUsers[userPosition], Level.INFO);
+			MainSimulator.printConsole("Available time for iteration in seconds: " +
+									(availableTimeOfUsers.get(userPosition)), Level.INFO);
+
+			long finalTime = System.currentTimeMillis();
+			log.log(Level.FINE, "   Usuario: " + currentUser.userID + " iterando");
+			log.log(Level.INFO, "   Tiempo en repintar: " + (finalTime - initialTime));
+
+			if (currentUser.hasFinishedVisit) {
+				log.log(Level.FINEST, "Skipping user's " + currentUser.userID + " iteration");
+				result.hasFinished = true;
+				return result;
+			}
+
+			long lastV2 = -1;
+			double visitDuration = 0;
+
+			// if (availableTimeOfUsers[userPosition] <= 0) {
+			if (availableTimeOfUsers.get(userPosition) <= 0) {
+				int roomOfUser = currentUser.room;
+				Pair<Integer,Integer> user_room = new Pair<Integer,Integer>(
+					currentUser.userID, MainSimulator.floor.getRoomLabel(roomOfUser));
+				Double pastTime = timeUsersInRooms.get(user_room);
+				timeUsersInRooms.put(user_room, pastTime == null ? timeForIteration : pastTime + timeForIteration);
+			}
+
+			// while ((availableTimeOfUsers[userPosition] > 0) &&
+			// 	(currentTimeOfUsers[userPosition] < getTimeAvailableUserInSecond())) {
+			// while ((availableTimeOfUsers.get(userPosition) > 0) &&
+			// 	(currentTimeOfUsers[userPosition] < getTimeAvailableUserInSecond())) {
+			while ((availableTimeOfUsers.get(userPosition) > 0) &&
+				(currentTimeOfUsers.get(userPosition) < getTimeAvailableUserInSecond())) {
+
+				int previousRoomOfUser = currentUser.room;
+
+				if (Configuration.instance != null) {
+					if (Configuration.instance.isUseContactTrajectoriesEnabled() &&
+						userToCliqueMap != null &&
+						userToCliqueMap.containsKey(currentUser.userID)) {
+
+						int cliqueId = userToCliqueMap.get(currentUser.userID);
+						long currentSimTimeSeconds = getCurrentSimulationTime();
+						int calculatedRoom = ContactTrajectoryBuilder.getRoomForCliqueAtTime(
+							cliqueId,
+							currentSimTimeSeconds,
+							EVENT_DURATION_SECONDS,
+							NUM_ROOMS
+						);
+						currentUser.room = calculatedRoom;
+					} else {
+						getUserRoomWithAdjustment(currentUser);
+					}
+				} else {
+					getUserRoomWithAdjustment(currentUser);
+				}
+
+				// log.log(Level.FINEST, "   TENGO TIEMPO TODAVÍA: " + availableTimeOfUsers[userPosition]);
+				log.log(Level.FINEST, "   TENGO TIEMPO TODAVÍA: " + availableTimeOfUsers.get(userPosition));
+
+				if (graphSpecialUser.paths.size() == 0) {
+					System.out.println("   graphSpecialUser.paths.size() == 0 -> BREAK");
+				}
+
+				List<String> path = graphSpecialUser.paths.get(userPosition);
+
+				if (path == null) {
+					continue;
+				}
+
+				// if ((path.size() - 1) >= userPositionInPath[userPosition]) {
+				if ((path.size() - 1) >= userPositionInPath.get(userPosition)) {
+
+					log.log(Level.FINEST, "   Path NO acabado");
+
+					// String edge = path.get(userPositionInPath[userPosition]);
+					String edge = path.get(userPositionInPath.get(userPosition));
+					String[] array = cleanEdge(edge);
+					long v1 = 1;
+					long v2 = 1;
+
+					try {
+						v1 = Long.valueOf(array[0]).longValue();
+						v2 = Long.valueOf(array[1]).longValue();
+					} catch (Exception e) {
+						// Ignorar
+					}
+
+					MainSimulator.printConsole("It is moved from item: " + v1 + " to " + v2, Level.INFO);
+					// itemsBeingWatched[userPosition] = v2;
+					itemsBeingWatched.set(userPosition, v2);
+
+					initialTime = System.currentTimeMillis();
+
+					if (currentUser.isSpecialUser) {
+						if (ElementIdMapper.isInCorrectRange(v1, ElementIdMapper.CATEGORY_ITEM) &&
+							ElementIdMapper.isInCorrectRange(v2, ElementIdMapper.CATEGORY_DOOR)) {
+
+							if (!itemUpdated.contains(v1)) {
+								long startVertex = v1;
+								long endVertex = v2;
+
+								long initialTimeSpecial = System.currentTimeMillis();
+
+								// ✅ Esta llamada está SINCRONIZADA internamente
+								updateSpecialUserPath(endVertex, endVertex, false, 0, false, currentUser);
+
+								long finalTimeSpecial = System.currentTimeMillis();
+
+								if (itemUpdated.isEmpty()) {
+									itemUpdated.add(v1);
+								} else {
+									if (!itemUpdated.contains(v1)) {
+										itemUpdated.add(v1);
+									}
+								}
+
+								path = graphSpecialUser.paths.get(userPosition);
+								if (path == null || path.isEmpty()) {
+									System.err.println("Warning: Path null after updateSpecialUserPath for user " + currentUser.userID);
+									continue;
+								}
+								// userPositionInPath[userPosition] = 0;
+								userPositionInPath.set(userPosition, 0);
+								edge = path.get(0);
+								array = cleanEdge(edge);
+								v1 = Long.valueOf(array[0]).longValue();
+								v2 = Long.valueOf(array[1]).longValue();
+								// itemsBeingWatched[userPosition] = v2;
+								itemsBeingWatched.set(userPosition, v2);
+
+								// checkUsersWatchingSameItem(itemsBeingWatched[userPosition]);
+								checkUsersWatchingSameItem(itemsBeingWatched.get(userPosition));
+
+								finalTime = System.currentTimeMillis();
+								log.log(Level.FINE, "      *** Tiempo en updateSpecialUserPath: " +
+									(finalTimeSpecial - initialTimeSpecial));
+								log.log(Level.INFO, "      Tiempo en actualizar ruta: " +
+									(finalTime - initialTime));
+							}
+						}
+					}
+
+					// Movement and voting
+
+					String location_v1 = MainSimulator.floor.getItemLocation(v1);
+					String location_v2 = MainSimulator.floor.getItemLocation(v2);
+
+					if (location_v1 == null) {
+						if (ElementIdMapper.isInCorrectRange(v1, ElementIdMapper.CATEGORY_ITEM)) {
+							long v1External = ElementIdMapper.getBaseId(v1);
+							location_v1 = MainSimulator.floor.getItemLocation(v1External);
+						} else if (ElementIdMapper.isInCorrectRange(v1, ElementIdMapper.CATEGORY_DOOR)) {
+							long v1External = ElementIdMapper.getBaseId(v1);
+							location_v1 = MainSimulator.floor.getItemLocation(v1External);
+						}
+
+						if (location_v1 == null) {
+							location_v1 = "500.0, 500.0";
+						}
+					}
+
+					if (location_v2 == null) {
+						if (ElementIdMapper.isInCorrectRange(v2, ElementIdMapper.CATEGORY_ITEM)) {
+							long v2External = ElementIdMapper.getBaseId(v2);
+							location_v2 = MainSimulator.floor.getItemLocation(v2External);
+						} else if (ElementIdMapper.isInCorrectRange(v2, ElementIdMapper.CATEGORY_DOOR)) {
+							long v2External = ElementIdMapper.getBaseId(v2);
+							location_v2 = MainSimulator.floor.getItemLocation(v2External);
+						}
+
+						if (location_v2 == null) {
+							location_v2 = "500.0, 500.0";
+						}
+					}
+
+					long internalV2 = ElementIdMapper.getBaseId(v2);
+
+					if (internalV2 <= this.numberOfITems) {
+                        // System.out.println("processUserParallel [Thread " + Thread.currentThread().getId() +
+                        //                     "] Modificando itemObservedOfUsers para user " + currentUser.userID);
+
+						// if (itemObservedOfUsers.containsKey(currentUser.userID)) {
+						// 	List<Long> observedList = itemObservedOfUsers.get(currentUser.userID);
+						// 	if (!observedList.contains(internalV2)) {
+						// 		observedList.add(internalV2);
+						// 	}
+						// } else {
+						// 	List<Long> observedList = new LinkedList<>();
+						// 	observedList.add(internalV2);
+						// 	// itemObservedOfUsers.put(currentUser.userID, observedList);
+						// 	itemObservedOfUsers.put((long) currentUser.userID, observedList);
+						// }
+
+						// itemObservedOfUsers.computeIfAbsent(currentUser.userID, k -> new CopyOnWriteArrayList<>())
+                   		// 	.add(internalV2);
+
+						List<Long> observedList = itemObservedOfUsers.computeIfAbsent(
+							currentUser.userID,
+							k -> new ArrayList<>()
+						);
+
+						// synchronized (observedList) {
+						observedList.add(internalV2);
+						// }
+
+                        // System.out.println("processUserParallel [Thread " + Thread.currentThread().getId() +
+                        //                 "] FIN modificación itemObservedOfUsers");
+
+						// if ((availableTimeOfUsers[userPosition] >= 0) && (voting[userPosition] == true)) {
+						// if ((availableTimeOfUsers.get(userPosition) >= 0) && (voting[userPosition] == true)) {
+						if ((availableTimeOfUsers.get(userPosition) >= 0) && (voting.get(userPosition) == true)) {
+							// System.out.println("      user " + currentUser.userID + " VOTING ITEM " + v2);
+
+							log.log(Level.FINEST, "      ITEM " + v2 + " SIENDO VOTADO");
+							long id_user = currentUser.userID;
+							long user = id_user;
+							// long item = itemsBeingWatched[userPosition];
+							long item = itemsBeingWatched.get(userPosition);
+							long itemExternal = ElementIdMapper.getBaseId(item);
+
+							initialTime = System.currentTimeMillis();
+							long context = getCurrentContext(currentUser);
+							finalTime = System.currentTimeMillis();
+							log.log(Level.INFO, "      Tiempo en obtener el contexto: " + (finalTime - initialTime));
+
+							initialTime = System.currentTimeMillis();
+
+							float rating = generateRating(user, item, itemExternal, context);
+
+							// System.out.println("      Generated rating: " + rating +
+							// 				" (User: " + user + ", Item: " + item +
+							// 				", Context: " + context + ")");
+
+							// userRatings.computeIfAbsent((int) user, k -> new ArrayList<>()).add(rating);
+							List<Float> ratings = userRatings.computeIfAbsent(
+								(int) user,
+								k -> new ArrayList<>()
+							);
+
+							// synchronized (ratings) {
+							ratings.add(rating);
+							// }
+
+							finalTime = System.currentTimeMillis();
+							log.log(Level.INFO, "      Tiempo en generar valoración: " + (finalTime - initialTime));
+
+							currentUser.totalObservationTime += getDelayObservingPaintingInSecond();
+							currentUser.totalItemsObserved += 1;
+
+							String location = currentUser.x + ", " + currentUser.y;
+							// InformationToPropagate informationToPropagate = new InformationToPropagate(
+							// 	id_user, user, item, context, rating, Configuration.simulation.getTtl(),
+							// 	location, currentTimeOfUsers[currentUser.userID - 1]);
+							InformationToPropagate informationToPropagate = new InformationToPropagate(
+								id_user, user, item, context, rating, Configuration.simulation.getTtl(),
+								location, currentTimeOfUsers.get(currentUser.userID - 1));
+
+							if (!isChangedItemByRecommender) {
+								initialTime = System.currentTimeMillis();
+
+								long initialTimeRecommender = System.currentTimeMillis();
+
+								specialUserListenTheInformation(informationToPropagate, currentUser);
+
+								long finalTimeRecommender = System.currentTimeMillis();
+
+								if (currentUser.isSpecialUser && Literals.COMPILE_ITEM_STATS) {
+									updateSpecialUserItemStatistics(informationToPropagate);
+}
+
+								logRecommender.log(Level.INFO, "[specialUserListenTheInformation]: " +
+												(finalTimeRecommender - initialTimeRecommender));
+
+								initialTimeRecommender = System.currentTimeMillis();
+
+								// currentTimeOfUsers[currentUser.userID - 1] +=
+								// 	getCurrentTime(location_v1, location_v2) +
+								// 	Configuration.simulation.getDelayObservingPaintingInSecond();
+								currentTimeOfUsers.addAndGet(currentUser.userID - 1,
+								(int)(getCurrentTime(location_v1, location_v2) +
+								Configuration.simulation.getDelayObservingPaintingInSecond()));
+
+
+								// if (itemRatedOfUsers.containsKey(currentUser.userID)) {
+								// 	List<Long> itemList = itemRatedOfUsers.get(currentUser.userID);
+								// 	itemList.add(item);
+								// 	itemRatedOfUsers.put(currentUser.userID, itemList);
+								// } else {
+								// 	List<Long> itemList = new LinkedList<>();
+								// 	itemList.add(item);
+								// 	itemRatedOfUsers.put(currentUser.userID, itemList);
+								// }
+								List<Long> ratedList = itemRatedOfUsers.computeIfAbsent(
+									currentUser.userID,
+									k -> new ArrayList<>()
+								);
+
+								// synchronized (ratedList) {
+								ratedList.add(item);
+								// }
+
+								finalTimeRecommender = System.currentTimeMillis();
+
+								logRecommender.log(Level.INFO, "[currentTimeOfUsers]: " +
+												(finalTimeRecommender - initialTimeRecommender));
+
+								initialTimeRecommender = System.currentTimeMillis();
+
+								if (Configuration.simulation.getNetworkType().equalsIgnoreCase("Peer To Peer (P2P)")) {
+									dataManagementQueueDBList_P2P.get(userPosition).insertInformation(informationToPropagate);
+								}
+
+								finalTimeRecommender = System.currentTimeMillis();
+
+								logRecommender.log(Level.INFO, "[insertInformation]: " +
+												(finalTimeRecommender - initialTimeRecommender));
+
+								finalTime = System.currentTimeMillis();
+								log.log(Level.INFO, "      IS CHANGED BY RECOMMENDER: " + (finalTime - initialTime));
+
+							} else {
+								// voting[userPosition] = false;
+								voting.set(userPosition, false);
+								isChangedItemByRecommender = false;
+							}
+
+							// voting[userPosition] = false;
+							voting.set(userPosition, false);
+
+						}
+
+					} else {
+						// voting[userPosition] = false;
+						voting.set(userPosition, false);
+					}
+
+					// User movement
+
+					// if (voting[userPosition] == false) {
+					if (voting.get(userPosition) == false) {
+						initialTime = System.currentTimeMillis();
+						long initialTimeMovement = System.currentTimeMillis();
+						long finalTimeMovement;
+
+						// String cur = locationNextIteration[userPosition];
+						String cur = locationNextIteration.get(userPosition);
+						String dst = location_v2;
+						String[] curParts = cur.split(",\\s*");
+						String[] dstParts = dst.split(",\\s*");
+
+						if (curParts.length >= 2 && dstParts.length >= 2) {
+							// if (locationNextIteration[userPosition].equalsIgnoreCase(location_v2)) {
+							if (locationNextIteration.get(userPosition).equalsIgnoreCase(location_v2)) {
+								// System.out.println("      User " + currentUser.userID +
+								// 	" has ARRIVED at destination item " + v2);
+
+								UserInfo.UserState ui = stateOfUsers.get(currentUser.userID);
+								if(v2 <= this.numberOfITems && ui != null) {
+									ui.action = "Observing item";
+									ui.item = v2;
+								}
+
+								String edgeTraveled = "(" + v1 + " : " + v2 + ")";
+								// actualPathTraveled.computeIfAbsent(currentUser.userID, k -> new ArrayList<>())
+								// 				.add(edgeTraveled);
+
+								List<String> traveledPath = actualPathTraveled.computeIfAbsent(
+									currentUser.userID,
+									k -> new ArrayList<>()
+								);
+
+								// synchronized (traveledPath) {
+									traveledPath.add(edgeTraveled);
+								// }
+
+								// userPositionInPath[userPosition] += 1;
+								userPositionInPath.addAndGet(userPosition, 1);
+
+								if (currentUser.isSpecialUser) {
+									specialUserDisobedience(currentUser);
+								}
+
+								if (v2 > this.numberOfITems) {
+									if ((this.pathStrategyUsed != null &&
+										this.pathStrategyUsed.checkDoorsConnectedByStairs(v1, v2)) ||
+										checkDoorsConnectedByStairs(v1, v2)) {
+										// currentTimeOfUsers[userPosition] += getTimeOnStairs();
+										currentTimeOfUsers.addAndGet(userPosition, getTimeOnStairs());
+									} else {
+										// currentTimeOfUsers[userPosition] += getCurrentTime(location_v1, location_v2);
+										currentTimeOfUsers.addAndGet(userPosition, (int)(getCurrentTime(location_v1, location_v2)));
+									}
+								}
+
+								finalTimeMovement = System.currentTimeMillis();
+								log.log(Level.INFO, "      - TIME MOVING ARRIVED DESTINATION ITEM: " +
+									(finalTimeMovement - initialTimeMovement));
+
+							} else {
+								initialTimeMovement = System.currentTimeMillis();
+
+								boolean connectedStairs = false;
+								try {
+									connectedStairs = (this.pathStrategyUsed == null) ?
+										checkDoorsConnectedByStairs(v1, v2) :
+										this.pathStrategyUsed.checkDoorsConnectedByStairs(v1, v2);
+								} catch (Exception e) {
+									e.printStackTrace();
+								}
+
+								if (connectedStairs) {
+									// locationStartVertex = locationNextIteration[userPosition];
+									// locationNextIteration[userPosition] = location_v2;
+									locationStartVertex = locationNextIteration.get(userPosition);
+									locationNextIteration.set(userPosition, location_v2);
+								} else {
+									// locationStartVertex = locationNextIteration[userPosition];
+									locationStartVertex = locationNextIteration.get(userPosition);
+									long timeNextMovementInit = System.currentTimeMillis();
+									// locationNextIteration[userPosition] = nextMovement(
+									// 	locationNextIteration[userPosition], location_v2, currentUser, (int) v2);
+									locationNextIteration.set(userPosition, nextMovement(
+											locationNextIteration.get(userPosition), location_v2, currentUser, (int) v2));
+
+									long timeNextMovementEnd = System.currentTimeMillis();
+									log.log(Level.FINE, "      - *** NEXT MOVEMENT: " +
+										(timeNextMovementEnd - timeNextMovementInit));
+								}
+
+								finalTimeMovement = System.currentTimeMillis();
+								log.log(Level.INFO, "      - CHANGING LOCATIONS: " +
+									(finalTimeMovement - initialTimeMovement));
+
+								initialTimeMovement = System.currentTimeMillis();
+								int room = getRoom(v2);
+
+								finalTimeMovement = System.currentTimeMillis();
+								log.log(Level.FINE, "      - GET ROOM: " + (finalTimeMovement - initialTimeMovement));
+
+								initialTimeMovement = System.currentTimeMillis();
+
+								// currentUser.move(locationNextIteration[userPosition], room);
+								currentUser.move(locationNextIteration.get(userPosition), room);
+
+								finalTimeMovement = System.currentTimeMillis();
+
+								if (!(Configuration.instance != null &&
+									Configuration.instance.isUseContactTrajectoriesEnabled() &&
+									userToCliqueMap != null &&
+									userToCliqueMap.containsKey(currentUser.userID))) {
+
+									getUserRoomWithAdjustment(currentUser);
+								}
+
+								int roomOfUser = currentUser.room;
+
+								updateUserRoomEntry(currentUser, previousRoomOfUser, roomOfUser);
+
+								if(roomOfUser > -1) {
+									UserInfo.UserState ui = stateOfUsers.get(currentUser.userID);
+									if(ui == null) {
+										ui = new UserInfo.UserState(MainSimulator.floor.getRoomLabel(roomOfUser));
+										stateOfUsers.put(currentUser.userID,ui);
+									} else {
+										ui.room = MainSimulator.floor.getRoomLabel(roomOfUser);
+									}
+
+									ui.action = "Moving";
+
+									Pair<Integer,Integer> user_room = new Pair<Integer,Integer>(
+										currentUser.userID, MainSimulator.floor.getRoomLabel(roomOfUser));
+									Double pastTime = timeUsersInRooms.get(user_room);
+									timeUsersInRooms.put(user_room,
+										pastTime == null ? timeForIteration : pastTime + timeForIteration);
+
+									if(MainSimulator.db.isConnected() && registerSimInDB) {
+										if(previousRoomOfUser != roomOfUser) {
+											MainSimulator.db.registerVisit(
+												MainSimulator.floor.getRoomLabel(roomOfUser),
+												currentUser.userID, currentUser.isSpecialUser);
+											visitDuration = 0;
+										}
+										// MainSimulator.db.addPositionToPath(currentUser.userID,
+										// 	locationNextIteration[userPosition],
+										// 	MainSimulator.floor.getRoomLabel(roomOfUser));
+										MainSimulator.db.addPositionToPath(currentUser.userID,
+											locationNextIteration.get(userPosition),
+											MainSimulator.floor.getRoomLabel(roomOfUser));
+										visitDuration += timeForIteration;
+										if(v2 != lastV2) {
+											MainSimulator.db.registerItemObservation(room, currentUser.userID, (int)v2);
+											MainSimulator.db.registerVisitDuration(
+												MainSimulator.floor.getRoomLabel(roomOfUser),
+												currentUser.userID, visitDuration);
+										}
+									}
+								}
+
+								log.log(Level.FINE, "      - FUNCIÓN MOVE: " +
+									(finalTimeMovement - initialTimeMovement));
+							}
+						} else {
+							System.out.println("Warning! parsing has failed");
+						}
+
+						finalTime = System.currentTimeMillis();
+						log.log(Level.INFO, "    - TIME MOVING: " + (finalTime - initialTime));
+					} else {
+						System.out.println("      User " + currentUser.userID + " is VOTING - NO MOVE");
+						int roomOfUser = currentUser.room;
+						Pair<Integer,Integer> user_room = new Pair<Integer,Integer>(
+							currentUser.userID, MainSimulator.floor.getRoomLabel(roomOfUser));
+						Double pastTime = timeUsersInRooms.get(user_room);
+						timeUsersInRooms.put(user_room,
+							pastTime == null ? timeForIteration : pastTime + timeForIteration);
+					}
+
+					lastV2 = v2;
+
+				} else {
+					// System.out.println("User " + currentUser.userID + " has FINISHED his/her PATH.");
+					initialTime = System.currentTimeMillis();
+					log.log(Level.INFO, "   Path Se ha acabado");
+
+					if (currentUser.isSpecialUser) {
+						userTimesUpdatedPath[userPosition]++;
+						try {
+							String start = cleanEdge(path.get(path.size() - 1))[0];
+							String end = cleanEdge(path.get(path.size() - 1))[1];
+							long startVertex = Long.valueOf(start).longValue();
+							long endVertex = Long.valueOf(end).longValue();
+							boolean finishPath = true;
+
+							updateSpecialUserPath(startVertex, endVertex, false, 0, finishPath, currentUser);
+
+							// userPositionInPath[userPosition] = 0;
+							userPositionInPath.set(userPosition, 0);
+						} catch (Exception e) {
+							e.printStackTrace();
+							// currentTimeOfUsers[userPosition] = Configuration.simulation.getTimeAvailableUserInSecond();
+							currentTimeOfUsers.set(userPosition, Configuration.simulation.getTimeAvailableUserInSecond());
+							// countFinishedSpecialUsers++;
+							result.hasFinished = true;
+
+							currentUser.hasFinishedVisit = true;
+							this.ended.add(currentUser);
+						}
+
+						path = graphSpecialUser.paths.get(userPosition);
+
+						if (path == null || path.isEmpty()) {
+							currentUser.hasFinishedVisit = true;
+							this.ended.add(currentUser);
+							break;
+						}
+
+					} else {
+						finish++;
+						// availableTimeOfUsers[userPosition] = 0;
+						availableTimeOfUsers.set(userPosition, 0);
+
+						currentUser.hasFinishedVisit = true;
+						this.ended.add(currentUser);
+					}
+
+					UserInfo.UserState ui = stateOfUsers.get(currentUser.userID);
+					if (ui != null) {
+						ui.action = "Finished";
+						ui.item = null;
+					} else {
+						ui = new UserInfo.UserState(MainSimulator.floor.getRoomLabel(currentUser.room));
+						ui.action = "Finished";
+						ui.item = null;
+						stateOfUsers.put(currentUser.userID, ui);
+					}
+
+					finalTime = System.currentTimeMillis();
+					log.log(Level.INFO, "    Tiempo en actualizar PATH de " + (userPosition+1) +
+						" (acabado): " + (finalTime - initialTime));
+				}
+			} // Fin del while de movimiento
+
+			initialTime = System.currentTimeMillis();
+
+			//MainSimulator.printConsole("Current time: " + currentTimeOfUsers[userPosition] + "/ " +
+									// Configuration.simulation.getTimeAvailableUserInSecond(), Level.INFO);
+			MainSimulator.printConsole("Current time: " + currentTimeOfUsers.get(userPosition) + "/ " +
+									Configuration.simulation.getTimeAvailableUserInSecond(), Level.INFO);
+
+			// if (currentTimeOfUsers[userPosition] >= Configuration.simulation.getTimeAvailableUserInSecond() &&
+			// 	currentUser.isSpecialUser) {
+			if (currentTimeOfUsers.get(userPosition) >= Configuration.simulation.getTimeAvailableUserInSecond() &&
+				currentUser.isSpecialUser) {
+
+				currentUser.hasFinishedVisit = true;
+				this.ended.add(currentUser);
+				result.hasFinished = true;
+			}
+
+			finalTime = System.currentTimeMillis();
+			log.log(Level.FINE, "   Tiempo en imprimir tiempos en consola: " + (finalTime - initialTime));
+
+		} catch (Exception e) {
+			result.error = e;
+			System.err.println("❌ Error procesando usuario " + currentUser.userID + ": " + e.getMessage());
+			e.printStackTrace();
+		}
+
+		return result;
 	}
 
 	/**
@@ -2320,27 +2583,27 @@ public class Simulation {
 	 * Compares elapsed simulated time against the configured maximum duration
 	 * from EpidemicConfiguration.
 	 * Added by Nacho Palacio 2025-09-18
-	 * 
+	 *
 	 * @return true if simulation time has expired, false otherwise
 	 */
 	private boolean hasSimulationTimeExpired() {
 		try {
 			EpidemicConfiguration config = es.unizar.epidemic.general.EpidemicConfiguration.getInstance();
 			int maxDurationSeconds = config.getSimulationDurationSeconds();
-			
+
 			double timePerIteration = getTimeForIterationInSecond();
 			int currentIterationCount = getCurrentSimulationIteration();
 			double elapsedSimulatedTime = currentIterationCount * timePerIteration;
-			
+
 			boolean timeExpired = elapsedSimulatedTime >= maxDurationSeconds;
-			
+
 			if (timeExpired) {
-				System.out.println("   \n Simulation time has expired (" + 
+				System.out.println("   \n Simulation time has expired (" +
 								String.format("%.1f", elapsedSimulatedTime) + "/" + maxDurationSeconds + " seconds)");
 			}
-			
+
 			return timeExpired;
-			
+
 		} catch (Exception e) {
 			System.err.println("Warning! Error verifying simulation duration: " + e.getMessage());
 			return false;
@@ -2350,7 +2613,7 @@ public class Simulation {
 	/**
 	 * Gets the current iteration count for the simulation.
 	 * Added by Nacho Palacio 2025-09-18
-	 * 
+	 *
 	 * @return current simulation iteration number
 	 */
 	private int getCurrentSimulationIteration() {
@@ -2378,7 +2641,7 @@ public class Simulation {
 			double timePerIteration = getTimeForIterationInSecond();
 			double elapsedSimulatedTime = getCurrentSimulationIteration() * timePerIteration;
 			int maxDurationSeconds = config.getSimulationDurationSeconds();
-			
+
 			int iterationsPerMinute = (int) (60.0 / getTimeForIterationInSecond());
 			if (iterationsPerMinute < 1) iterationsPerMinute = 1;
 
@@ -2386,27 +2649,27 @@ public class Simulation {
 				int minutesElapsed = (int) (elapsedSimulatedTime / 60);
 				int totalMinutes = maxDurationSeconds / 60;
 				double progressPercent = (elapsedSimulatedTime / maxDurationSeconds) * 100;
-				
-				MainSimulator.printConsole(String.format(" Simulation progress: %d/%d minutes (%.1f%%)", 
+
+				MainSimulator.printConsole(String.format(" Simulation progress: %d/%d minutes (%.1f%%)",
 										minutesElapsed, totalMinutes, progressPercent), Level.INFO);
 			}
-			
+
 		} catch (Exception e) {
 		}
 	}
-	
+
 	/**
 	 * Verifies if all users are infected.
 	 * Checks epidemic extensions of all users to determine if everyone
 	 * has been infected (useful for early termination conditions).
 	 * Added by Nacho Palacio 2025-07-30
-	 * 
+	 *
 	 * @return true if all users are infected, false otherwise
 	 */
 	private boolean areAllUsersInfected() {
 		int totalUsers = userList.size();
 		int infectedUsers = 0;
-		
+
 		for (User user : userList) {
 			UserEpidemicExtension extension = user.getEpidemicExtension();
 			if (extension != null && isUserInfected(extension)) {
@@ -2415,12 +2678,12 @@ public class Simulation {
 		}
 
 		boolean allInfected = (infectedUsers >= totalUsers);
-		
+
 		if (infectedUsers > totalUsers * 0.8) {
-			MainSimulator.printConsole(String.format(" Epidemic progress: %d/%d users infected (%.1f%%)", 
+			MainSimulator.printConsole(String.format(" Epidemic progress: %d/%d users infected (%.1f%%)",
 									infectedUsers, totalUsers, (infectedUsers * 100.0) / totalUsers), Level.INFO);
 		}
-		
+
 		return allInfected;
 	}
 
@@ -2428,7 +2691,7 @@ public class Simulation {
 	 * Verifies if a user is infected.
 	 * Checks if user's health status indicates infection (symptomatic, asymptomatic, or superspreader).
 	 * Added by Nacho Palacio 2025-07-30
-	 * 
+	 *
 	 * @param extension the user's epidemic extension
 	 * @return true if the user is infected, false otherwise
 	 */
@@ -2445,7 +2708,7 @@ public class Simulation {
 
 	/**
 	 * Calculates the next movement of the user.
-	 * 
+	 *
 	 * @param location_v1 the initial vertex location
 	 * @param location_v2 the final vertex location
 	 * @param currentUser the current user
@@ -2465,34 +2728,39 @@ public class Simulation {
 		//long finalPoints = System.currentTimeMillis();
 
 		//long initAxis = System.currentTimeMillis();
-		
+
 		// Moving from P0 to P1
 		// Axis X
 		double velocityAxisX = getVelocityAxisX(xInitial, yInitial, xFinal, yFinal);
 		double maxDistanceToReachTarget = Math.abs(xFinal - xInitial);
-		double xF1 = pointFinalToMove(xInitial, velocityAxisX, availableTimeOfUsers[currentUser.userID - 1], maxDistanceToReachTarget);
+		// double xF1 = pointFinalToMove(xInitial, velocityAxisX, availableTimeOfUsers[currentUser.userID - 1], maxDistanceToReachTarget);
+		double xF1 = pointFinalToMove(xInitial, velocityAxisX, availableTimeOfUsers.get(currentUser.userID - 1), maxDistanceToReachTarget);
 
 		// Axis Y
 		double velocityAxisY = getVelocityAxisY(xInitial, yInitial, xFinal, yFinal);
 		maxDistanceToReachTarget = Math.abs(yFinal - yInitial);
-		double yF1 = pointFinalToMove(yInitial, velocityAxisY, availableTimeOfUsers[currentUser.userID - 1], maxDistanceToReachTarget);
+		// double yF1 = pointFinalToMove(yInitial, velocityAxisY, availableTimeOfUsers[currentUser.userID - 1], maxDistanceToReachTarget);
+		double yF1 = pointFinalToMove(yInitial, velocityAxisY, availableTimeOfUsers.get(currentUser.userID - 1), maxDistanceToReachTarget);
 		//long finalAxis = System.currentTimeMillis();
 
 		//long initRemainingTime = System.currentTimeMillis();
-		double remainingTimeAvailable = getRemainingTimeAvailable(xInitial, yInitial, xFinal, yFinal, availableTimeOfUsers[currentUser.userID - 1]);
+		// double remainingTimeAvailable = getRemainingTimeAvailable(xInitial, yInitial, xFinal, yFinal, availableTimeOfUsers[currentUser.userID - 1]);
+		double remainingTimeAvailable = getRemainingTimeAvailable(xInitial, yInitial, xFinal, yFinal, availableTimeOfUsers.get(currentUser.userID - 1));
+
 		MainSimulator.printConsole("Remaining time available for the user: " + remainingTimeAvailable, Level.INFO);
 		if (remainingTimeAvailable < 0) {
 			remainingTimeAvailable = 0;
 			MainSimulator.printConsole("The user does not have time to get to the item, then the remaining time available: " + remainingTimeAvailable, Level.INFO);
 		}
 
-		availableTimeOfUsers[currentUser.userID - 1] = remainingTimeAvailable;
+		// availableTimeOfUsers[currentUser.userID - 1] = remainingTimeAvailable;
+		availableTimeOfUsers.set(currentUser.userID - 1, (long) remainingTimeAvailable);
 		//long finalRemainingTime = System.currentTimeMillis();
-		
+
 		//long end = System.currentTimeMillis();
-		
+
 		//log.log(Level.FINER, "!!!! Times next movement: POINTS= " + (finalPoints - initPoints) + ";" + (finalAxis - initAxis) + ";" + (finalRemainingTime - initRemainingTime) + "; TOTAL: " + (end - init));
-		
+
 		//long initRating = System.currentTimeMillis();
 
 		// Time of the rating
@@ -2504,9 +2772,12 @@ public class Simulation {
 
 			long externalItemId = ElementIdMapper.getBaseId(itemID); // Modified by Nacho Palacio 2025-07-06
 			if (externalItemId <= this.numberOfITems) { // Modified by Nacho Palacio 2025-07-06
-				availableTimeOfUsers[currentUser.userID - 1] -= Configuration.simulation.getDelayObservingPaintingInSecond();
-				MainSimulator.printConsole("Remaining time available after to generate rating: " + availableTimeOfUsers[currentUser.userID - 1], Level.INFO);
-				voting[currentUser.userID - 1] = true;
+				// availableTimeOfUsers[currentUser.userID - 1] -= Configuration.simulation.getDelayObservingPaintingInSecond();
+				availableTimeOfUsers.set(currentUser.userID - 1, availableTimeOfUsers.get(currentUser.userID - 1) - Configuration.simulation.getDelayObservingPaintingInSecond());
+				// MainSimulator.printConsole("Remaining time available after to generate rating: " + availableTimeOfUsers[currentUser.userID - 1], Level.INFO);
+				MainSimulator.printConsole("Remaining time available after to generate rating: " + availableTimeOfUsers.get(currentUser.userID - 1), Level.INFO);
+				// voting[currentUser.userID - 1] = true;
+				voting.set(currentUser.userID - 1, true);
 			}
 
 			// Added by Nacho Palacio 2025-10-22
@@ -2514,7 +2785,7 @@ public class Simulation {
             yF1 = yFinal;
 		}
 		//long endRating = System.currentTimeMillis();
-		
+
 		//long initPrints = System.currentTimeMillis();
 
 		String xyF = xF1 + ", " + yF1;
@@ -2522,16 +2793,16 @@ public class Simulation {
 		MainSimulator.printConsole("[Current location: " + xyF + "]", Level.INFO);
 		xInitial = xF1;
 		yInitial = yF1;
-		
+
 		//long finalPrints = System.currentTimeMillis();
-		
+
 		//log.log(Level.FINER, "!!!! Times next movement: " + (end - init) + ";" + (endRating - initRating) + ";" + (finalPrints - initPrints) + "; TOTAL: " + ((end - init)+(endRating - initRating)+(finalPrints - initPrints))); // TIME CONSUMED AT THE BEGINNING
 		return xyF;
 	}
 
 	/**
 	 * Gets the velocity from axis X.
-	 * 
+	 *
 	 * @param xInitial the initial X coordinate
 	 * @param yInitial the initial Y coordinate
 	 * @param xFinal the final X coordinate
@@ -2551,7 +2822,7 @@ public class Simulation {
 
 	/**
 	 * Gets the velocity from axis Y.
-	 * 
+	 *
 	 * @param xInitial: The initial X.
 	 * @param yInitial: The initial Y.
 	 * @param xFinal:   The final X.
@@ -2573,7 +2844,7 @@ public class Simulation {
 	 * Calculates the final point where the user will move.
 	 * Computes the destination coordinate based on starting point, velocity,
 	 * available time, and maximum distance constraints.
-	 * 
+	 *
 	 * @param pointInitial the initial coordinate value
 	 * @param velocity the velocity component
 	 * @param availableTime the available time for movement
@@ -2589,7 +2860,7 @@ public class Simulation {
 
 	/**
 	 * Gets the angle.
-	 * 
+	 *
 	 * @param xInitial the initial X coordinate
 	 * @param yInitial the initial Y coordinate
 	 * @param xFinal the final X coordinate
@@ -2609,7 +2880,7 @@ public class Simulation {
 	/**
 	 * Calculates the user's remaining time to complete the visit.
 	 * Subtracts the time required to travel between two points from current available time.
-	 * 
+	 *
 	 * @param xInitial:    The initial X.
 	 * @param yInitial:    The initial Y.
 	 * @param xFinal:      The final X.
@@ -2628,7 +2899,7 @@ public class Simulation {
 
 	/**
 	 * Get the current time.
-	 * 
+	 *
 	 * @param locationStartVertex the initial vertex location
 	 * @param locationEndVertex the final vertex location
 	 * @return the time in seconds to travel between vertices
@@ -2647,7 +2918,7 @@ public class Simulation {
 
 	/**
 	 * Calculate the distance between two users.
-	 * 
+	 *
 	 * @param positionUser1 the position of the first user as "x, y"
 	 * @param positionUser2 the position of the second user as "x, y"
 	 * @return the distance in pixels between the two users
@@ -2666,30 +2937,30 @@ public class Simulation {
 
 	/**
 	 * Gets the (x,y) location of a vertex (item or door)
-	 * 
+	 *
 	 * @param vertexId the vertex ID
 	 * @return the (x,y) location as a string "x, y"
 	 */
 	private String getVertexLocation(long vertexId) {
 		long mappedVertexId = vertexId;
 
-		if (MainSimulator.floor != null && MainSimulator.floor.diccionaryItemLocation != null) {
-			String location = MainSimulator.floor.diccionaryItemLocation.get(mappedVertexId);
+		if (MainSimulator.floor != null /*&& MainSimulator.floor.diccionaryItemLocation != null*/) {
+			String location = MainSimulator.floor.getItemLocation(mappedVertexId);
 			if (location != null) {
 				return location;
 			}
 		}
-		
+
 		if (MainSimulator.floor != null && DrawFloorGraph.vertices != null) {
 			for (com.mxgraph.model.mxCell cell : DrawFloorGraph.vertices) {
 				if (cell != null && cell.getId() != null) {
 					try {
 						long cellId = Long.parseLong(cell.getId());
-						
+
 						if (cellId == mappedVertexId) {
 							com.mxgraph.model.mxGeometry geo = cell.getGeometry();
 							String location = geo.getX() + ", " + geo.getY();
-													
+
 							return location;
 						}
 					} catch (NumberFormatException e) {
@@ -2697,9 +2968,9 @@ public class Simulation {
 				}
 			}
 		}
-		
+
 		// Fallback
-		System.err.println("    Coordinates not found for vertex " + vertexId + 
+		System.err.println("    Coordinates not found for vertex " + vertexId +
 						" (mapped: " + mappedVertexId + "), using (100, 100)");
 		return "100.0, 100.0";
 	}
@@ -2708,7 +2979,7 @@ public class Simulation {
 	 * Gets a fallback location for a room if no items or doors have valid locations.
 	 * Searches room's items and doors for the first valid location, or returns
 	 * a default location based on room ID.
-	 * 
+	 *
 	 * @param roomId the room ID
 	 * @return the fallback (x,y) location as a string "x, y"
 	 */
@@ -2722,7 +2993,7 @@ public class Simulation {
 					return location;
 				}
 			}
-			
+
 			int numDoors = graphSpecialUser.accessGraphFile.getNumDoorsByRoom(roomId);
 			if (numDoors > 0) {
 				long doorId = graphSpecialUser.accessGraphFile.getDoorOfRoomWithIndex(1, roomId);
@@ -2734,7 +3005,7 @@ public class Simulation {
 		} catch (Exception e) {
 			System.err.println("   Warning! Error obtaining fallback location for room " + roomId + ": " + e.getMessage());
 		}
-		
+
 		// Fallback
 		return "500.0, 500.0";
 	}
@@ -2758,20 +3029,20 @@ public class Simulation {
 	/**
 	 * Randomly changes the mood of a user.
 	 * Assigns a new random mood value (10=happy, 11=neutral, 12=sad) to the specified user.
-	 * 
+	 *
 	 * @param currentUser the user whose mood will be changed
 	 */
 	public void changeMoodOfUsers(User currentUser) {
 		int[] moodValues = { 10, 11, 12 };
 		int pos = random.nextInt(moodValues.length);
 		moodOfUsers[currentUser.userID - 1] = moodValues[pos];
-	}	
+	}
 
 	/**
 	 * Updates the user's path when they ignore the recommendation.
 	 * Called when a special user exhibits disobedience behavior,
 	 * requiring path recalculation.
-	 * 
+	 *
 	 * @param currentUser the user exhibiting disobedience
 	 */
 	public void specialUserDisobedience(User currentUser) {
@@ -2779,7 +3050,27 @@ public class Simulation {
 		double factorDisobedience = 0.5;// (double) random.nextInt(10) /(double) 10;//
 		if ((factorDisobedience <= Configuration.simulation.getProbabilityUserDisobedience())) {
 			// The current edge.
-			String edge = path.get(userPositionInPath[(int) currentUser.userID]);
+			// String edge = path.get(userPositionInPath[(int) currentUser.userID]);
+			// String edge = path.get(userPositionInPath.get((int) currentUser.userID));
+			int userIndex = (int) currentUser.userID - 1;
+			List<String> path = graphSpecialUser.paths.get(userIndex);
+
+			// Verificar que el path existe y tiene elementos
+			if (path == null || path.isEmpty()) {
+				System.err.println("Warning! No path available for user " + currentUser.userID);
+				return;
+			}
+
+			// Verificar que userPositionInPath está dentro del rango
+			int currentPosition = userPositionInPath.get(userIndex);
+			if (currentPosition >= path.size()) {
+				System.err.println("Warning! User " + currentUser.userID + " position out of path bounds");
+				return;
+			}
+
+			// The current edge.
+			String edge = path.get(currentPosition);
+
 			// Gets randomly the next item to visit by a user.
 			long nextItemSelected = getItemRandomly(edge, currentUser.userID);
 
@@ -2794,7 +3085,7 @@ public class Simulation {
 	/**
 	 * Gets randomly the next item to visit by a user.
 	 * Selects a random item connected to the current edge that hasn't been visited.
-	 * 
+	 *
 	 * @param edge the current edge
 	 * @param specialUserID the ID of the special user
 	 * @return the ID of the randomly selected next item
@@ -2845,7 +3136,7 @@ public class Simulation {
 	 * and collaborative filtering. Handles various recommendation strategies including
 	 * random, exhaustive, UBCF, SVD, and risk-aware approaches.
 	 * Modified by Nacho Palacio 2025-05-11
-	 * 
+	 *
 	 * @param startVertex the entrance door
 	 * @param endVertex initially equals to startVertex
 	 * @param disobedience if the algorithm will consider user disobedience
@@ -2853,7 +3144,7 @@ public class Simulation {
 	 * @param finishPath if finish the RS user path
 	 * @param currentUser the current user receiving recommendations
 	 */
-	public void updateSpecialUserPath(long startVertex, long endVertex, boolean disobedience, long nextItemSelected, boolean finishPath, User currentUser) {		
+	public void updateSpecialUserPath(long startVertex, long endVertex, boolean disobedience, long nextItemSelected, boolean finishPath, User currentUser) {
 		int idx = (int) currentUser.userID - 1;
 
 		// Added by nacho Palacio 2025-11-04
@@ -2871,7 +3162,7 @@ public class Simulation {
 
 		long initialTimeTotal = 0, finalTimeTotal = 0, initialTimeNetwork = 0, finalTimeNetwork = 0;
 		initialTimeTotal = System.currentTimeMillis();
-		
+
 		List<String> finalPath = null;
 		List<RecommendedItem> recommendedItems = null;
 		String recommendationType = null;
@@ -2896,34 +3187,34 @@ public class Simulation {
 		finalTimeTotal = System.currentTimeMillis();
 		log.log(Level.FINE, "[updateSpecialUserPath]: PRE - " + (finalTimeTotal - initialTimeTotal));
 		log.log(Level.FINER, "[updateSpecialUserPath]: PRE NETWORK - " + (finalTimeNetwork - initialTimeNetwork));
-		
+
 		// DBDataModel and DataAccessLayer that are going to open DB connections
 		// Declared before try block so that they can be disconnected from db in finally method
 		DBDataModel dataModelSpecialUser = null;
 		DataAccessLayer dataAccesLayerDBMuseum = null;
-		
+
 		try {
 			long initialTimeTry = 0, finalTimeTry = 0;
-			
+
 			initialTimeTotal = System.currentTimeMillis();
 			initialTimeTry = System.currentTimeMillis();
 			// For the database connection of the current RS user.
 			dataModelSpecialUser = DBDataModel.getFromPool(special_user_dbURL, db_special_user, this.numberOfUser-1); // Modified by Nacho Palacio 2025-12-08
 			dataAccesLayerDBMuseum = new DataAccessLayer(Literals.SQL_DRIVER + Literals.DB_ALL_USERS_PATH, dataInstanceMuseumDB);
-			
+
 			finalTimeTry = System.currentTimeMillis();
-			log.log(Level.WARNING, "[updateSpecialUserPath]: TRY - DB connection: " + (finalTimeTry - initialTimeTry));	
-					//+ " -> DBDataModel: " + (finalTimeDBDataModel - initialTimeDBDataModel) + 
+			log.log(Level.WARNING, "[updateSpecialUserPath]: TRY - DB connection: " + (finalTimeTry - initialTimeTry));
+					//+ " -> DBDataModel: " + (finalTimeDBDataModel - initialTimeDBDataModel) +
 					//"; DataAccessLayer: "+ (finalTimeDataAccessLayer - initialTimeDataAccessLayer));
-			
-			
+
+
 			initialTimeTry = System.currentTimeMillis();
 			// Build a graph for the RS user.
-			
+
 			// Modified by Nacho Palacio 2025-12-08
             SimpleWeightedGraph<Long, DefaultWeightedEdge> currentGraph = graphSpecialUser.getCachedGraph();
             if (cachedTrajectoryStrategy == null || lastUsedGraph != currentGraph) {
-                cachedTrajectoryStrategy = new ShortestTrajectoryStrategy(currentGraph, MainSimulator.floor.diccionaryItemLocation);
+                cachedTrajectoryStrategy = new ShortestTrajectoryStrategy(currentGraph, MainSimulator.floor.getItemLocationDictionary());
                 lastUsedGraph = currentGraph;
             }
             ShortestTrajectoryStrategy trajectoryStrategy = cachedTrajectoryStrategy;
@@ -2934,62 +3225,61 @@ public class Simulation {
 
 			finalTimeTry = System.currentTimeMillis();
 			log.log(Level.WARNING, "[updateSpecialUserPath]: TRY - Build graph: " + (finalTimeTry - initialTimeTry));
-			
+
 			initialTimeTry = System.currentTimeMillis();
 			// The recommendation threshold.
 			float threshold = getThresholdRecommendation();
 			if (finishPath) {
-				System.out.println("El path ha terminado");
 				// // When the path is finished.
-			
+
 				// Modified by Nacho Palacio 2025-12-10
 				long exitDoor = endVertex;
-				
+
 				// Verify if endVertex is an item (not a door)
-				if (endVertex <= numberOfITems || 
+				if (endVertex <= numberOfITems ||
 					ElementIdMapper.isInCorrectRange(endVertex, ElementIdMapper.CATEGORY_ITEM)) {
-					
+
 					// Search for closest door to end item
 					int currentRoom = getRoom(endVertex);
-					
+
 					if (currentRoom > 0) {
 						List<Long> doorsInRoom = graphSpecialUser.getDoorsByRoom(currentRoom);
-						
+
 						if (doorsInRoom != null && !doorsInRoom.isEmpty()) {
 							// Obtain closest door to item
 							exitDoor = graphSpecialUser.getDoorClosestToTheItem(endVertex, doorsInRoom);
 						} else {
-							System.err.println("   Warning! No doors in room " + currentRoom + 
+							System.err.println("   Warning! No doors in room " + currentRoom +
 											", using endVertex as fallback");
 						}
 					} else {
 						System.err.println("   Warning! Could not determine room for item " + endVertex);
 					}
 				}
-				
+
 				postfiltering = new TrajectoryPostfilteringBasedRecommendation(
-					dataModelSpecialUser, 
-					special_user_dbURL, 
-					trajectoryStrategy, 
+					dataModelSpecialUser,
+					special_user_dbURL,
+					trajectoryStrategy,
 					exitDoor,
 					threshold
 				);
 			} else {
 				// When the path is not finished.
 				long exitDoor = startVertex;
-				if (startVertex <= numberOfITems || 
+				if (startVertex <= numberOfITems ||
 					ElementIdMapper.isInCorrectRange(startVertex, ElementIdMapper.CATEGORY_ITEM)) {
-					
+
 					// Search for closest door to start item
 					int currentRoom = getRoom(startVertex);
 					if (currentRoom > 0) {
 						List<Long> doorsInRoom = graphSpecialUser.getDoorsByRoom(currentRoom);
-						
+
 						if (doorsInRoom != null && !doorsInRoom.isEmpty()) {
 							// Obtain closest door to item
 							exitDoor = graphSpecialUser.getDoorClosestToTheItem(startVertex, doorsInRoom);
 						} else {
-							System.err.println("   Warning! No doors in room " + currentRoom + 
+							System.err.println("   Warning! No doors in room " + currentRoom +
 											", using startVertex as fallback");
 						}
 					} else {
@@ -2997,19 +3287,18 @@ public class Simulation {
 					}
 				}
 
-				System.out.println("Calling with exitDoor: " + exitDoor);
 				postfiltering = new TrajectoryPostfilteringBasedRecommendation(
-					dataModelSpecialUser, 
-					special_user_dbURL, 
-					trajectoryStrategy, 
-					exitDoor, 
+					dataModelSpecialUser,
+					special_user_dbURL,
+					trajectoryStrategy,
+					exitDoor,
 					threshold
 				);
 			}
-			
+
 			finalTimeTry = System.currentTimeMillis();
 			log.log(Level.WARNING, "[updateSpecialUserPath]: TRY - Threshold: " + (finalTimeTry - initialTimeTry));
-			
+
 			initialTimeTry = System.currentTimeMillis();
 
 			// Recommendation type
@@ -3025,15 +3314,15 @@ public class Simulation {
 				//log.log(Level.WARNING, "Recommended items: " + recommendedItems.toString());
 				// The path is obtained from the recommended items.
 				recommendedItems = filterAlreadyObservedItems(recommendedItems, itemObservedOfUsers, currentUser.userID);
-				
+
 				postfiltering.recommendBaseline(recommendedItems);
-				
+
 				currentPath = postfiltering.getFinalPath();
 				finalTimeTry = System.currentTimeMillis();
 				log.log(Level.WARNING, "[updateSpecialUserPath]: TRY - Recommendation (FULLY-RAND): " + (finalTimeTry - initialTimeTry));
 				log.log(Level.SEVERE, "Finished: FULLY-RAND");
-				
-				
+
+
 			} else if (recommendationType.equalsIgnoreCase("User-Based Collaborative Filtering (UBCF)") || recommendationType.equalsIgnoreCase("Know-It-All (Know-It-All)")) {
 				UserSimilarity similarity = new PearsonCorrelationSimilarity(dataModelSpecialUser);
 				UserNeighborhood neighborhood = new ThresholdUserNeighborhood(getThresholdSimilarity(), similarity, dataModelSpecialUser);
@@ -3042,14 +3331,14 @@ public class Simulation {
 				recommendedItems = postfiltering.recommend(currentUser.userID, getHowMany()); // NoSuchUserException
 				// The path is obtained from the recommended items.
 				currentPath = postfiltering.getFinalPath();
-				
+
 				if (recommendationType.equalsIgnoreCase("User-Based Collaborative Filtering (UBCF)")) {
 					log.log(Level.SEVERE, "Finished: UBCF");
 				}
 				else {
 					log.log(Level.SEVERE, "Finished: Know-It-All");
 				}
-				
+
 			} else if (recommendationType.equalsIgnoreCase("K-Ideal (K-Ideal)")) { // Baseline
 				System.out.println("Usando K-Ideal (K-Ideal)");
 				IdealRecommendation recommender = new IdealRecommendation(dataModelSpecialUser, dataAccesLayerDBMuseum);
@@ -3061,10 +3350,44 @@ public class Simulation {
 				// The path is obtained from the recommended items.
 				currentPath = postfiltering.getFinalPath();
 				log.log(Level.SEVERE, "Finished: K-Ideal");
+			}
+			else if (recommendationType.equalsIgnoreCase("Non-Risk-Aware (Non-Risk-Aware)") || (recommendationType.equalsIgnoreCase("Risk-Aware (Risk-Aware)") && currentUser.isInfected)) {
+				RiskAwareRecommendation recommender = new RiskAwareRecommendation(
+					pythonScriptPath, false
+				);
+
+				// Obtain favorite artworks of current user
+				PreferenceArray userPreferences = dataModelMuseumDB.getPreferencesFromUserSortedByRating(currentUser.userID);
+
+				// Sorted by rating
+				List<Long> favoriteArtworks = new ArrayList<>();
+				int maxFavorites = Math.min(20, userPreferences.length());
+				for (int i = 0; i < maxFavorites; i++) {
+					long itemId = userPreferences.getItemID(i);
+					favoriteArtworks.add(itemId);
+				}
+
+				recommendedItems = recommender.recommend(
+					currentUser.userID,
+					itemObservedOfUsers.get(currentUser.userID),
+					null, null, favoriteArtworks
+				);
+
+				// Added by Nacho Palacio 2025-12-10
+				if (recommendedItems != null && recommendedItems.size() > getHowMany()) {
+					recommendedItems = recommendedItems.subList(0, getHowMany());
+				}
+
+				if (recommendedItems != null && !recommendedItems.isEmpty()) {
+					recommendedItems = filterAlreadyObservedItems(recommendedItems, itemObservedOfUsers, currentUser.userID);
+					postfiltering.recommendBaseline(recommendedItems);
+					currentPath = postfiltering.getFinalPath();
+				} else {
+					currentPath = "";
+				}
+
+				log.log(Level.SEVERE, "Finished: Non-Risk-Aware");
 			} else if (recommendationType.equalsIgnoreCase("Risk-Aware (Risk-Aware)")) {
-				// String pythonScriptPath = "../../../../../../../Backups/moma...";
-				String pythonScriptPath = "/home/nacho/universidad/cuarto/TFG/RecMobiSimPlus/Backups/moma.recommender-main-snapshot20251005/moma.recommender-main/src/recommender/recommender_bridge.py";
-								
 				RiskAwareRecommendation recommender = new RiskAwareRecommendation(pythonScriptPath);
 
 				Map<Integer, Integer> occupancyPerRoom = new HashMap<>();
@@ -3087,7 +3410,7 @@ public class Simulation {
 				durationPerRoom.replaceAll((room, seconds) -> seconds / 60.0);
 
 				Map<Integer, Double> durationPerRoomNew = calculateCurrentDurationPerRoom();
-    
+
 				ElementIdMapper.SystemRangeData rangeData = ElementIdMapper.getSystemRangeData();
 				int minRoomId = (int) rangeData.minRoomId;
 				int maxRoomId = (int) rangeData.maxRoomId;
@@ -3095,8 +3418,10 @@ public class Simulation {
 				// Ensure all rooms have entries in occupancyPerRoom and durationPerRoom
 				for (int roomId = minRoomId; roomId <= maxRoomId; roomId++) {
 					durationPerRoomNew.putIfAbsent(roomId, 0.0167); // 1 second in minutes
+					// durationPerRoomNew.put(roomId, 5.0); // Modificado 2026-03-12
 					if (durationPerRoomNew.get(roomId) == 0.0) {
 						durationPerRoomNew.put(roomId, 0.0167);
+						// durationPerRoomNew.put(roomId, 5.0); // Modificado 2026-03-12
 					}
 				}
 
@@ -3114,9 +3439,10 @@ public class Simulation {
 				if (durationPerRoomNew.isEmpty()) {
 					for (int roomId = minRoomId; roomId <= maxRoomId; roomId++) {
 						durationPerRoomNew.put(roomId, 1.0);
+						// durationPerRoomNew.put(roomId, 5.0); // Modificado 2026-03-12
 					}
 				}
-				
+
 				// Obtain favorite artworks of current user
 				PreferenceArray userPreferences = dataModelMuseumDB.getPreferencesFromUserSortedByRating(currentUser.userID);
 
@@ -3127,11 +3453,11 @@ public class Simulation {
 					long itemId = userPreferences.getItemID(i);
 					favoriteArtworks.add(itemId);
 				}
-				
+
 				try {
-					recommendedItems = recommender.recommend(currentUser.userID, 
-															itemObservedOfUsers.get(currentUser.userID), 
-															occupancyPerRoom, 
+					recommendedItems = recommender.recommend(currentUser.userID,
+															itemObservedOfUsers.get(currentUser.userID),
+															occupancyPerRoom,
 															// durationPerRoom,
 															durationPerRoomNew, // Modified by Nacho Palacio 2025-12-16
 															favoriteArtworks
@@ -3143,7 +3469,7 @@ public class Simulation {
 					}
 
 					recommendedItems = filterAlreadyObservedItems(recommendedItems, itemObservedOfUsers, currentUser.userID);
-					
+
 				} catch (IOException e) {
 					recommendedItems = new ArrayList<>();
 				}
@@ -3157,50 +3483,18 @@ public class Simulation {
 				}
 
 				log.log(Level.SEVERE, "Finished: Risk-Aware");
-			} 
-			else if (recommendationType.equalsIgnoreCase("Non-Risk-Aware (Non-Risk-Aware)")) {
-				String pythonScriptPath = "/home/nacho/universidad/cuarto/TFG/RecMobiSimPlus/Backups/moma.recommender-main-snapshot20251005/moma.recommender-main/src/recommender/recommender_bridge.py";
-				RiskAwareRecommendation recommender = new RiskAwareRecommendation(
-					pythonScriptPath, false
-				);
-				
-				List<Long> favoriteArtworks = new ArrayList<>();
-				PreferenceArray userPreferences = dataModelMuseumDB.getPreferencesFromUserSortedByRating(currentUser.userID);
-				for (int i = 0; i < Math.min(10, userPreferences.length()); i++) {
-					favoriteArtworks.add(userPreferences.getItemID(i));
-				}
-				
-				recommendedItems = recommender.recommend(
-					currentUser.userID, 
-					itemObservedOfUsers.get(currentUser.userID),
-					null, null, favoriteArtworks
-				);
-
-				// Added by Nacho Palacio 2025-12-10
-				if (recommendedItems != null && recommendedItems.size() > getHowMany()) {
-					recommendedItems = recommendedItems.subList(0, getHowMany());
-				}
-				
-				if (recommendedItems != null && !recommendedItems.isEmpty()) {
-					recommendedItems = filterAlreadyObservedItems(recommendedItems, itemObservedOfUsers, currentUser.userID);
-					postfiltering.recommendBaseline(recommendedItems);
-					currentPath = postfiltering.getFinalPath();
-				} else {
-					currentPath = "";
-				}
-				
-				log.log(Level.SEVERE, "Finished: Non-Risk-Aware");
-			} else {
+			}
+			else {
 				if (recommendationType.equalsIgnoreCase("Exhaustive visit (ALL)")) {
 					ExhaustiveRecommendation recommender = new ExhaustiveRecommendation(dataModelSpecialUser, dataAccesLayerDBMuseum);
 					recommendedItems = recommender.recommend(currentUser.userID, 1);
 					// The path is obtained from the recommended items.
 					recommendedItems = filterAlreadyObservedItems(recommendedItems, itemObservedOfUsers, currentUser.userID);
-					
+
 					postfiltering.recommendBaseline(recommendedItems); // NoSuchUserException
 					// The path is obtained from the recommended items.
 					currentPath = postfiltering.getFinalPath();
-					
+
 					log.log(Level.SEVERE, "Finished: Exhaustive (ALL)");
 				} else {
 					if (recommendationType.equalsIgnoreCase("Near POI (NPOI)")) {
@@ -3221,7 +3515,7 @@ public class Simulation {
 					e.printStackTrace();
 				}
 			}
-			
+
 			List<String> pathSpecialUser = new LinkedList<>();
 			if (currentPath != null) {
 				pathSpecialUser = Arrays.asList(currentPath.split(", "));
@@ -3242,16 +3536,40 @@ public class Simulation {
 					e.printStackTrace();
 				}
 
-			}
+			}	
 
 			// It is asigned to the RS user graph
 			pathSpecialUser = Arrays.asList(currentPath.split(", ")); // Added by Nacho Palacio 2025-11-01
 
-			graphSpecialUser.paths.set(((int) currentUser.userID) - 1, pathSpecialUser);
+			// graphSpecialUser.paths.set(((int) currentUser.userID) - 1, pathSpecialUser); Antes solo esto
+			// List<String> finalPathToAssign = pathSpecialUser;
+			// if (!UserRunnable.firstTime) {
+			// 	// Combine old path with new recommended path
+			// 	finalPathToAssign = combinePaths(startVertex, endVertex, 
+			// 									new ArrayList<>(pathSpecialUser), 
+			// 									finishPath);
+			// }
+			// graphSpecialUser.paths.set(((int) currentUser.userID) - 1, finalPathToAssign);
+
+			List<String> finalPathToAssign = new ArrayList<>(pathSpecialUser);
+			if (!finalPathToAssign.isEmpty()) {
+				String[] firstEdgeParts = cleanEdge(finalPathToAssign.get(0));
+				if (firstEdgeParts != null && firstEdgeParts.length >= 2) {
+					long newPathStart = Long.parseLong(firstEdgeParts[0].trim());
+					long bridgeFrom = endVertex;
+					if (bridgeFrom != newPathStart) {
+						// Si el nuevo path no empieza donde termina el path anterior, se añade un edge puente
+						String bridgeEdge = "(" + bridgeFrom + " : " + newPathStart + ")";
+						finalPathToAssign.add(0, bridgeEdge);
+					}
+				}
+			}
+			graphSpecialUser.paths.set(((int) currentUser.userID) - 1, finalPathToAssign);
+			UserRunnable.firstTime = false;
 
 			// Store predicted ratings by the RS user
 			storePredictedRatings(recommendedItems, currentUser);
-			
+
 			/*
 			 * Connection reused -> Don't disconnect till the end of the simulation
 			// Close DB connections
@@ -3260,7 +3578,7 @@ public class Simulation {
 			*/
 
 			// graphSpecialUser.paths.set(((int) currentUser.userID) - 1, finalPath);
-			
+
 			finalTimeTotal = System.currentTimeMillis();
 			log.log(Level.WARNING, "[updateSpecialUserPath]: TRY - " + (finalTimeTotal - initialTimeTotal));
 
@@ -3269,21 +3587,21 @@ public class Simulation {
 			ex.printStackTrace();
 			if (recommendationType.equalsIgnoreCase("Near POI (NPOI)")) {
 				log.log(Level.SEVERE, "NPOI");
-				
+
 				//ex.printStackTrace();
 			}
-			
+
 			/*
 			 * NPOI STRATEGY IN CASE OF EXCETION
 			 */
 			// Prints exception without trace
 			// log.log(Level.SEVERE, ex.toString()); // + "\n" + ex.getStackTrace().toString());
-			
+
 			/*
 			 * https://stackoverflow.com/questions/6822968/print-the-stack-trace-of-an-exception
-			 * 
+			 *
 			 * For printing stacktrace
-			 * 
+			 *
 			 * The 5 following lines
 			 */
 			StringWriter writer = new StringWriter();
@@ -3293,14 +3611,14 @@ public class Simulation {
 
 			String stackTrace = writer.toString();
 			log.log(Level.SEVERE, stackTrace);
-			
+
 			log.log(Level.WARNING, "[updateSpecialUserPath]: TRY - TIME TILL IT REACHES CATCH: " + (System.currentTimeMillis() - initialTimeTotal));
-			
+
 			initialTimeTotal = System.currentTimeMillis();
-			
+
 			long catchCurrentPath = 0, catchCurrentPathFinal = 0, catchPathSpecialUser = 0, catchPathSpecialUserFinal = 0, catchFinalPath = 0, catchFinalPathFinal = 0;
 			catchCurrentPath = System.currentTimeMillis();
-	
+
 			// If there is not information to apply the specified recommender, then the path is generated by using the NPOI strategy.
 			// Added by Nacho Palacio 2025-06-10
 			try {
@@ -3313,9 +3631,9 @@ public class Simulation {
 			catch (Exception e) {
 				//e.printStackTrace();
 			}
-			
+
 			catchCurrentPathFinal = System.currentTimeMillis();
-			
+
 			catchPathSpecialUser = System.currentTimeMillis();
 
 
@@ -3328,35 +3646,52 @@ public class Simulation {
 
 
 			catchPathSpecialUserFinal = System.currentTimeMillis();
-			
+
 			catchFinalPath = System.currentTimeMillis();
 			// If the first time, is not necessary to combine the old path with the updated path.
-			if (UserRunnable.firstTime) {
-				finalPath = pathSpecialUser;
-				UserRunnable.firstTime = false;
-			} else {
-				// In order not to repeat, for example (22 : 22), which is only for the first
-				// time.
-				List<String> pathSpecialUserTemp = new ArrayList<String>(pathSpecialUser);
-				String edge[] = cleanEdge(pathSpecialUserTemp.get(0));
-				if (edge.length > 1) {
-					if (edge[0] == edge[1]) {
-						pathSpecialUserTemp.remove(0);
+			// if (UserRunnable.firstTime) {
+			// 	finalPath = pathSpecialUser;
+			// 	UserRunnable.firstTime = false;
+			// } else {
+			// 	// In order not to repeat, for example (22 : 22), which is only for the first
+			// 	// time.
+			// 	List<String> pathSpecialUserTemp = new ArrayList<String>(pathSpecialUser);
+			// 	String edge[] = cleanEdge(pathSpecialUserTemp.get(0));
+			// 	if (edge.length > 1) {
+			// 		if (edge[0] == edge[1]) {
+			// 			pathSpecialUserTemp.remove(0);
+			// 		}
+			// 	}
+			// 	// If is the second time, is necessary to combine the old path with the updated path.
+			// 	finalPath = combinePaths(startVertex, endVertex, pathSpecialUserTemp, finishPath);
+			// }
+
+
+			List<String> finalPathCatch = new ArrayList<>(pathSpecialUser);
+
+			if (!finalPathCatch.isEmpty()) {
+				String[] firstEdgeParts = cleanEdge(finalPathCatch.get(0));
+				if (firstEdgeParts != null && firstEdgeParts.length >= 2) {
+					long newPathStart = Long.parseLong(firstEdgeParts[0].trim());
+					long bridgeFrom = endVertex;
+					if (bridgeFrom != newPathStart) {
+						String bridgeEdge = "(" + bridgeFrom + " : " + newPathStart + ")";
+						finalPathCatch.add(0, bridgeEdge);
 					}
 				}
-				// If is the second time, is necessary to combine the old path with the updated path.
-				finalPath = combinePaths(startVertex, endVertex, pathSpecialUserTemp, finishPath);				
 			}
+			graphSpecialUser.paths.set(((int) currentUser.userID) - 1, finalPathCatch);
+
 			catchFinalPathFinal = System.currentTimeMillis();
-			
+
 			log.log(Level.WARNING, "[updateSpecialUserPath / CURRENTPATH]: CATCH - " + (catchCurrentPathFinal - catchCurrentPath));
 			log.log(Level.WARNING, "[updateSpecialUserPath / PATHSPECIALUSER]: CATCH - " + (catchPathSpecialUserFinal - catchPathSpecialUser));
 			log.log(Level.WARNING, "[updateSpecialUserPath / FINALPATH]: CATCH - " + (catchFinalPathFinal - catchFinalPath));
-			
+
 			finalTimeTotal = System.currentTimeMillis();
 			log.log(Level.FINE, "[updateSpecialUserPath]: CATCH - " + (finalTimeTotal - initialTimeTotal));
-			
-			
+
+
 		} // End catch
 		finally { // Added by Nacho Palacio 2025-12-08
             if (dataModelSpecialUser != null) {
@@ -3365,12 +3700,12 @@ public class Simulation {
             }
             dataAccesLayerDBMuseum = null;
         }
-		
+
 		// Close db connections (if opened) to reduce db delays
 		/*
 		 * Connection reused -> Don't disconnect till the end of the simulation
 		 * finally {
-			
+
 			try {
 				// Close DB connections
 				dataModelSpecialUser.disconnect();
@@ -3382,79 +3717,161 @@ public class Simulation {
 			}
 		}*/
 		// System.out.println("Después del bloque try-catch de updateSpecialUserPath");
-		
+
 		initialTimeTotal = System.currentTimeMillis();
-		
+
 		/*
 		 * THE PURPOSE OF THIS FUNCTION: SET RS user'S PATH
 		 */
 		// Modified by Nacho Palacio 2025-11-21
-		finalPath = Arrays.asList(currentPath.split(", "));
+		// synchronized (this) {
+		// 	finalPath = Arrays.asList(currentPath.split(", "));
 
-		List<String> cleaned1 = new ArrayList<>();
-		String lastEdge = null;
-		for (String edge : finalPath) {
-			if (!edge.equals(lastEdge)) {
-				cleaned1.add(edge);
-				lastEdge = edge;
+		// 	List<String> cleaned1 = new ArrayList<>();
+		// 	String lastEdge = null;
+		// 	for (String edge : finalPath) {
+		// 		if (!edge.equals(lastEdge)) {
+		// 			cleaned1.add(edge);
+		// 			lastEdge = edge;
+		// 		}
+		// 	}
+		// 	finalPath = cleaned1;
+
+		// 	graphSpecialUser.paths.set(((int) currentUser.userID) - 1, finalPath);
+		// 	if (finalPath == null) finalPath = new LinkedList<>();
+		// 	List<String> cleaned = new LinkedList<>();
+		// 	for (String e : finalPath) {
+		// 		String[] parts = cleanEdge(e);
+		// 		if (parts != null && parts.length >= 2) {
+		// 			if (!parts[0].equals(parts[1])) cleaned.add(e);
+		// 		} else {
+		// 			cleaned.add(e);
+		// 		}
+		// 	}
+		// 	finalPath = cleaned;
+
+		// 	graphSpecialUser.paths.set(((int) currentUser.userID) - 1, finalPath);
+		// 	idx = (int) currentUser.userID - 1;
+
+		// 	// finalPath no nulo
+		// 	if (finalPath == null) finalPath = new LinkedList<>();
+
+		// 	if (graphSpecialUser != null) {
+		// 		if (graphSpecialUser.paths == null) {
+		// 			graphSpecialUser.paths = new ArrayList<>();
+		// 		}
+		// 		while (graphSpecialUser.paths.size() <= idx) {
+		// 			graphSpecialUser.paths.add(new LinkedList<String>());
+		// 		}
+		// 		if (graphSpecialUser.paths.get(idx) == null) {
+		// 			graphSpecialUser.paths.set(idx, new LinkedList<String>());
+		// 		}
+		// 		graphSpecialUser.paths.set(idx, finalPath);
+		// 	}
+
+		// 	// userPositionInPath must be updated according to the new path length
+		// 	if (userPositionInPath != null && idx >= 0 && idx < userPositionInPath.length) {
+		// 		if (finalPath.isEmpty()) {
+		// 			userPositionInPath[idx] = 0;
+		// 		} else if (userPositionInPath[idx] >= finalPath.size()) {
+		// 			userPositionInPath[idx] = Math.max(0, finalPath.size() - 1);
+		// 		}
+		// 		if (userPositionInPath[idx] < 0) userPositionInPath[idx] = 0;
+		// 	}
+
+		// 	// reset flags to avoid loops
+		// 	if (voting != null && idx >= 0 && idx < voting.length) voting[idx] = false;
+		// 	isChangedItemByRecommender = false;
+		// }
+
+        // finalPath = Arrays.asList(currentPath.split(", "));
+
+        // List<String> cleaned1 = new ArrayList<>();
+        // String lastEdge = null;
+        // for (String edge : finalPath) {
+        //     if (!edge.equals(lastEdge)) {
+        //         cleaned1.add(edge);
+        //         lastEdge = edge;
+        //     }
+        // }
+        // finalPath = cleaned1;
+
+        // // 2. Limpieza de bordes inválidos (SIN LOCK)
+        // if (finalPath == null) finalPath = new LinkedList<>();
+
+        // List<String> cleaned = new LinkedList<>();
+        // for (String e : finalPath) {
+        //     String[] parts = cleanEdge(e);
+        //     if (parts != null && parts.length >= 2) {
+        //         if (!parts[0].equals(parts[1])) cleaned.add(e);
+        //     } else {
+        //         cleaned.add(e);
+        //     }
+        // }
+        // finalPath = cleaned;
+
+        // // 3. Validar que no sea null (SIN LOCK)
+        // if (finalPath == null) finalPath = new LinkedList<>();
+
+        // idx = (int) currentUser.userID - 1;
+
+		// // Escritura #1: graphSpecialUser.paths
+		// if (graphSpecialUser != null) {
+		// 	if (graphSpecialUser.paths == null) {
+		// 		graphSpecialUser.paths = new ArrayList<>();
+		// 	}
+		// 	while (graphSpecialUser.paths.size() <= idx) {
+		// 		graphSpecialUser.paths.add(new LinkedList<String>());
+		// 	}
+		// 	if (graphSpecialUser.paths.get(idx) == null) {
+		// 		graphSpecialUser.paths.set(idx, new LinkedList<String>());
+		// 	}
+		// 	graphSpecialUser.paths.set(idx, finalPath);
+		// }
+
+		// if (userPositionInPath != null && idx >= 0 && idx < userPositionInPath.length()) {
+		// 	if (finalPath.isEmpty()) {
+		// 		userPositionInPath.set(idx, 0);
+		// 	} else if (userPositionInPath.get(idx) >= finalPath.size()) {
+		// 		userPositionInPath.set(idx, Math.max(0, finalPath.size() - 1));
+		// 	}
+		// 	if (userPositionInPath.get(idx) < 0) userPositionInPath.set(idx, 0);
+		// }
+
+		List<String> assignedPath = null;
+		if (graphSpecialUser != null && graphSpecialUser.paths != null && idx >= 0 && idx < graphSpecialUser.paths.size()) {
+			assignedPath = graphSpecialUser.paths.get(idx);
+		}
+		if (assignedPath == null) {
+			assignedPath = new LinkedList<>();
+		}
+
+		if (userPositionInPath != null && idx >= 0 && idx < userPositionInPath.length()) {
+			if (assignedPath.isEmpty()) {
+				userPositionInPath.set(idx, 0);
+			} 
+			else if (userPositionInPath.get(idx) >= assignedPath.size()) {
+				userPositionInPath.set(idx, Math.max(0, assignedPath.size() - 1));
+			}
+			if (userPositionInPath.get(idx) < 0) {
+				userPositionInPath.set(idx, 0);
 			}
 		}
-		finalPath = cleaned1;
 
-		graphSpecialUser.paths.set(((int) currentUser.userID) - 1, finalPath);
-		if (finalPath == null) finalPath = new LinkedList<>();
-		List<String> cleaned = new LinkedList<>();
-		for (String e : finalPath) {
-			String[] parts = cleanEdge(e);
-			if (parts != null && parts.length >= 2) {
-				if (!parts[0].equals(parts[1])) cleaned.add(e);
-			} else {
-				cleaned.add(e);
-			}
-		}
-		finalPath = cleaned;
-
-		graphSpecialUser.paths.set(((int) currentUser.userID) - 1, finalPath);
-		idx = (int) currentUser.userID - 1;
-
-        // finalPath no nulo
-        if (finalPath == null) finalPath = new LinkedList<>();
-
-        if (graphSpecialUser != null) {
-            if (graphSpecialUser.paths == null) {
-                graphSpecialUser.paths = new ArrayList<>();
-            }
-            while (graphSpecialUser.paths.size() <= idx) {
-                graphSpecialUser.paths.add(new LinkedList<String>());
-            }
-            if (graphSpecialUser.paths.get(idx) == null) {
-                graphSpecialUser.paths.set(idx, new LinkedList<String>());
-            }
-            graphSpecialUser.paths.set(idx, finalPath);
-        }
-
-        // userPositionInPath must be updated according to the new path length
-        if (userPositionInPath != null && idx >= 0 && idx < userPositionInPath.length) {
-            if (finalPath.isEmpty()) {
-                userPositionInPath[idx] = 0;
-            } else if (userPositionInPath[idx] >= finalPath.size()) {
-                userPositionInPath[idx] = Math.max(0, finalPath.size() - 1);
-            }
-            if (userPositionInPath[idx] < 0) userPositionInPath[idx] = 0;
-        }
-
-        // reset flags to avoid loops
-        if (voting != null && idx >= 0 && idx < voting.length) voting[idx] = false;
-        isChangedItemByRecommender = false;
+		// Escritura #3: voting y flags
+		// if (voting != null && idx >= 0 && idx < voting.length) voting[idx] = false;
+		if (voting != null && idx >= 0 && idx < voting.length()) voting.set(idx, false);
+		isChangedItemByRecommender = false;
+	
 
 		// Print in file the paths.
 		stopTime = System.currentTimeMillis();
 		// Divide by 1000 to print the result in seconds.
 		elapsedTime = (stopTime - startTime) / 1000;
-		
+
 		finalTimeTotal = System.currentTimeMillis();
 		log.log(Level.FINE, "[updateSpecialUserPath]: POST - " + (finalTimeTotal - initialTimeTotal));
-		
+
 		// System.out.println("End recommendation");
 	}
 
@@ -3462,7 +3879,7 @@ public class Simulation {
 	 * Combines the old path with the recommended current path.
 	 * Merges previously traveled path segments with newly recommended path,
 	 * ensuring continuity in user navigation.
-	 * 
+	 *
 	 * @param startVertex the start vertex
 	 * @param endVertex the end vertex
 	 * @param pathSpecialUser the user path
@@ -3477,14 +3894,14 @@ public class Simulation {
 		for (int j = 0; j < pathSpecialUser.size(); j++) {
 			currentPath.add(pathSpecialUser.get(j));
 		}
-		
+
 		//currentPath = clearPath(currentPath);
 		return currentPath;
 	}
 
 	/**
 	 * Combines the old path with the recommended current path when there is disobedience.
-	 * 
+	 *
 	 * @param nextItemSelected the next item selected by the user
 	 * @param startVertex the start vertex
 	 * @param endVertex the end vertex
@@ -3506,7 +3923,7 @@ public class Simulation {
 				break;
 			}
 		}
-		
+
 		//currentPath = clearPath(currentPath);
 		return currentPath;
 	}
@@ -3515,75 +3932,77 @@ public class Simulation {
 	 * Filters out items that the user has already observed.
 	 * Removes previously visited items from recommendation list to ensure
 	 * only novel items are recommended.
-	 * 
+	 *
 	 * @param recommendedItems the list of recommended items
-	 * @param itemObservedOfUsers a map of user IDs to lists of observed item IDs
+	 * @param itemObservedOfUsers2 a map of user IDs to lists of observed item IDs
 	 * @param userID the user ID
 	 * @return a filtered list of recommended items (not yet observed)
 	 */
-	public List<RecommendedItem> filterAlreadyObservedItems(List<RecommendedItem> recommendedItems, Map<Integer, List<Long>> itemObservedOfUsers, int userID) {
-		List<Long> observed = itemObservedOfUsers.get(userID);
+	public List<RecommendedItem> filterAlreadyObservedItems(List<RecommendedItem> recommendedItems, ConcurrentHashMap<Integer,List<Long>> itemObservedOfUsers2, int userID) {
+		List<Long> observed = itemObservedOfUsers2.get(userID);
 		if (observed == null || observed.isEmpty()) {
 			return recommendedItems; // Nada que filtrar
 		}
 		List<RecommendedItem> filtered = new ArrayList<>();
-		for (RecommendedItem item : recommendedItems) {
-			if (!observed.contains(item.getItemID())) {
-				filtered.add(item);
+		// synchronized (observed) {
+			for (RecommendedItem item : recommendedItems) {
+				if (!observed.contains(item.getItemID())) {
+					filtered.add(item);
+				}
 			}
-		}
+		// }
 		return filtered;
 	}
-	
+
 
 	////////////////////////////////////////////////////////
 	// MÉTODOS DE GENERACIÓN DE RUTAS
 	////////////////////////////////////////////////////////
-	
+
 	/**
 	 * Generate non-RS user paths.
-	 * 
+	 *
 	 * @param strategy the path generation strategy
 	 */
-	public void generate_non_special_user_path(Path strategy) {	
+	public void generate_non_special_user_path(Path strategy) {
 		try {
 			Map<Integer, List<Long>> roomItems = new HashMap<>();
-			
+
 			for (int i = 1; i <= dataAccessGraphFile.getNumberOfRoom(); i++) {
 				List<Long> items = new LinkedList<>();
 				for (int j = 1; j <= dataAccessGraphFile.getNumberOfItemsByRoom(i); j++) {
 					long itemId = dataAccessGraphFile.getItemOfRoom(j, i);
-					
+
 					if (itemId > 0) {
 						items.add(itemId);
 					}
 				}
-				
+
 				for (int j = 1; j <= dataAccessGraphFile.getNumberOfDoorsByRoom(i); j++) {
 					long doorId = dataAccessGraphFile.getDoorOfRoom(j, i);
 					if (doorId > 0) {
 						items.add(doorId);
 					}
 				}
-				
+
 				long stairsId = dataAccessGraphFile.getStairsOfRoom(i);
 				if (stairsId > 0) {
 					items.add(stairsId);
 				}
-				
+
 				if (!items.isEmpty()) {
 					roomItems.put(i, items);
 				}
 			}
-			
+
 			strategy.initializeItemsByRoom(roomItems); // Modified by Nacho Palacio 2025-06-28
-			
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 		this.pathStrategyUsed = strategy;
-		
+
 		RandomAccessFile pw;
 		try {
 			// Remove the file if exist.
@@ -3599,7 +4018,7 @@ public class Simulation {
 			MainSimulator.printConsole("Generating non RS user paths:", Level.INFO);
 
 			Random random = new Random(Configuration.simulation.getSeed());
-			
+
 			for (int i = 0; i < numberOfNonSpecialUser; i++) {
 				// Choose a random number in the range of NUMBER OF items. IN MUSEUM: (1-240).
 				int start_item = random.nextInt((strategy.accessItemFile.getNumberOfItems() - 1) + 1) + 1;
@@ -3642,7 +4061,7 @@ public class Simulation {
 	/**
 	 * Creates a fallback path when no path is available.
 	 * Generates a minimal default path to prevent simulation errors.
-	 * 
+	 *
 	 * @param userId the user ID
 	 * @return a fallback path as a list of edges
 	 */
@@ -3655,19 +4074,19 @@ public class Simulation {
 
 	/**
 	 * Converts a path string into a list of edges.
-	 * 
+	 *
 	 * @param pathString the path string to convert
 	 * @return a list of edge strings
 	 */
 	private List<String> pathStringToList(String pathString) {
 		List<String> pathList = new ArrayList<>();
-		
+
 		if (pathString == null || pathString.isEmpty()) {
 			return pathList;
 		}
-		
+
 		String[] edges = pathString.split("\\), ");
-		
+
 		for (String edge : edges) {
 			edge = edge.trim();
 			if (!edge.isEmpty()) {
@@ -3677,7 +4096,7 @@ public class Simulation {
 				pathList.add(edge);
 			}
 		}
-		
+
 		return pathList;
 	}
 
@@ -3688,12 +4107,12 @@ public class Simulation {
 
 	/**
 	 * Gets the current user's context.
-	 * 
+	 *
 	 * @param currentUser the current user
 	 * @return the context ID representing current conditions
 	 */
 	public long getCurrentContext(User currentUser) {
-		
+
 		int temperatureRoom = 1;
 		int numberPeopleRoom = getNumberPeopleRoom(currentUser.room, currentUser);
 		int noiseLevelRoom = 8;
@@ -3707,26 +4126,28 @@ public class Simulation {
 
 		// TIME CONSUMING (DATAACCESSLAYER
 		long initialTimeContext = System.currentTimeMillis();
-		
+
 		//String new_user_db_file_path = Literals.SQL_DRIVER + Literals.DB_ALL_USERS_PATH;
 		//DataAccessLayer dataAccesLayerDBMuseum = new DataAccessLayer(new_user_db_file_path);
-		
+
 		long finalTimeContext = System.currentTimeMillis();
 		log.log(Level.INFO, "!!! CONTEXT [new DataAccessLayer(new_user_db_file_path)]: " + (finalTimeContext - initialTimeContext));
-		
-		
+
+
 		initialTimeContext = System.currentTimeMillis();
+		// System.out.println("Current context values for user " + currentUser.userID + ": " + currentContextValues);
 		long currentContext = dataModelMuseumDB.getContextIDFor(currentContextValues);
+		// System.out.println("Context ID for user " + currentUser.userID + ": " + currentContext);
 		finalTimeContext = System.currentTimeMillis();
-		
+
 		log.log(Level.INFO, "!!! CONTEXT [getContextIDFor]: " + (finalTimeContext - initialTimeContext));
-		
+
 		return currentContext;
 	}
 
 	/**
 	 * Gets the number of people in a room.
-	 * 
+	 *
 	 * @param room the room number
 	 * @param currentUser the user making the query
 	 * @return the number of other people in the room
@@ -3757,7 +4178,7 @@ public class Simulation {
 
 	/**
 	 * The user generates a rating to the item seen in a specific context.
-	 * 
+	 *
 	 * @param uID the ID of the current user
 	 * @param itemIDinternal the internal ID of the item seen
 	 * @param itemIDexternal the external ID of the item seen
@@ -3821,7 +4242,9 @@ public class Simulation {
 						// The information from the currentUser is propagated to all the neighbors.
 						countRatingsPropagated = passPropagationToken(neighborsInTheAllowedDistance, id_user);
 					}
-					countItemsTTPByUser.put(id_user, countRatingsPropagated);
+					// countItemsTTPByUser.put(id_user, countRatingsPropagated);
+					countItemsTTPByUser.computeIfAbsent(id_user, k -> new AtomicInteger(0))
+                  						.set(countRatingsPropagated);
 					// Prints the number of times that the information is propagated.
 					numberItemsPropagated += countRatingsPropagated;
 				}
@@ -3848,11 +4271,17 @@ public class Simulation {
 
 				// The value of TTP is initialized for the ratings of that user to be
 				// propagated, where the isIntializedTTP=0.
-				if (countItemsTTPByUser.get(id_user) > 0) {
+				// if (countItemsTTPByUser.get(id_user) > 0) {
+				// 	int countRatings = Integer.valueOf(array[1]).intValue();
+				// 	dataManagementQueue.initializeAllTTP(countRatings, id_user);
+				// 	// In order to indicate that the user is busy propagating information.
+				// 	countItemsTTPByUser.put(id_user, 0);
+				// }
+				if (countItemsTTPByUser.containsKey(id_user)) {
 					int countRatings = Integer.valueOf(array[1]).intValue();
 					dataManagementQueue.initializeAllTTP(countRatings, id_user);
 					// In order to indicate that the user is busy propagating information.
-					countItemsTTPByUser.put(id_user, 0);
+					countItemsTTPByUser.get(id_user).set(0);
 				}
 			}
 		}
@@ -3860,7 +4289,7 @@ public class Simulation {
 
 	/**
 	 * Get the neighbors in the allowed distance.
-	 * 
+	 *
 	 * @param currentUser the current user
 	 * @param users all users in the simulation
 	 * @return list of users within communication range
@@ -3882,11 +4311,11 @@ public class Simulation {
 		return neighborsInTheAllowedDistance;
 	}
 
-	
+
 
 	/**
 	 * The neighbors listen the information.
-	 * 
+	 *
 	 * @param informationToPropagateList the list with information to propagate
 	 * @param neighborsInTheAllowedDistance the list of neighbors in communication range
 	 */
@@ -3904,7 +4333,7 @@ public class Simulation {
 
 	/**
 	 * Get the farthest user to the current user.
-	 * 
+	 *
 	 * @param currentUser the current user
 	 * @param neighborsOfTheCurrentUser the neighbors of the current user
 	 * @return the farthest user among neighbors
@@ -3928,7 +4357,7 @@ public class Simulation {
 
 	/**
 	 * The information is propagated to the farthest neighbor.
-	 * 
+	 *
 	 * @param farthestUser the ID of the farthest user
 	 * @param id_user the current user ID
 	 * @return the number of propagated ratings
@@ -3940,7 +4369,7 @@ public class Simulation {
 
 	/**
 	 * The information is propagated to the all neighbors.
-	 * 
+	 *
 	 * @param neighborsInTheAllowedDistance list of neighbors to receive information
 	 * @param id_user the current user ID
 	 * @return the number of propagated ratings
@@ -3972,7 +4401,7 @@ public class Simulation {
 
 	/**
 	 * The RS user listen the information.
-	 * 
+	 *
 	 * @param informationToPropagate the information to propagate
 	 * @param currentUser the user receiving the information
 	 */
@@ -3990,25 +4419,32 @@ public class Simulation {
 		log.log(Level.INFO, "[DatabaseConnection]: " + (finalTimeRecommender - initialTimeRecommender));
 
 		initialTimeRecommender = System.currentTimeMillis();
-		
+
 		boolean ifInsertOK = dataManagementUserDB.insertInformation(informationToPropagate, this.numberOfITems); // Lot of time consumed
-		
-		
+
+
 		finalTimeRecommender = System.currentTimeMillis();
 		log.log(Level.INFO, "[insertInformation]: " + (finalTimeRecommender - initialTimeRecommender));
-		
+
 		initialTimeRecommender = System.currentTimeMillis();
 		if (ifInsertOK) {
 			log.log(Level.INFO, "    Insert OK!!!"); // Info is inserted OK
-			int numberOfItems = 0;
-			if (!numberOfReceivedItems.isEmpty() && numberOfReceivedItems.containsKey((long) currentUser.userID)) {
-				numberOfItems = numberOfReceivedItems.get((long) currentUser.userID);
-				numberOfItems++;
-				numberOfReceivedItems.put((long) currentUser.userID, numberOfItems);
-			} else {
-				numberOfItems++;
-				numberOfReceivedItems.put((long) currentUser.userID, numberOfItems);
-			}
+			// int numberOfItems = 0;
+			// if (!numberOfReceivedItems.isEmpty() && numberOfReceivedItems.containsKey((long) currentUser.userID)) {
+			// 	numberOfItems = numberOfReceivedItems.get((long) currentUser.userID);
+			// 	numberOfItems++;
+			// 	numberOfReceivedItems.put((long) currentUser.userID, numberOfItems);
+			// } else {
+			// 	numberOfItems++;
+			// 	numberOfReceivedItems.put((long) currentUser.userID, numberOfItems);
+			// }
+			AtomicInteger count = numberOfReceivedItems.computeIfAbsent(
+				(long) currentUser.userID,
+				k -> new AtomicInteger(0)
+			);
+
+			int numberOfItems = count.incrementAndGet();
+
 		}
 		finalTimeRecommender = System.currentTimeMillis();
 		logRecommender.log(Level.INFO, "[if(InsertOK)]: " + (finalTimeRecommender - initialTimeRecommender));
@@ -4022,7 +4458,7 @@ public class Simulation {
 	 * Calculates individual risk for the current epidemic model.
 	 * Delegates to model-specific risk calculator based on configured epidemic model.
 	 * Added by Nacho Palacio 2025-09-18
-	 * 
+	 *
 	 * @return average individual infection risk across all users
 	 */
 	private double calculateIndividualRiskForCurrentModel() {
@@ -4032,7 +4468,7 @@ public class Simulation {
 	/**
 	 * Calculates the average combined individual risk for all rooms based on current epidemic model.
 	 * Aggregates risk across all rooms using model-specific calculations.
-	 * 
+	 *
 	 * @return average individual risk across all rooms
 	 */
 	public double calculateCombinedIndividualRiskForAllRooms() {
@@ -4069,62 +4505,57 @@ public class Simulation {
 	 * Calculates the average theoretical risk for all rooms based on current epidemic model.
 	 * Computes theoretical infection risk using room-specific parameters and aerosol/proximity models.
 	 * Modified by Nacho Palacio 2025-10-06
-	 * 
+	 *
 	 * @return average theoretical risk across all rooms
 	 */
 	public double calculateAverageTheoreticalRiskForAllRooms() {
 		EpidemicModel model = epidemicManager.getEpidemicModel();
-		
+
 		if (model == null) {
 			System.err.println("Warning! No active epidemic model");
 			return 0.0;
 		}
-		
+
 		// Only susceptibles are considered
 		List<User> susceptibles = getAllUsers().stream()
 			.filter(u -> {
 				UserEpidemicExtension ext = u.getEpidemicExtension();
-				return ext != null && 
-					!ext.isImmune() && 
+				return ext != null &&
+					!ext.isImmune() &&
 					ext.getHealthStatus() == HealthStatus.SUSCEPTIBLE;
 			})
 			.collect(Collectors.toList());
-		
+
 		if (susceptibles.isEmpty()) {
 			System.err.println("Warning! No susceptible users to calculate risk");
 			return 0.0;
 		}
-		
-		System.out.printf("\n Calculating average risk for %d susceptible users...\n", susceptibles.size());
-		
+
 		double totalRisk = 0.0;
-		
+
 		if (model instanceof PengTransmissionModel) {
 			PengTransmissionModel pengModel = (PengTransmissionModel) model;
-			
+
 			for (User user : susceptibles) {
 				double userRisk = pengModel.calculateCombinedInfectionRiskForUser(user);
 				totalRisk += userRisk;
 			}
-			
+
 		} else if (model instanceof LelieveldTransmissionModel) {
 			LelieveldTransmissionModel lelieveldModel = (LelieveldTransmissionModel) model;
-			
+
 			for (User user : susceptibles) {
 				double userRisk = lelieveldModel.calculateCombinedInfectionRiskForUser(user);
 				totalRisk += userRisk;
 			}
-			
+
 		} else {
 			System.err.println("Warning! Unsupported model for accumulated risk calculation");
 			return 0.0;
 		}
-		
+
 		double averageRisk = (totalRisk / susceptibles.size()) * 100.0;
-		
-		System.out.printf("\n FINAL AVERAGE RISK AVG: %.2f%%\n", averageRisk);
-		System.out.printf("   (Average accumulated risk of %d susceptible users)\n\n", susceptibles.size());
-		
+
 		return averageRisk;
 	}
 
@@ -4133,38 +4564,38 @@ public class Simulation {
 	 * Infected users are assigned 100% risk since they were infected.
 	 * Susceptible users get risk calculated from their exposure history.
 	 * Added by Nacho Palacio 2025-10-11
-	 * 
+	 *
 	 * @return average retrospective infection risk across all users
 	 */
 	public double calculateRetrospectiveRiskForAllUsers() {
 		EpidemicModel model = epidemicManager.getEpidemicModel();
-		
+
 		if (model == null) {
 			System.err.println("Warning! No active epidemic model");
 			return 0.0;
 		}
-		
+
 		List<User> allUsers = getAllUsers();
 		if (allUsers.isEmpty()) {
 			System.err.println("Warning! No users in the simulation");
 			return 0.0;
 		}
-		
+
 		double totalRisk = 0.0;
 		int validUsers = 0;
-		
+
 		System.out.printf("\n Calculating retrospective risk for %d total users...\n", allUsers.size());
-		
+
 		for (User user : allUsers) {
 			UserEpidemicExtension ext = user.getEpidemicExtension();
-			
+
 			// Ignore immune users
 			if (ext == null || ext.isImmune()) {
 				continue;
 			}
-			
+
 			double userRisk = 0.0;
-			
+
 			if (ext.getHealthStatus() != HealthStatus.SUSCEPTIBLE) {
 				userRisk = 1.0; // 100% because they are infected
 				System.out.printf("    User %d (INFECTED): Risk = 100.00%%\n", user.userID);
@@ -4176,27 +4607,27 @@ public class Simulation {
 					LelieveldTransmissionModel lelieveldModel = (LelieveldTransmissionModel) model;
 					userRisk = lelieveldModel.calculateCombinedInfectionRiskForUser(user);
 				}
-				
-				System.out.printf("    User %d (SUSCEPTIBLE): Risk = %.2f%%\n", 
+
+				System.out.printf("    User %d (SUSCEPTIBLE): Risk = %.2f%%\n",
 								user.userID, userRisk * 100);
 			}
-			
+
 			totalRisk += userRisk;
 			validUsers++;
 		}
-		
+
 		if (validUsers == 0) {
 			System.err.println("Warning! No valid users to calculate risk");
 			return 0.0;
 		}
-		
+
 		double averageRisk = (totalRisk / validUsers) * 100.0;
-		
+
 		System.out.printf("\n AVERAGE RETROSPECTIVE RISK: %.2f%%\n", averageRisk);
 		System.out.printf("   (Average of %d users: infected + susceptible)\n", validUsers);
 		System.out.printf("   - Infected: risk = 100%%\n");
 		System.out.printf("   - Susceptible: risk = calculated by model\n\n");
-		
+
 		return averageRisk;
 	}
 
@@ -4209,7 +4640,7 @@ public class Simulation {
 	 * Randomly selects one member from each clique to be initially infected,
 	 * ensuring diverse infection distribution across social groups.
 	 * Added by Nacho Palacio 2025-11-10
-	 * 
+	 *
 	 * @param selectedCliques the list of selected cliques
 	 */
 	private void infectOneUserPerClique(List<List<String>> selectedCliques) {
@@ -4217,65 +4648,74 @@ public class Simulation {
 			System.err.println("   Warning! No cliques to infect");
 			return;
 		}
-		
+
 		System.out.println(" Infecting one user per clique...");
-		
+
 		Set<Integer> simulationUserIds = userList.stream()
 			.map(u -> u.userID)
 			.collect(Collectors.toSet());
-				
+
 		int cliquesProcessed = 0;
 		int cliquesSkipped = 0;
 		Set<Integer> infectedUsers = new HashSet<>();
-		
-		for (List<String> clique : selectedCliques) {
+		this.initialInfectedByClique = new HashMap<>();
+
+		// for (List<String> clique : selectedCliques) {
+		// 	if (clique.isEmpty()) {
+		// 		cliquesSkipped++;
+		// 		continue;
+		// 	}
+		for (int cliqueIndex = 0; cliqueIndex < selectedCliques.size(); cliqueIndex++) {
+			List<String> clique = selectedCliques.get(cliqueIndex);
+
 			if (clique.isEmpty()) {
 				cliquesSkipped++;
+				initialInfectedByClique.put(cliqueIndex, 0);
 				continue;
 			}
-			
+
 			// Search a user in the clique who has not been infected yet
 			User patientZero = null;
 			int selectedSimulationId = -1;
-			
+
 			for (String userIdStr : clique) {
 				try {
 					int realUserId = Integer.parseInt(userIdStr);
-					
+
 					if (!ContactTrajectoryBuilder.hasSimulationId(realUserId)) {
 						continue;
 					}
-					
+
 					int simulationUserId = ContactTrajectoryBuilder.getSimulationId(realUserId);
-					
+
 					if (infectedUsers.contains(simulationUserId)) {
 						continue;
 					}
-					
+
 					if (!simulationUserIds.contains(simulationUserId)) {
 						continue;
 					}
-					
+
 					patientZero = userList.stream()
 						.filter(u -> u.userID == simulationUserId)
 						.findFirst()
 						.orElse(null);
-					
+
 					if (patientZero != null) {
 						selectedSimulationId = simulationUserId;
 						break; // User found
 					}
-					
+
 				} catch (NumberFormatException e) {
 					System.err.println("Warning! Invalid ID in clique: " + userIdStr);
 				}
 			}
-			
+
 			// Infect the user
 			if (patientZero != null && patientZero.getEpidemicExtension() != null) {
-				boolean isSuperSpreader = Math.random() < 
+				boolean isSuperSpreader = Math.random() <
 					EpidemicConfiguration.getInstance().getSuperSpreaderProbability();
-				
+
 				if (isSuperSpreader) {
 					patientZero.getEpidemicExtension().setHealthStatus(
 						HealthStatus.SUPER_SPREADER
@@ -4289,19 +4729,28 @@ public class Simulation {
 					System.out.printf("    Clique %d: User %d (infected) - Size: %d\n",
 						cliquesProcessed + 1, selectedSimulationId, clique.size());
 				}
-				
+
 				infectedUsers.add(selectedSimulationId);
+				initialInfectedByClique.put(cliqueIndex, 1);
 				cliquesProcessed++;
 			} else {
 				cliquesSkipped++;
+				initialInfectedByClique.put(cliqueIndex, 0);
 			}
 		}
-		
-		System.out.printf("\n✅ Total initially infected: %d (of %d cliques)\n",
-			infectedUsers.size(), selectedCliques.size());
-		System.out.printf("    Cliques processed: %d\n", cliquesProcessed);
-		System.out.printf("     Cliques skipped: %d\n", cliquesSkipped);
-		System.out.printf("    Unique cliques with infection: %d\n", infectedUsers.size());
+
+		int totalInfectedUsers = infectedUsers.size();
+		es.unizar.epidemic.general.EpidemicConfiguration.getInstance()
+			.setInitialInfectedUsers(totalInfectedUsers);
+
+		// System.out.printf("\n✅ Total initially infected: %d (of %d cliques)\n",
+		// 	infectedUsers.size(), selectedCliques.size());
+		// System.out.printf("    Cliques processed: %d\n", cliquesProcessed);
+		// System.out.printf("     Cliques skipped: %d\n", cliquesSkipped);
+		// System.out.printf("    Unique cliques with infection: %d\n", infectedUsers.size());
+		// System.out.printf("    Cliques registered in initialInfectedByClique: %d\n",
+        //             initialInfectedByClique.size());
+
 	}
 
 	/**
@@ -4314,19 +4763,19 @@ public class Simulation {
 	private void initializeCoincidenceTracker() {
 		if (cliqueUserMapping != null && !cliqueUserMapping.isEmpty()) {
 			System.out.println("\n Initializing inter-clique coincidence tracker...");
-			
+
 			try {
 				this.coincidenceTracker = new es.unizar.epidemic.data.InterCliqueCoincidenceTracker(
 					cliqueUserMapping
 				);
-				
+
 				System.out.println("   ✅ Tracker initialized successfully");
 				System.out.println("      - Cliques tracked: " + cliqueUserMapping.size());
-				System.out.println("      - Users in tracking: " + 
+				System.out.println("      - Users in tracking: " +
 								cliqueUserMapping.values().stream()
 									.mapToInt(List::size)
 									.sum());
-				
+
 			} catch (Exception e) {
 				System.err.println("    Error initializing tracker: " + e.getMessage());
 				this.coincidenceTracker = null;
@@ -4345,37 +4794,30 @@ public class Simulation {
 	 */
 	private void recordInitialSusceptiblesByClique() {
 		this.initialSusceptiblesByClique = new HashMap<>();
-		
-		System.out.println("\n Recording initial susceptibles by clique...");
-		
+
 		for (Map.Entry<Integer, List<Integer>> entry : cliqueUserMapping.entrySet()) {
 			int cliqueIndex = entry.getKey();
 			List<Integer> userIds = entry.getValue();
-			
+
 			int susceptibleCount = 0;
-			
+
 			for (int userId : userIds) {
 				User user = userList.stream()
 					.filter(u -> u.userID == userId)
 					.findFirst()
 					.orElse(null);
-				
+
 				if (user != null) {
 					UserEpidemicExtension ext = user.getEpidemicExtension();
-					
+
 					if (ext != null && ext.getHealthStatus() == HealthStatus.SUSCEPTIBLE) {
 						susceptibleCount++;
 					}
 				}
 			}
-			
+
 			initialSusceptiblesByClique.put(cliqueIndex, susceptibleCount);
-			
-			System.out.printf("    Clique %d: %d initial susceptibles (of %d total users)\n",
-							cliqueIndex + 1, susceptibleCount, userIds.size());
 		}
-		
-		System.out.println("   ✅ Recording completed\n");
 	}
 
 	/**
@@ -4389,7 +4831,7 @@ public class Simulation {
 		System.out.println("Entering printFinalEpidemicStatistics");
 		if (!manualSimulation) {
 			return;
-		}	
+		}
 
 		try {
 			if (epidemicManager.getEpidemicModel() instanceof es.unizar.epidemic.models.PengTransmissionModel) {
@@ -4406,25 +4848,25 @@ public class Simulation {
 
 			if (coincidenceTracker != null) {
 				System.out.println("\n Ending inter-clique coincidence tracking...");
-				
+
 				try {
 					// Close all active coincidences
 					coincidenceTracker.closeAllActiveCoincidences(simulationIterationCounter);
-					
+
 					coincidenceTracker.printAttackRatesByClique(
 						userList,
-						initialSusceptiblesByClique,     
-						cliqueUserMapping          
+						initialSusceptiblesByClique,
+						cliqueUserMapping
 					);
 
 					coincidenceTracker.printIsolationMetrics();
                 	coincidenceTracker.printDetailedUserCoincidences();
-					
+
 					// Export to CSV
 					String csvPath = "./inter_clique_coincidences.csv";
 					coincidenceTracker.exportToCSV(csvPath);
 					System.out.println("   ✅ Coincidences exported to: " + csvPath);
-					
+
 				} catch (Exception e) {
 					System.err.println("    Error in coincidence tracking: " + e.getMessage());
 					e.printStackTrace();
@@ -4433,14 +4875,14 @@ public class Simulation {
 			else {
 				System.out.println("Warning! Warning: Inter-clique coincidence tracking was not started");
 			}
-			
+
 			EpidemicConfiguration config = es.unizar.epidemic.general.EpidemicConfiguration.getInstance();
 			String model = config.getSelectedModel();
-			
+
 			List<User> users = getAllUsers();
 			int totalUsers = users.size();
 			int susceptible = 0, infectiousSymp = 0, infectiousAsymp = 0, superSpreaders = 0;
-			
+
 			for (User user : users) {
 				if (user.getEpidemicExtension() != null) {
 					switch (user.getEpidemicExtension().getHealthStatus()) {
@@ -4458,12 +4900,12 @@ public class Simulation {
 					susceptible++;
 				}
 			}
-			
+
 			int initialInfected = EpidemicConfiguration.getInstance().getInitialInfectedUsers();
 			int newInfected = (totalUsers - susceptible) - initialInfected;
 			config.setFinalInfectedUsers(initialInfected + newInfected);
 			config.setTotalUsers(totalUsers);
-			
+
 			int initialSusceptibles = totalUsers - initialInfected;
 			double attackRate = initialSusceptibles > 0 ? (double)newInfected / initialSusceptibles : 0.0;
 			int totalInfectious = infectiousSymp + infectiousAsymp + superSpreaders;
@@ -4471,22 +4913,24 @@ public class Simulation {
 			int totalContacts = 0;
 			int infectiousContacts = 0;
 			double averageConcentration = 0.0;
-			
+
 			try {
-				es.unizar.epidemic.statistics.EpidemicStatistics stats = 
+				es.unizar.epidemic.statistics.EpidemicStatistics stats =
 					es.unizar.epidemic.statistics.EpidemicStatistics.getInstance();
 				totalContacts = stats.getTotalContacts();
 				infectiousContacts = stats.getInfectiousContacts();
-				
+
 				// double concentration = stats.getAverageAerosolConcentration();
 				// Modified by Nacho Palacio 2025-12-13
 				double concentrationSimple = stats.getAverageAerosolConcentration();
 				double concentrationPonderada = stats.getTimeWeightedAverageAerosolConcentration();
-				
+
 				System.out.println(" COMPARISON OF CONCENTRATIONS:");
 				System.out.println("   - Simple average: " + String.format("%.6e", concentrationSimple));
 				System.out.println("   - Weighted average: " + String.format("%.6e", concentrationPonderada));
-				
+
+				stats.printRoomVolumeAnalysis();
+
 				// Use the weighted average for the rest of the statistics
 				double concentration = concentrationPonderada;
 
@@ -4518,7 +4962,7 @@ public class Simulation {
 					totalContacts,
 					infectiousContacts
 				);
-			} 
+			}
 			else if ("AEROSOL_PENG".equals(model)) {
 				System.out.printf("%-20s %-12.2f %-12d %-22.6f %-12.2f\n",
 					model,
@@ -4527,7 +4971,7 @@ public class Simulation {
 					averageConcentration,
 					avgRisk
 				);
-			} 
+			}
 			else if ("AEROSOL_LELIEVELD".equals(model)) {
 				System.out.printf("%-20s %-12.2f %-12d %-28.6f %-12.2f\n",
 					model,
@@ -4537,7 +4981,7 @@ public class Simulation {
 					avgRisk
 				);
 			}
-			
+
 			System.out.println("-".repeat(90));
 			System.out.println("\n SIMULATION DETAILS:");
 			System.out.printf("    Total users: %d\n", totalUsers);
@@ -4548,11 +4992,11 @@ public class Simulation {
 				config = es.unizar.epidemic.general.EpidemicConfiguration.getInstance();
 				double timePerIteration = getTimeForIterationInSecond();
 				elapsedSimulatedTime = getCurrentSimulationIteration() * timePerIteration;
-				
-				System.out.printf("     Configured duration: %d minutes (%.0f seconds)\n", 
-								config.getSimulationDuration(), 
+
+				System.out.printf("     Configured duration: %d minutes (%.0f seconds)\n",
+								config.getSimulationDuration(),
 								(double) config.getSimulationDurationSeconds());
-				System.out.printf("     Elapsed simulated time: %.1f seconds (%.1f minutes)\n", 
+				System.out.printf("     Elapsed simulated time: %.1f seconds (%.1f minutes)\n",
 								elapsedSimulatedTime, elapsedSimulatedTime / 60.0);
 				System.out.printf("   Executed iterations: %d\n", getCurrentSimulationIteration());
 				System.out.printf("   ⚡ Time per iteration: %.1f simulated seconds\n", timePerIteration);
@@ -4582,8 +5026,10 @@ public class Simulation {
 
 			System.out.println("=".repeat(100));
 
-			double globalAverageDistance = calculateGlobalAverageDistanceBetweenVisitedItems();
-
+			// double globalAverageDistance = calculateGlobalAverageDistanceBetweenVisitedItems();
+			Pair<Double, Double> distances = calculateGlobalAverageDistanceBetweenVisitedItems();
+			double averageDistance = distances.getF();
+			double averageDistanceRooms = distances.getS();
 			System.out.println("=".repeat(100));
 
 		} catch (Exception e) {
@@ -4596,12 +5042,12 @@ public class Simulation {
 	 * Gets infection statistics of all users.
 	 * Returns summary string with counts of susceptible, infected, and recovered users.
 	 * Added by Nacho Palacio 2025-07-30
-	 * 
+	 *
 	 * @return formatted string with infection statistics
 	 */
 	private String getInfectionStatistics() {
 		int susceptible = 0, infectiousAsymp = 0, infectiousSymp = 0, superSpreader = 0, recovered = 0;
-		
+
 		for (User user : userList) {
 			UserEpidemicExtension extension = user.getEpidemicExtension();
 			if (extension != null) {
@@ -4619,100 +5065,186 @@ public class Simulation {
 			}
 		}
 
-		return String.format("S:%d, I_A:%d, I_S:%d, SS:%d, R:%d", 
+		return String.format("S:%d, I_A:%d, I_S:%d, SS:%d, R:%d",
     		susceptible, infectiousAsymp, infectiousSymp, superSpreader, recovered);
 	}
 
 	////////////////////////////////////////////////////////
 	// STATISTICS AND ANALYSIS METHODS: User statistics
 	////////////////////////////////////////////////////////
-	
+
 	/**
 	 * Ratings predicted and number of users watching same item. Called when the RS user is going to vote the item (because he/she has already seen it).
-	 * 
+	 *
 	 * @param informationToPropagate the information being propagated
 	 */
 	private void updateSpecialUserItemStatistics(InformationToPropagate informationToPropagate) {
 		updateRatingsPredicted(informationToPropagate);
 		updateNumberUsersWatchingSameItem(informationToPropagate);
-		
 	}
 
 	/**
 	 * Stores all ratings predicted for an item, its current rating and timestamp.
 	 * Maintains history of predicted ratings for analysis and evaluation.
-	 * 
+	 *
 	 * @param informationToPropagate
 	 */
-	private void updateRatingsPredicted(InformationToPropagate informationToPropagate) {
-		try {
-			FileWriter output = new FileWriter(Literals.CSV_RATINGS, true);
-			csvWriter = new CSVWriter(output, ';', CSVWriter.NO_QUOTE_CHARACTER, CSVWriter.DEFAULT_ESCAPE_CHARACTER, CSVWriter.DEFAULT_LINE_END);
-			
-			PredictedRatingsInfo currentPredicted = predictedRatings.get(informationToPropagate.getItem());
-			
-			if (currentPredicted != null) {
-				String[] csvEntry = new String[] { Long.toString(currentPredicted.getId_item()), Double.toString(informationToPropagate.getRating()), 
-						Float.toString(currentPredicted.getRatingPredicted()), Integer.toString(currentPredicted.getTime()) };
-				
-				// Write all entries
-				csvWriter.writeNext(csvEntry);
-				csvWriter.close();
-				
-				//System.out.println( "Storing rating prediction info: " + Long.toString(currentPredicted.getId_item()) + ", " + 
-				//		informationToPropagate.getRating() + ", " + Float.toString(currentPredicted.getRatingPredicted()) + ", " + Integer.toString(currentPredicted.getTime()) + " from user " + informationToPropagate.getId_user());
-			}
-			
-		}
-		catch (IOException e) {
-			MainSimulator.printConsole(e.getMessage(), Level.SEVERE);
-			e.printStackTrace();
-		}
-	}
-	
+	// private void updateRatingsPredicted(InformationToPropagate informationToPropagate) {
+	// 	try {
+	// 		FileWriter output = new FileWriter(Literals.CSV_RATINGS, true);
+	// 		csvWriter = new CSVWriter(output, ';', CSVWriter.NO_QUOTE_CHARACTER, CSVWriter.DEFAULT_ESCAPE_CHARACTER, CSVWriter.DEFAULT_LINE_END);
+
+	// 		PredictedRatingsInfo currentPredicted = predictedRatings.get(informationToPropagate.getItem());
+
+	// 		if (currentPredicted != null) {
+	// 			String[] csvEntry = new String[] { Long.toString(currentPredicted.getId_item()), Double.toString(informationToPropagate.getRating()),
+	// 					Float.toString(currentPredicted.getRatingPredicted()), Integer.toString(currentPredicted.getTime()) };
+
+	// 			// Write all entries
+	// 			csvWriter.writeNext(csvEntry);
+	// 			csvWriter.close();
+
+	// 			//System.out.println( "Storing rating prediction info: " + Long.toString(currentPredicted.getId_item()) + ", " +
+	// 			//		informationToPropagate.getRating() + ", " + Float.toString(currentPredicted.getRatingPredicted()) + ", " + Integer.toString(currentPredicted.getTime()) + " from user " + informationToPropagate.getId_user());
+	// 		}
+
+	// 	}
+	// 	catch (IOException e) {
+	// 		MainSimulator.printConsole(e.getMessage(), Level.SEVERE);
+	// 		e.printStackTrace();
+	// 	}
+	// }
+
+    private void updateRatingsPredicted(InformationToPropagate informationToPropagate) {
+            if (this.csvWriterRatings == null) {
+            System.err.println("⚠️ csvWriterRatings es NULL, no se puede escribir rating para item " +
+                            informationToPropagate.getItem());
+            return;
+        }
+
+        PredictedRatingsInfo currentPredicted = predictedRatings.get(informationToPropagate.getItem());
+
+        if (currentPredicted != null) {
+            String[] csvEntry = new String[] {
+                Long.toString(currentPredicted.getId_item()),
+                Double.toString(informationToPropagate.getRating()),
+                Float.toString(currentPredicted.getRatingPredicted()),
+                Integer.toString(currentPredicted.getTime())
+            };
+            try {
+                if (this.csvWriterRatings != null) {
+                    // this.csvWriterRatings.writeNext(csvEntry);
+					synchronized(csvWriterRatings) {
+						csvWriterRatings.writeNext(csvEntry);
+					}
+                    // this.csvWriterRatings.flush();
+					synchronized(csvWriterRatings) {
+						csvWriterRatings.flush();
+					}
+                }
+            } catch (IOException e) {
+                System.err.println("❌ Error escribiendo CSV ratings: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+        else {
+            // System.out.println("No current predicted found for item: " + informationToPropagate.getItem());
+        }
+    }
+
 	/**
 	 * Stores the number of users that were watching the item at the same time as the RS user and its time stamp.
-	 * 
+	 *
 	 * @param informationToPropagate the information about item viewing
 	 */
-	private void updateNumberUsersWatchingSameItem(InformationToPropagate informationToPropagate) {
-		try {
-			FileWriter output = new FileWriter(Literals.CSV_USERS_SAME_ITEM, true);
-			csvWriter = new CSVWriter(output, ';', CSVWriter.NO_QUOTE_CHARACTER, CSVWriter.DEFAULT_ESCAPE_CHARACTER, CSVWriter.DEFAULT_LINE_END);
-			
-			int numUsersWatchingSameItem = idUsersWatchingSameItem.size();
-			
-			String[] csvEntry = new String[] { Long.toString(informationToPropagate.getItem()), Integer.toString(numUsersWatchingSameItem), 
-					Double.toString(informationToPropagate.getRating()), Integer.toString(currentTimeOfUsers[(int) informationToPropagate.getId_user()-1]) };
-			
-			// Write all entries
-			csvWriter.writeNext(csvEntry);
-			csvWriter.close();
-			
-			/*System.out.println( "Number of users watching same item: " + Long.toString(informationToPropagate.getItem()) + ", " + 
-					Integer.toString(numUsersWatchingSameItem) + ", " + Double.toString(informationToPropagate.getRating()) + ", " +
-					Integer.toString(currentTimeOfUsers[(int) informationToPropagate.getId_user()-1]));*/
-			
-			// IMPORTANT: Clear list after having stored number os users from current item.
-			idUsersWatchingSameItem.clear();
-			
-		}
-		catch (IOException e) {
-			MainSimulator.printConsole(e.getMessage(), Level.SEVERE);
-			e.printStackTrace();
-		}
-	}
-	
+	// private void updateNumberUsersWatchingSameItem(InformationToPropagate informationToPropagate) {
+	// 	try {
+	// 		FileWriter output = new FileWriter(Literals.CSV_USERS_SAME_ITEM, true);
+	// 		csvWriter = new CSVWriter(output, ';', CSVWriter.NO_QUOTE_CHARACTER, CSVWriter.DEFAULT_ESCAPE_CHARACTER, CSVWriter.DEFAULT_LINE_END);
+
+	// 		int numUsersWatchingSameItem = idUsersWatchingSameItem.size();
+
+	// 		String[] csvEntry = new String[] { Long.toString(informationToPropagate.getItem()), Integer.toString(numUsersWatchingSameItem),
+	// 				Double.toString(informationToPropagate.getRating()), Integer.toString(currentTimeOfUsers[(int) informationToPropagate.getId_user()-1]) };
+
+	// 		// Write all entries
+	// 		// csvWriter.writeNext(csvEntry);
+	// 		// csvWriter.close();
+	// 		synchronized (this) {
+	// 			try {
+	// 				csvWriter.writeNext(csvEntry);
+	// 				csvWriter.flush();
+	// 				// ❌ NO CERRAR AQUÍ
+	// 				// csvWriter.close(); // ← ELIMINAR
+
+	// 			} catch (IOException e) {
+	// 				e.printStackTrace();
+	// 			}
+	// 		}
+
+	// 		/*System.out.println( "Number of users watching same item: " + Long.toString(informationToPropagate.getItem()) + ", " +
+	// 				Integer.toString(numUsersWatchingSameItem) + ", " + Double.toString(informationToPropagate.getRating()) + ", " +
+	// 				Integer.toString(currentTimeOfUsers[(int) informationToPropagate.getId_user()-1]));*/
+
+	// 		// IMPORTANT: Clear list after having stored number os users from current item.
+	// 		idUsersWatchingSameItem.clear();
+
+	// 	}
+	// 	catch (IOException e) {
+	// 		MainSimulator.printConsole(e.getMessage(), Level.SEVERE);
+	// 		e.printStackTrace();
+	// 	}
+	// }
+
+    private void updateNumberUsersWatchingSameItem(InformationToPropagate informationToPropagate) {
+
+        if (this.csvWriterUsersWatching == null) {
+            System.err.println("⚠️ csvWriterUsersWatching es NULL, no se puede escribir para item " +
+                            informationToPropagate.getItem());
+            return;
+        }
+
+        int numUsersWatchingSameItem = idUsersWatchingSameItem.size();
+
+        String[] csvEntry = new String[] {
+            Long.toString(informationToPropagate.getItem()),
+            Integer.toString(numUsersWatchingSameItem),
+            Double.toString(informationToPropagate.getRating()),
+            // Integer.toString(currentTimeOfUsers[(int) informationToPropagate.getId_user()-1])
+			Integer.toString(currentTimeOfUsers.get((int) informationToPropagate.getId_user()-1))
+        };
+
+        try {
+            if (this.csvWriterUsersWatching != null) {
+                // this.csvWriterUsersWatching.writeNext(csvEntry);
+				synchronized(csvWriterUsersWatching) {
+					csvWriterUsersWatching.writeNext(csvEntry);
+				}
+
+                // this.csvWriterUsersWatching.flush();
+				synchronized(csvWriterUsersWatching) {
+					csvWriterUsersWatching.flush();
+				}
+            }
+        } catch (IOException e) {
+            System.err.println("❌ Error escribiendo CSV users watching: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        idUsersWatchingSameItem.clear();
+    }
+
 	/**
 	 * Check how many users are watching the same item as the RS user.
-	 * 
+	 *
 	 * @param specialUserItemWatched the item ID being watched
 	 */
 	private void checkUsersWatchingSameItem(long specialUserItemWatched) {
-		
+
 		if (specialUserItemWatched > 0) {
 			for (int user = 0; user < userList.size(); user++) {
-				long itemBeingWatched = itemsBeingWatched[user];
+				// long itemBeingWatched = itemsBeingWatched[user];
+				long itemBeingWatched = itemsBeingWatched.get(user);
 				if (itemBeingWatched == specialUserItemWatched)
 					idUsersWatchingSameItem.add((long) user+1);
 			}
@@ -4721,22 +5253,23 @@ public class Simulation {
 
 	/**
 	 * Stores in CSV file the information about the predicted ratings to calculate MAE.
-	 * 
+	 *
 	 * @param recommendedItems the list of recommended items with predictions
 	 * @param currentUser the user receiving recommendations
 	 */
 	private void storePredictedRatings(List<RecommendedItem> recommendedItems, User currentUser) {
 		// If list of recommendedItems isn't empty
 		if (!recommendedItems.isEmpty()) {
-			
+
 			for (RecommendedItem item: recommendedItems) {
-				
+
 				long id_item = item.getItemID();
 				float ratingPredicted = item.getValue();
-				int time = currentTimeOfUsers[currentUser.userID-1];
-				
+				// int time = currentTimeOfUsers[currentUser.userID-1];
+				int time = currentTimeOfUsers.get(currentUser.userID-1);
+
 				PredictedRatingsInfo ratingPredictedInfo = new PredictedRatingsInfo(id_item, ratingPredicted, time);
-				
+
 				predictedRatings.put(id_item, ratingPredictedInfo);
 			}
 		}
@@ -4748,22 +5281,22 @@ public class Simulation {
 
 	/**
 	 * Update user distances checking if they are under DIST_THRESHOLD at least TIME_THRESHOLD seconds. Creates a list of users under DIST_THRESHOLD to call automaton.
-	 * 
+	 *
 	 * @param timeStamp		current time to check TIME_THRESHOLD restriction
 	 */
 	public void updateUserDistances(int timeStamp) {
 		if (timeStamp < getTimeAvailableUserInSecond()) {
 			List<DistancesBetweenUsersAndTime> currentDistances = new ArrayList<DistancesBetweenUsersAndTime>();
-			
+
 			// For every RS user
 			for (int i = numberOfNonSpecialUser; i < userList.size(); i++) {
 				User special = userList.get(i);
 				for (int j = 0; j < numberOfNonSpecialUser; j++) {
 					User nonSpecial = userList.get(j);
-					
+
 					double distance = Distance.distanceBetweenTwoPoints(special.x, special.y, nonSpecial.x, nonSpecial.y);
 					double distanceInMeters = distance * 1000 / getKmToPixel();
-					
+
 					if (distanceInMeters <= Literals.DIST_THRESHOLD) {
 						DistancesBetweenUsersAndTime distanceUnderThreshold = new DistancesBetweenUsersAndTime(special.userID, nonSpecial.userID, timeStamp, 0);
 						currentDistances.add(distanceUnderThreshold);
@@ -4779,17 +5312,17 @@ public class Simulation {
 
 	/**
 	 * Applies distance's automaton.
-	 * 
+	 *
 	 * If was already and has left (distance is greater than DIST_THRESHOLD) -> Check time together and if it's bigger than TIME_THRESHOLD, add it to list to persist
 	 * If new -> Add it to list
 	 * If was already and it's still under DIST_THRESHOLD -> update times
-	 * 
+	 *
 	 * @param currentDistances	List of users that are in distance under threshold
 	 */
 	private void updateUserDistancesInTime(List<DistancesBetweenUsersAndTime> currentDistances) {
-		
+
 		List<DistancesBetweenUsersAndTime> brokenDistances = distancesBetweenUsers.stream().collect(Collectors.toList());
-		
+
 		// NOT UNDER DIST_THRESHOLD ANYMORE
 		brokenDistances.removeAll(currentDistances);
 		// System.out.println("BROKEN: " + brokenDistances);
@@ -4803,7 +5336,7 @@ public class Simulation {
 				distancesBetweenUsers.remove(brokenDist);
 			}
 		}
-		
+
 		// OTHERWISE, CHECK CURRENT DISTANCES
 		for (DistancesBetweenUsersAndTime dist: currentDistances) {
 			// If was already and it's still under DIST_THRESHOLD -> update times
@@ -4816,7 +5349,7 @@ public class Simulation {
 			}
 		}
 	}
-	
+
 	/**
 	 * Write distance stats file (called at the end of the simulation). Writes all completedDistancesBetweenUsers entries to CSV.
 	 */
@@ -4824,19 +5357,19 @@ public class Simulation {
 		try {
 			FileWriter output = new FileWriter(Literals.CSV_USERS_DISTANCES_STATS);
 			csvWriter = new CSVWriter(output, ';', CSVWriter.NO_QUOTE_CHARACTER, CSVWriter.DEFAULT_ESCAPE_CHARACTER, CSVWriter.DEFAULT_LINE_END);
-			
+
 			String[] header = { "specialUser", "nonSpecialUser", "Start time (seconds)", "End time (seconds)", "Time together (seconds)" };
 	        csvWriter.writeNext(header);
-			
+
 			for (DistancesBetweenUsersAndTime entry: completedDistancesBetweenUsers) {
-				String[] csvEntry = new String[] { Long.toString(entry.getSpecialUser()), Long.toString(entry.getNonSpecialUser()), 
+				String[] csvEntry = new String[] { Long.toString(entry.getSpecialUser()), Long.toString(entry.getNonSpecialUser()),
 						Integer.toString(entry.getStartTime()), Integer.toString(entry.getEndTime()), Integer.toString(entry.getTimeTogether()) };
-				
+
 				csvWriter.writeNext(csvEntry);
 			}
-			
+
 			csvWriter.close();
-			
+
 		}
 		catch (IOException e) {
 			MainSimulator.printConsole(e.getMessage(), Level.SEVERE);
@@ -4847,141 +5380,222 @@ public class Simulation {
 	/**
 	 * Calculates the average distance between consecutively visited items.
 	 * Added by Nacho Palacio 2025-11-06
-	 * 
+	 *
 	 * @return Map with userId -> average distance in pixels
 	 */
-	public Map<Integer, Double> calculateAverageDistanceBetweenVisitedItems() {
-		Map<Integer, Double> averageDistances = new HashMap<>();
-		
+	// public Map<Integer, Double> calculateAverageDistanceBetweenVisitedItems() {
+	public Map<Integer, Pair<Double, Double>> calculateAverageDistanceBetweenVisitedItems() {
+		// Map<Integer, Double> averageDistances = new HashMap<>();
+		Map<Integer, Pair<Double, Double>> averageDistances = new HashMap<>();
+
 		for (Map.Entry<Integer, List<String>> entry : actualPathTraveled.entrySet()) {
+			// System.out.println("Actual path travelled by user " + entry.getKey() + ": " + entry.getValue());
 			int userId = entry.getKey();
 			List<String> traveledPath = entry.getValue();
-			
+
 			if (traveledPath == null || traveledPath.size() < 1) {
-				averageDistances.put(userId, 0.0);
+				// averageDistances.put(userId, 0.0);
+				averageDistances.put(userId, new Pair<>(0.0, 0.0));
 				continue;
 			}
-			
+
 			double totalDistance = 0.0;
 			int itemPairs = 0;
-			
+
 			Long lastItem = null;
 			double distanceSinceLastItem = 0.0;
-			
+
+			double totalRoomsDistance = 0.0;
+			int roomChangesCounter = 0; 
+
 			for (String edge : traveledPath) {
 				String[] vertices = cleanEdge(edge);
 				if (vertices.length < 2) continue;
-				
+
 				try {
 					long v1 = Long.parseLong(vertices[0]);
 					long v2 = Long.parseLong(vertices[1]);
-					
-					String loc1 = MainSimulator.floor.diccionaryItemLocation.get(v1);
-					String loc2 = MainSimulator.floor.diccionaryItemLocation.get(v2);
-					
+
+					String loc1 = MainSimulator.floor.getItemLocation(v1);
+					String loc2 = MainSimulator.floor.getItemLocation(v2);
+
 					if (loc1 == null && ElementIdMapper.isInCorrectRange(v1, ElementIdMapper.CATEGORY_ITEM)) {
-						loc1 = MainSimulator.floor.diccionaryItemLocation.get(ElementIdMapper.getBaseId(v1));
+						//System.out.println("Warning: Location1 for vertex " + v1 + " is null, but it is an item. Attempting to retrieve location.");
+						loc1 = MainSimulator.floor.getItemLocation(ElementIdMapper.getBaseId(v1));
 					}
 					if (loc2 == null && ElementIdMapper.isInCorrectRange(v2, ElementIdMapper.CATEGORY_ITEM)) {
-						loc2 = MainSimulator.floor.diccionaryItemLocation.get(ElementIdMapper.getBaseId(v2));
+						// System.out.println("Warning: Location2 for vertex " + v2 + " is null, but it is an item. Attempting to retrieve location.");
+						loc2 = MainSimulator.floor.getItemLocation(ElementIdMapper.getBaseId(v2));
 					}
-					
-					if (loc1 == null || loc2 == null) continue;
-					
+
+					if (loc1 == null || loc2 == null) {
+						// System.out.println("  ⚠️ SKIPPING EDGE: loc1=" + loc1 + ", loc2=" + loc2 + ")");
+						continue;
+					}
+
 					double edgeDistance = distanceBetweenUsers(loc1, loc2);
-					
+
 					long v1External = ElementIdMapper.getBaseId(v1);
 					long v2External = ElementIdMapper.getBaseId(v2);
-					
+
 					boolean v1IsItem = v1External <= this.numberOfITems;
 					boolean v2IsItem = v2External <= this.numberOfITems;
-					
+
 					if (v1IsItem && v2IsItem) {
 						if (lastItem != null) {
 							totalDistance += distanceSinceLastItem + edgeDistance;
+							totalRoomsDistance += roomChangesCounter;
+
 							itemPairs++;
+							// System.out.printf("User %d: Item pair found (%d -> %d), distance since last item: %.2f, edge distance: %.2f, total distance: %.2f, total room changes: %d, item pairs: %d, total rooms distance: %.2f\n",
+							// 				userId, v1External, v2External, distanceSinceLastItem, edgeDistance, totalDistance, roomChangesCounter, itemPairs, totalRoomsDistance);
 						}
 						lastItem = v2External;
 						distanceSinceLastItem = 0.0;
+						roomChangesCounter = 1;
 					}
 					else if (v1IsItem && !v2IsItem) {
 						lastItem = v1External;
 						distanceSinceLastItem = edgeDistance;
+						roomChangesCounter = 1;
+						// System.out.printf("User %d: Item to non-item (%d -> %d), starting new distance count: %.2f, total room changes: %d, item pairs: %d, total rooms distance: %.2f\n",
+						// 				userId, v1External, v2External, edgeDistance, roomChangesCounter, itemPairs, totalRoomsDistance);
 					}
 					else if (!v1IsItem && !v2IsItem) {
+						lastItem = v1External;
 						distanceSinceLastItem += edgeDistance;
+						roomChangesCounter++;
+						// System.out.printf("User %d: Non-item to non-item (%d -> %d), accumulating distance: %.2f, room changes: %d, item pairs: %d, total rooms distance: %.2f\n",
+						// 				userId, v1External, v2External, distanceSinceLastItem, roomChangesCounter, itemPairs, totalRoomsDistance);
 					}
 					else if (!v1IsItem && v2IsItem) {
 						if (lastItem != null) {
 							totalDistance += distanceSinceLastItem + edgeDistance;
+							totalRoomsDistance += roomChangesCounter;
+
 							itemPairs++;
+							// System.out.printf("User %d: Non-item to item (%d -> %d), completing item pair, distance: %.2f, room changes: %d, item pairs: %d, total rooms distance: %.2f\n",
+							// 				userId, v1External, v2External, distanceSinceLastItem + edgeDistance, roomChangesCounter, itemPairs, totalRoomsDistance);
+
 						}
 						lastItem = v2External;
 						distanceSinceLastItem = 0.0;
+						roomChangesCounter = 1;
 					}
-					
+
 				} catch (NumberFormatException e) {
 				}
 			}
-			
+			// System.out.printf("User %d: Total distance: %.2f, total room changes: %d, item pairs: %d\n",
+			// 				userId, totalDistance, roomChangesCounter, itemPairs);
 			double avgDistance = itemPairs > 0 ? totalDistance / itemPairs : 0.0;
-			
-			averageDistances.put(userId, avgDistance);
+			double avgRoomsDistance = itemPairs > 0 ? totalRoomsDistance / itemPairs : 0.0;
+
+			// System.out.printf("User %d: Total distance between visited items: %.2f, average distance: %.2f, totalRoomsDistance: %.2f, average room changes: %.2f\n",
+			// 				userId, totalDistance, avgDistance, totalRoomsDistance, avgRoomsDistance);
+
+			// averageDistances.put(userId, avgDistance);
+			averageDistances.put(userId, new Pair<>(avgDistance, avgRoomsDistance));
 		}
-		
+
 		return averageDistances;
 	}
 
 	/**
 	 * Calculates the global average distance between visited items across all users
 	 * Added by Nacho Palacio 2025-11-06
-	 * 
+	 *
 	 * @return Global average distance in pixels
 	 */
-	public double calculateGlobalAverageDistanceBetweenVisitedItems() {
-		Map<Integer, Double> userAverages = calculateAverageDistanceBetweenVisitedItems();
-		
+	// public double calculateGlobalAverageDistanceBetweenVisitedItems() {
+	// 	Map<Integer, Double> userAverages = calculateAverageDistanceBetweenVisitedItems();
+	public Pair<Double, Double> calculateGlobalAverageDistanceBetweenVisitedItems() {
+        Map<Integer, Pair<Double, Double>> userAverages = calculateAverageDistanceBetweenVisitedItems();
+
 		if (userAverages.isEmpty()) {
-			return 0.0;
+			// return 0.0;
+			return new Pair<>(0.0, 0.0);
 		}
-		
-		double totalAverage = 0.0;
+
+		// double totalAverage = 0.0;
+		double totalEuclidean = 0.0;
+    	double totalRooms = 0.0;
 		int validUsers = 0;
-		
-		for (Double avgDistance : userAverages.values()) {
-			if (avgDistance > 0) {
-				totalAverage += avgDistance;
+
+		// for (Double avgDistance : userAverages.values()) {
+		// 	if (avgDistance > 0) {
+		// 		totalAverage += avgDistance;
+		// 		validUsers++;
+		// 	}
+		// }
+		for (Pair<Double, Double> avgDistances : userAverages.values()) {
+			if (avgDistances.getF() > 0) {
+				totalEuclidean += avgDistances.getF();
+				totalRooms += avgDistances.getS();
 				validUsers++;
 			}
 		}
-		
-		double globalAverage = validUsers > 0 ? totalAverage / validUsers : 0.0;
-		double globalAverageMeters = globalAverage * 1000 / getKmToPixel();
-		
+
+		// double globalAverage = validUsers > 0 ? totalAverage / validUsers : 0.0;
+		// double globalAverageMeters = globalAverage * 1000 / getKmToPixel();
+		double globalEuclidean = validUsers > 0 ? totalEuclidean / validUsers : 0.0;
+    	double globalRooms = validUsers > 0 ? totalRooms / validUsers : 0.0;
+
+    	double globalEuclideanMeters = globalEuclidean * 1000 / getKmToPixel();
+
+
 		System.out.println("\n📏 GLOBAL AVERAGE DISTANCE BETWEEN VISITED ITEMS (REAL PATH):");
-		System.out.printf("    Average: %.2f pixels (%.2f meters)\n", globalAverage, globalAverageMeters);
-		System.out.printf("    Users analyzed: %d\n", validUsers);
-		
-		return globalAverage;
+		System.out.printf("    Euclidean: %.2f pixels (%.2f meters)\n", globalEuclidean, globalEuclideanMeters);
+        System.out.printf("    Rooms: %.2f salas\n", globalRooms);
+
+		// return globalAverageMeters;
+		return new Pair<>(globalEuclideanMeters, globalRooms);
+	}
+
+	/**
+	 * Gets the room ID where an item is located.
+	 * Searches through all rooms to find which one contains the item.
+	 *
+	 * @param itemId the item ID to search for
+	 * @return room ID (1-based), or 0 if not found
+	 */
+	private int getRoomIdOfItem(long itemId) {
+		long externalItemId = ElementIdMapper.getBaseId(itemId);
+
+		if (dataAccessGraphFile == null) {
+			return 0;
+		}
+
+		int numberOfRooms = dataAccessGraphFile.getNumberOfRoom();
+		for (int roomId = 1; roomId <= numberOfRooms; roomId++) {
+			int numItems = dataAccessGraphFile.getNumberOfItemsByRoom(roomId);
+			for (int i = 1; i <= numItems; i++) {
+				long itemInRoom = dataAccessGraphFile.getItemOfRoom(i, roomId);
+				if (ElementIdMapper.getBaseId(itemInRoom) == externalItemId) {
+					return roomId;
+				}
+			}
+		}
+		return 0;
 	}
 
 	////////////////////////////////////////////////////////
 	// STATISTICS AND ANALYSIS METHODS: Room metrics
 	////////////////////////////////////////////////////////
-	
+
 	/**
 	 * Updates the entry time of a user into a room
-	 * 
+	 *
 	 * @param user			User whose room entry is to be updated
 	 * @param previousRoom	Previous room of the user
 	 * @param currentRoom	Current room of the user
 	 */
 	private void updateUserRoomEntry(User user, int previousRoom, int currentRoom) {
 		if (previousRoom != currentRoom && currentRoom >= 0) {
-			userCurrentRoomEntry.put(user.userID, 
+			userCurrentRoomEntry.put(user.userID,
 				new Pair<>(currentRoom, getCurrentSimulationTime()));
-			System.out.printf("    User %d entered room %d at time %d seconds\n", 
-				user.userID, currentRoom, getCurrentSimulationTime());
+			// System.out.printf("    User %d entered room %d at time %d seconds\n",
+			// 	user.userID, currentRoom, getCurrentSimulationTime());
 		}
 	}
 
@@ -4991,51 +5605,45 @@ public class Simulation {
 	public Map<Integer, Double> calculateCurrentDurationPerRoom() {
 		Map<Integer, Double> durationPerRoom = new HashMap<>();
 		long currentTime = getCurrentSimulationTime(); // In seconds
-		
+
 		ElementIdMapper.SystemRangeData rangeData = ElementIdMapper.getSystemRangeData();
 		int minRoomId = (int) rangeData.minRoomId;
 		int maxRoomId = (int) rangeData.maxRoomId;
-		
+
 		for (int roomId = minRoomId; roomId <= maxRoomId; roomId++) {
 			durationPerRoom.put(roomId, 0.0);
 		}
-		
+
 		for (User user : userList) {
 			int room = getUserRoomWithAdjustment(user);
 			if (room < 0) continue;
-			
+
 			int adjustedRoom = room + minRoomId;
-			
+
 			Pair<Integer, Long> entry = userCurrentRoomEntry.get(user.userID);
 			double timeInRoom = 0.0;
-			
+
 			if (entry != null && entry.getF() == room) {
 				timeInRoom = (currentTime - entry.getS()) / 60.0;
 				if (timeInRoom < 0) timeInRoom = 0;
 			} else {
 				timeInRoom = getTimeForIterationInSecond() / 60.0;
 			}
-			
+
 			durationPerRoom.merge(adjustedRoom, timeInRoom, Double::sum);
 		}
-		
+
 		return durationPerRoom;
 	}
 
 	/**
 	 * Exports metrics for Python recommender system
-	 * 
+	 *
 	 * @param timeUsersInRooms	Map with (userId, roomId) -> duration in seconds
 	 * @param nVisitors			Number of visitors (for file naming)
 	 */
 	public void exportMetricsForPythonRecommender(Map<Pair<Integer, Integer>, Double> timeUsersInRooms, String nVisitors) {
 		try {
-			for (Map.Entry<Pair<Integer, Integer>, Double> entry : timeUsersInRooms.entrySet()) {
-				Pair<Integer, Integer> userRoom = entry.getKey();
-				double duration = entry.getValue();
-				System.out.printf("    User %d: Room %d: %.2f seconds\n", userRoom.getF(), userRoom.getS(), duration);
-			}
-
 			Map<Integer, Integer> occupancyPerRoom = new HashMap<>();
 			Map<Integer, Double> durationPerRoom = new HashMap<>();
 
@@ -5103,7 +5711,7 @@ public class Simulation {
 
 	/**
 	 * Cleans the edge.
-	 * 
+	 *
 	 * @param edge The edge.
 	 * @return A list with the position X and Y of the edge.
 	 */
@@ -5116,14 +5724,14 @@ public class Simulation {
 
 	/**
 	 * Converts internal path ids to external ids.
-	 * 
+	 *
 	 * @param path The path.
 	 * @return The external path.
 	 */
 	private String convertPathIdsToExternal(String path) {
 		if (path == null || path.isEmpty())
 			return path;
-			
+
 		StringBuilder externalPath = new StringBuilder();
 		String[] edges = path.split(", ");
 
@@ -5132,24 +5740,24 @@ public class Simulation {
 
 			if (edge.trim().isEmpty())
 				continue;
-				
+
 			String[] vertices = cleanEdge(edge);
 			if (vertices.length == 2) {
 				long v1 = Long.parseLong(vertices[0]);
 				long v2 = Long.parseLong(vertices[1]);
-				
+
 				if (ElementIdMapper.isInCorrectRange(v1, ElementIdMapper.CATEGORY_ITEM)) {
 					v1 = ElementIdMapper.getBaseId(v1);
 				} else if (ElementIdMapper.isInCorrectRange(v1, ElementIdMapper.CATEGORY_DOOR)) {
 					v1 = ElementIdMapper.getBaseId(v1);
 				}
-				
+
 				if (ElementIdMapper.isInCorrectRange(v2, ElementIdMapper.CATEGORY_ITEM)) {
 					v2 = ElementIdMapper.getBaseId(v2);
 				} else if (ElementIdMapper.isInCorrectRange(v2, ElementIdMapper.CATEGORY_DOOR)) {
 					v2 = ElementIdMapper.getBaseId(v2);
 				}
-				
+
 				externalPath.append("(").append(v1).append(" : ").append(v2).append("), ");
 			}
 		}
@@ -5160,10 +5768,10 @@ public class Simulation {
 	////////////////////////////////////////////////////////
 	// HELPER METHODS: Management of doors, stairs, and rooms
 	////////////////////////////////////////////////////////
-	
+
 	/**
 	 * Get the connection of the current door TO STAIRS.
-	 * 
+	 *
 	 * @param currentDoor: The current door.
 	 * @return The connection of the current door TO STAIRS.
 	 */
@@ -5176,7 +5784,7 @@ public class Simulation {
 			String[] array = doorStairsConnected.split(", ");
 			String stairs = array[0];
 			String door = array[1];
-			
+
 			if (dataAccessGraphFile.getDoorOfRoom(door) == currentDoor) {
 				// System.out.println("Door " + door + " (" + currentDoor + ") is connected to stairs: " + stairs);
 				stairsList.add(dataAccessGraphFile.getStairsOfRoom(stairs));
@@ -5185,16 +5793,16 @@ public class Simulation {
 
 		return stairsList;
 	}
-	
+
 	/**
 	 * Checks if two doors are connected by stairs (changing floor, adding time on stairs).
-	 * 
+	 *
 	 * @param startVertex
 	 * @param endVertex
 	 * @return
 	 */
 	public boolean checkDoorsConnectedByStairs(long startVertex, long endVertex) {
-		
+
 		boolean connected = false;
 		DataAccessItemFile accessItemFile = new DataAccessItemFile(new File(Literals.ITEM_FLOOR_COMBINED));
 		int numDoors = 0;
@@ -5204,11 +5812,11 @@ public class Simulation {
 		}
 		int numberOfItems = accessItemFile.getNumberOfItems();
 		int idInvisibleDoors = numberOfItems + numDoors + dataAccessGraphFile.getNumberOfStairs() + 1;
-		
+
 		if (startVertex > numberOfItems && startVertex < idInvisibleDoors && endVertex > numberOfItems && endVertex < idInvisibleDoors) { // They are doors
 			List<Long> connectedStairsStartVertex = getConnectedStairs(startVertex);
 			List<Long> connectedStairsEndVertex = getConnectedStairs(endVertex);
-			
+
 			if (connectedStairsStartVertex.size() > 0 && connectedStairsEndVertex.size() > 0) {
 				connected = true;
 				return connected;
@@ -5224,7 +5832,7 @@ public class Simulation {
 
 	/**
 	 * Find the room of a door with corrected ID mapping.
-	 * 
+	 *
 	 * @param doorVertex The door vertex.
 	 * @return The room number.
 	 * Modified by Nacho Palacio 2025-05-29
@@ -5238,7 +5846,7 @@ public class Simulation {
 				ElementIdMapper.SystemRangeData rangeData = ElementIdMapper.getSystemRangeData();
 				long doorStart = rangeData.totalItems + 1;
 				long doorEnd = rangeData.totalItems + rangeData.totalDoors;
-				
+
 				long mappedBaseId;
 
 				// Modified by Nacho Palacio 2025-07-10
@@ -5247,27 +5855,27 @@ public class Simulation {
 				} else {
 					mappedBaseId = doorStart + (baseId % (doorEnd - doorStart + 1));
 				}
-				
+
 				int room = searchDoorInRooms(mappedBaseId);
 				if (room > 0) {
 					return room;
 				}
-				
+
 				return 1;
 			} else {
 				return searchDoorInRooms(doorVertex);
 			}
-			
+
 		} catch (Exception e) {
 			// System.err.println("ERROR in findDoorRoomCorrected for ID " + doorVertex + ": " + e.getMessage());
 		}
-		
+
 		return 1;
 	}
 
 	/**
 	 * Searchs for an external door in all rooms and returns the room number if found, otherwise returns 0.
-	 * 
+	 *
 	 * @param doorId The door ID.
 	 * @return The room number.
 	 * Added by Nacho Palacio 2025-05-28.
@@ -5275,10 +5883,10 @@ public class Simulation {
 	private int findExternalDoorRoom(int doorId) {
 		try {
 			int numberOfRooms = dataAccessGraphFile.getNumberOfRoom();
-			
+
 			for (int room = 1; room <= numberOfRooms; room++) {
 				int numberOfDoors = dataAccessGraphFile.getNumberOfDoorsByRoom(room);
-				
+
 				for (int door = 1; door <= numberOfDoors; door++) {
 					long roomDoorId = dataAccessGraphFile.getDoorOfRoom(door, room);
 					if (roomDoorId == doorId) {
@@ -5289,13 +5897,13 @@ public class Simulation {
 		} catch (Exception e) {
 			// System.err.println("ERROR searching external door room for ID " + doorId + ": " + e.getMessage());
 		}
-		
+
 		return 0;
 	}
 
 	/**
 	 * Searchs for a door in all rooms and returns the room number if found, otherwise returns 0.
-	 * 
+	 *
 	 * @param doorId The door ID.
 	 * @return The room number.
 	 * Added by Nacho Palacio 2025-05-28.
@@ -5303,13 +5911,13 @@ public class Simulation {
 	private int searchDoorInRooms(long doorId) {
 		try {
 			int numberOfRooms = dataAccessGraphFile.getNumberOfRoom();
-			
+
 			for (int room = 1; room <= numberOfRooms; room++) {
 				int numDoors = dataAccessGraphFile.getNumberOfDoorsByRoom(room);
-				
+
 				for (int j = 1; j <= numDoors; j++) {
 					long doorInRoom = dataAccessGraphFile.getDoorOfRoom(j, room);
-					
+
 					if (doorInRoom == doorId) {
 						return room;
 					}
@@ -5317,13 +5925,13 @@ public class Simulation {
 			}
 		} catch (Exception e) {
 		}
-		
+
 		return 0;
 	}
 
 	/**
 	 * Gets user's room with proper ID adjustment for contact trajectories mode
-	 * 
+	 *
 	 * @param user The user
 	 * @return The room number
 	 * Added by Nacho Palacio 2025-10-08
@@ -5332,23 +5940,21 @@ public class Simulation {
 		int previousRoom = user.room;
 		int roomCount = MainSimulator.floor.getRoomCount();
 		user.getRoomOfTheUser();
-		
+
 		if (user.room == -1 && previousRoom >= 0 && previousRoom < roomCount) {
 			user.room = previousRoom; // Previous room if current is invalid
 		}
-		
+
 		if (user.room < 0 || user.room >= roomCount) {
-			System.err.println("    User " + user.userID + " in invalid room (" + 
-							user.room + "), forcing to room 1");
-			user.room = 1; 
+			user.room = 1;
 		}
-		
+
 		return user.room;
 	}
 
 	/**
 	 * Gets the room from vertex. Get property directly from DataAccessItemFile (which has properties already loaded).
-	 * 
+	 *
 	 * @param vertex: The vertex.
 	 * @return The room.
 	 */
@@ -5366,17 +5972,17 @@ public class Simulation {
 					}
 				}
 				return 1;
-				
+
 			} else if (ElementIdMapper.isInCorrectRange(vertex, ElementIdMapper.CATEGORY_DOOR)) {
 				int doorRoom = findDoorRoomCorrected(vertex); // Modified by Nacho Palacio 2025-05-29
 				if (doorRoom > 0) {
 					return doorRoom;
 				}
 				return 1;
-				
+
 			} else if (ElementIdMapper.isInCorrectRange(vertex, ElementIdMapper.CATEGORY_STAIRS)) {
 				return 1;
-				
+
 			} else {
 				return 1;
 			}
@@ -5398,7 +6004,7 @@ public class Simulation {
 				if (doorRoom > 0) {
 					return doorRoom;
 				}
-				
+
 				return 1;
 			}
 		}
@@ -5410,50 +6016,50 @@ public class Simulation {
 	 */
 	private Map<Integer, List<Long>> buildRoomItemsMap() {
 		Map<Integer, List<Long>> roomItems = new HashMap<>();
-		
+
 		try {
 			DataAccessItemFile itemFile = new DataAccessItemFile(
 				new File(es.unizar.util.Literals.ITEM_FLOOR_COMBINED));
-			
+
 			int numRooms = dataAccessGraphFile.getNumberOfRoom();
 			int numItems = itemFile.getNumberOfItems();
-			
+
 			// Initialize lists for each room
 			for (int roomId = 1; roomId <= numRooms; roomId++) {
 				roomItems.put(roomId, new ArrayList<>());
 			}
-			
+
 			// Assign items to rooms
 			for (long itemId = 1; itemId <= numItems; itemId++) {
 				String roomIdStr = itemFile.getItemRoom((int) itemId);
-				
+
 				int roomId = -1;
 				try {
 					roomId = Integer.parseInt(roomIdStr.trim());
 				} catch (NumberFormatException e) {
-					System.err.println("    Error parsing roomId for item " + itemId + 
+					System.err.println("    Error parsing roomId for item " + itemId +
 									": '" + roomIdStr + "'");
 					continue;
 				}
-				
+
 				if (roomId > 0 && roomId <= numRooms) {
 					roomItems.get(roomId).add(itemId);
 				}
 			}
-			
+
 			// Add doors to each room
 			for (int roomId = 1; roomId <= numRooms; roomId++) {
 				int numDoors = dataAccessGraphFile.getNumberOfDoorsByRoom(roomId);
-				
+
 				for (int doorIdx = 1; doorIdx <= numDoors; doorIdx++) {
 					long doorId = dataAccessGraphFile.getDoorOfRoom(doorIdx, roomId);
 					roomItems.get(roomId).add(doorId);
 				}
-			}	
+			}
 		} catch (Exception e) {
 			System.err.println("    Error constructing items map: " + e.getMessage());
 		}
-		
+
 		return roomItems;
 	}
 
@@ -5467,12 +6073,13 @@ public class Simulation {
      */
     private Map<Integer, List<Integer>> buildCliqueUserMappingFromSelectedCliques(
             List<List<String>> selectedCliques) {
-        
+		System.out.println("Building clique-user mapping from selected cliques...");
+
         Map<Integer, List<Integer>> mapping = new HashMap<>();
-        
+
         for (int cliqueIndex = 0; cliqueIndex < selectedCliques.size(); cliqueIndex++) {
             List<Integer> cliqueUsers = new ArrayList<>();
-            
+
             for (String userIdStr : selectedCliques.get(cliqueIndex)) {
                 try {
                     int realUserId = Integer.parseInt(userIdStr);
@@ -5482,10 +6089,10 @@ public class Simulation {
                 } catch (NumberFormatException e) {
                 }
             }
-            
+
             mapping.put(cliqueIndex, cliqueUsers);
         }
-        
+
         return mapping;
     }
 
@@ -5496,17 +6103,17 @@ public class Simulation {
     private void printSimplifiedAssignmentSummary(
             List<List<String>> selectedCliques,
             Map<Integer, List<ContactTrajectoryBuilder.UserRoomEvent>> trajectories) {
-        
+
         System.out.println("\n" + "=".repeat(80));
         System.out.println(" ASSIGNMENT SUMMARY (SIMPLIFIED MODEL)");
         System.out.println("=".repeat(80));
-        
+
         System.out.println("\n CIRCULAR ROTATION MODEL:");
-        System.out.println("   - Event duration: " + EVENT_DURATION_SECONDS + "s (" + 
+        System.out.println("   - Event duration: " + EVENT_DURATION_SECONDS + "s (" +
                          (EVENT_DURATION_SECONDS / 60) + " min)");
         System.out.println("   - Rooms: " + NUM_ROOMS);
         System.out.println("   - Cliques: " + selectedCliques.size());
-        
+
         System.out.println("\n INITIAL ASSIGNMENT (t=0):");
         for (int cliqueIndex = 0; cliqueIndex < Math.min(10, selectedCliques.size()); cliqueIndex++) {
             int initialRoom = ContactTrajectoryBuilder.getRoomForCliqueAtTime(
@@ -5517,12 +6124,12 @@ public class Simulation {
         if (selectedCliques.size() > 10) {
             System.out.println("   ... and " + (selectedCliques.size() - 10) + " more cliques");
         }
-        
+
         System.out.println("\n✅ MODEL GUARANTEES:");
         System.out.println("   - 0% inter-clique overlaps (by design)");
         System.out.println("   - 100% intra-clique co-presence");
         System.out.println("   - Fair room rotation");
-        
+
         System.out.println("=".repeat(80) + "\n");
     }
 
@@ -5535,36 +6142,36 @@ public class Simulation {
 			int independentUsers,
 			List<List<String>> selectedCliques,
 			List<Integer> independentUserIds) {
-		
+
 		System.out.println("\n" + "=".repeat(80));
 		System.out.println(" ASSIGNMENT SUMMARY (MIXED MODE)");
 		System.out.println("=".repeat(80));
-		
+
 		System.out.println("\n USERS IN CLIQUES:");
 		System.out.println("   - Total: " + cliqueUsers);
 		System.out.println("   - Cliques: " + selectedCliques.size());
 		System.out.println("   - Model: Synchronized circular rotation");
-		
+
 		System.out.println("\n INDEPENDENT USERS:");
 		System.out.println("   - Total: " + independentUsers);
-		System.out.println("   - IDs: " + independentUserIds.get(0) + " - " + 
+		System.out.println("   - IDs: " + independentUserIds.get(0) + " - " +
 						independentUserIds.get(independentUserIds.size() - 1));
 		System.out.println("   - Model: RandomPath (free movement)");
 		System.out.println("   - cliqueId: -1 (marked as independent)");
-		
+
 		System.out.println("\n DISTRIBUTION:");
-		System.out.printf("   - Cliques:        %d users (%.1f%%)\n", 
+		System.out.printf("   - Cliques:        %d users (%.1f%%)\n",
 						cliqueUsers, (cliqueUsers * 100.0) / (cliqueUsers + independentUsers));
-		System.out.printf("   - Independents: %d users (%.1f%%)\n", 
+		System.out.printf("   - Independents: %d users (%.1f%%)\n",
 						independentUsers, (independentUsers * 100.0) / (cliqueUsers + independentUsers));
-		
+
 		System.out.println("\n HYPOTHESES TO VALIDATE:");
 		System.out.println("   1. Users in cliques -> Higher intra-clique attack rate");
 		System.out.println("   2. Independent users -> Lower global infection rate");
 		System.out.println("   3. Peng and Lelieveld models -> Similar trends");
-		
+
 		System.out.println("=".repeat(80) + "\n");
-	}	
+	}
 
 
 
@@ -5587,7 +6194,7 @@ public class Simulation {
 
 	/**
 	 * Sets maximum number of users for testing purposes
-	 * 
+	 *
 	 * @param maxUsers Maximum number of users
 	 * Added by Nacho Palacio 2025-10-08
 	 */
@@ -5605,13 +6212,14 @@ public class Simulation {
 		// printFinalEpidemicStatistics();
 		// Commit info in databases.
 		// CENTRALIZED
+		System.out.println("\n🔌 Disconnecting databases...");
 		if (Configuration.simulation.getNetworkType().equalsIgnoreCase("Centralized (Centralized)")) {
 			SQLiteDataManagementUserDB sqlite = (SQLiteDataManagementUserDB) dataManagementUserDB_Centralized;
-			
+
 			try {
 				sqlite.commit();
 				MainSimulator.printConsole("[SQLITE DATABASE]: COMMITTED", Level.WARNING);
-				
+
 				sqlite.disconnect();
 				MainSimulator.printConsole("[SQLITE DATABASE]: DISCONNECTED", Level.WARNING);
 			}
@@ -5624,7 +6232,7 @@ public class Simulation {
 			for (DataManagementUserDB userDBList_P2P : dataManagementUserDBList_P2P ) {
 				SQLiteDataManagementUserDB userMemo = (SQLiteDataManagementUserDB) userDBList_P2P;
 				userMemo.commit();
-				
+
 				try {
 					userMemo.disconnect();
 				}
@@ -5636,7 +6244,7 @@ public class Simulation {
 			for (DataManagementQueueDB queueDBList_P2P : dataManagementQueueDBList_P2P ) {
 				SQLiteDataManagementQueueDB queueMemo = (SQLiteDataManagementQueueDB) queueDBList_P2P;
 				queueMemo.commit();
-				
+
 				try {
 					queueMemo.disconnect();
 				}
@@ -5646,31 +6254,31 @@ public class Simulation {
 			}
 			MainSimulator.printConsole("[SQLITE DATABASE]: Queue DBs COMMITTED", Level.WARNING);
 		}
-		
+
 		// Disconnect from museum db too
 		dataInstanceMuseumDB.disconnect();
-		
+
 		// Empty visited items
 		Configuration.simulation.oldPathUserSpecial.clear();
-		
+
 		// Update distancesBetweenUsers file (if Literals.COMPILE_DISTANCES_STATS)
 		if (Literals.COMPILE_DISTANCES_STATS) {
 			// Update distances ended
 			updateUserDistances(getTimeAvailableUserInSecond());
-			
+
 			// Write to file
 			writeDistancesStats();
 		}
-		
+
 		MainSimulator.userRunnable.running = false;
 
 
 		// Added by Nacho Palacio 2024-12-08
         DBDataModel.clearAllPools();
-        
+
         cachedTrajectoryStrategy = null;
         lastUsedGraph = null;
-        
+
         if (graphSpecialUser != null) {
             graphSpecialUser.invalidateGraphCache();
         }
@@ -5684,16 +6292,24 @@ public class Simulation {
 			User currentUser = Configuration.simulation.userList.get(userPosition);
 			if (currentUser.isSpecialUser) {
 				int numberOfItems = 0;
-				if (!numberOfReceivedItems.isEmpty() && numberOfReceivedItems.containsKey((long) currentUser.userID)) {
-					// Number of items received by the current RS user.
-					numberOfItems = numberOfReceivedItems.get((long) currentUser.userID);
+				// if (!numberOfReceivedItems.isEmpty() && numberOfReceivedItems.containsKey((long) currentUser.userID)) {
+				// 	// Number of items received by the current RS user.
+				// 	numberOfItems = numberOfReceivedItems.get((long) currentUser.userID);
+				// }
+				AtomicInteger itemCount = numberOfReceivedItems.get((long) currentUser.userID);
+				if (itemCount != null) {
+					numberOfItems = itemCount.get();
 				}
 				// If the number of information received by the RS user is higher than a fixed amount, then his path must be updated by the recommendation algorithm, starting with the last item
 				// he saw.
-				if ((numberOfItems >= Configuration.simulation.getNumberVoteReceived()) && (currentTimeOfUsers[currentUser.userID - 1] < Configuration.simulation.getTimeAvailableUserInSecond())
-						&& (currentTimeOfUsers[currentUser.userID - 1] >= Configuration.simulation.getMinimumTimeToUpdateRecommendation())) {
-					path = graphSpecialUser.paths.get((int) (currentUser.userID - 1));
-					String edge = path.get(userPositionInPath[(int) (currentUser.userID - 1)]);
+				// if ((numberOfItems >= Configuration.simulation.getNumberVoteReceived()) && (currentTimeOfUsers[currentUser.userID - 1] < Configuration.simulation.getTimeAvailableUserInSecond())
+				// 		&& (currentTimeOfUsers[currentUser.userID - 1] >= Configuration.simulation.getMinimumTimeToUpdateRecommendation())) {
+				if ((numberOfItems >= Configuration.simulation.getNumberVoteReceived()) && (currentTimeOfUsers.get(currentUser.userID - 1) < Configuration.simulation.getTimeAvailableUserInSecond())
+					&& (currentTimeOfUsers.get(currentUser.userID - 1) >= Configuration.simulation.getMinimumTimeToUpdateRecommendation())) {
+
+					List<String> path = graphSpecialUser.paths.get((int) (currentUser.userID - 1));
+					// String edge = path.get(userPositionInPath[(int) (currentUser.userID - 1)]);
+					String edge = path.get(userPositionInPath.get((int) (currentUser.userID - 1)));
 					long startVertex = Long.valueOf(cleanEdge(edge)[0]).longValue();
 					long endVertex = Long.valueOf(cleanEdge(edge)[1]).longValue();
 					// The RS user path is updated with the recommendation algorithm.
@@ -5709,7 +6325,7 @@ public class Simulation {
 
 	/**
 	 * Create a database for all users in order to carry out the simulation process, by considering the specified recommendation algorithm and using a centralized architecture.
-	 * 
+	 *
 	 * @param recommendationAlgorithm: The specified recommendation algorithm.
 	 * @throws SQLException
 	 * @throws TasteException
@@ -5732,15 +6348,14 @@ public class Simulation {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+
 		// Create DB instance
 		dataInstanceUserDB_Centralized = new Database();
-		System.out.println("Database instance created for centralized user DB: " + dataInstanceUserDB_Centralized);
 
 		// The information contained in the DB will depend of type of recommendation algorithm chosen.
 		// Use factory to select userDB according to the wanted db
 		DAOFactory factory = DAOFactory.getFactory(Literals.currentDBUsed);
-		
+
 		dataManagementUserDB_Centralized = factory.getUserDB(user_dbURL, dataInstanceUserDB_Centralized); // PREVIOUS: new SQLiteDataManagementUserDB(user_dbURL);
 		/*if (recommendationAlgorithm.equalsIgnoreCase("K-Ideal (K-Ideal)") || recommendationAlgorithm.equalsIgnoreCase("Know-It-All (Know-It-All)")) {
 			for (int userPosition = 0; userPosition < userList.size(); userPosition++) {
@@ -5765,14 +6380,14 @@ public class Simulation {
 
 	/**
 	 * Create a database by user in order to carry out the simulation process, by considering the specified recommendation algorithm and using a P2P architecture.
-	 * 
+	 *
 	 * @param recommendationAlgorithm: The specified recommendation algorithm.
 	 * @throws SQLException
 	 * @throws TasteException
 	 */
 	public void initializeUserDB_P2P(String recommendationAlgorithm) {
 		MainSimulator.printConsole("Initializing P2P databases of users:", Level.WARNING);
-		
+
 		// Initialize database instance's lists
 		dataInstanceUserDBList_P2P = new LinkedList<>();
 		dataInstanceQueueDBList_P2P = new LinkedList<>();
@@ -5800,20 +6415,20 @@ public class Simulation {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			
+
 			// Create database instance
 			Database db = new Database();
 			// Add it to instances list
 			dataInstanceUserDBList_P2P.add(db);
 			//////////////////////////////////////
-			
+
 
 			// The information contained in the DB will depend of type of recommendation algorithm chosen.
 			// Use factory to select userDB according to the wanted db
 			DAOFactory factory = DAOFactory.getFactory(Literals.currentDBUsed);
-			
+
 			DataManagementUserDB dataManagementUserDB = factory.getUserDB(user_dbURL, db); // PREVIOUS: new SQLiteDataManagementUserDB(user_dbURL);
-			
+
 			dataManagementUserDBList_P2P.add(dataManagementUserDB);
 			if (recommendationAlgorithm.equalsIgnoreCase("K-Ideal (K-Ideal)") || recommendationAlgorithm.equalsIgnoreCase("Know-It-All (Know-It-All)")) {
 				// It cleans the information for the RS user.
@@ -5841,26 +6456,26 @@ public class Simulation {
 				e.printStackTrace();
 			}
 			// Delete all information stored into queue.db.
-			
+
 			// Create database instance
 			Database dbQueue = new Database();
 			// Add it to instances list
 			dataInstanceQueueDBList_P2P.add(dbQueue);
 			//////////////////////////////////////
-			
+
 			// We already have the factory created
 			DataManagementQueueDB dataManagementQueue = factory.getQueueDB(queue_dbURL, dbQueue); // PREVIOUS: new SQLiteDataManagementQueueDB(queue_dbURL);
 			dataManagementQueueDBList_P2P.add(dataManagementQueue);
 			dataManagementQueue.deleteAllInformationFromTable();
 			MainSimulator.printConsole("Database created: " + new_queue_db_file_path, Level.WARNING);
 		}
-		
+
 		MainSimulator.printConsole("P2P user and queue databases created", Level.WARNING);
 	}
 
 	/**
 	 * In db_user.db a item fictitious is inserted for the RS user (e.g., the item 400 that has not been evaluated by any user).
-	 * 
+	 *
 	 * @param numberOfUsers: The number of users.
 	 */
 	public void insertFictisuousInformationInUserDBFrom(long userID, DataManagementUserDB dataManagementUserDB) {
@@ -5875,7 +6490,7 @@ public class Simulation {
 
 	/**
 	 * In db_user.db items fictitious is inserted by user (e.g., the item 400 that has not been evaluated by any user).
-	 * 
+	 *
 	 * @param numberOfUsers: The number of users.
 	 */
 	public void insertFictisuousInformationInUserDB(int numberOfUsers, DataManagementUserDB dataManagementUserDB) {
@@ -5889,15 +6504,15 @@ public class Simulation {
 			dataManagementUserDB.insert(user, item, context, rating, opinion, userProvided);
 		}
 	}
-	
+
 
 	////////////////////////////////////////////////////////
 	// GETTERS AND SETTERS
 	////////////////////////////////////////////////////////
-	
+
 	/**
 	 * Gets the time available for the user in hours.
-	 * 
+	 *
 	 * @return time available in hours
 	 */
 	public int getTimeAvailableUserInHour() {
@@ -5906,7 +6521,7 @@ public class Simulation {
 
 	/**
 	 * Gets the time available for the user in seconds.
-	 * 
+	 *
 	 * @return time available in seconds
 	 */
 	public int getTimeAvailableUserInSecond() {
@@ -5915,7 +6530,7 @@ public class Simulation {
 
 	/**
 	 * Gets the delay for observing a painting in hours.
-	 * 
+	 *
 	 * @return delay observing painting in hours
 	 */
 	public int getDelayObservingPaintingInHour() {
@@ -5924,7 +6539,7 @@ public class Simulation {
 
 	/**
 	 * Gets the delay for observing a painting in seconds.
-	 * 
+	 *
 	 * @return delay observing painting in seconds
 	 */
 	public int getDelayObservingPaintingInSecond() {
@@ -5933,7 +6548,7 @@ public class Simulation {
 
 	/**
 	 * Gets the time for an iteration in hours.
-	 * 
+	 *
 	 * @return time for iteration in hours
 	 */
 	public double getTimeForIterationInHour() {
@@ -5942,7 +6557,7 @@ public class Simulation {
 
 	/**
 	 * Gets the time for an iteration in seconds.
-	 * 
+	 *
 	 * @return time for iteration in seconds
 	 */
 	public double getTimeForIterationInSecond() {
@@ -5951,7 +6566,7 @@ public class Simulation {
 
 	/**
 	 * Gets the number of iterations for the specified simulated seconds.
-	 * 
+	 *
 	 * @param seconds: The simulated seconds.
 	 * @return number of iterations
 	 */
@@ -5962,7 +6577,7 @@ public class Simulation {
 
 	/**
 	 * Gets the screen refresh time in seconds.
-	 * 
+	 *
 	 * @return screen refresh time in seconds
 	 */
 	public double getScreenRefreshTimeInSecond() {
@@ -5971,7 +6586,7 @@ public class Simulation {
 
 	/**
 	 * Gets the time for the paths in hours.
-	 * 
+	 *
 	 * @return time for the paths in hours
 	 */
 	public double getTimeForThePathsInHour() {
@@ -5980,7 +6595,7 @@ public class Simulation {
 
 	/**
 	 * Gets the time for the paths in seconds.
-	 * 
+	 *
 	 * @return time for the paths in seconds
 	 */
 	public double getTimeForThePathsInSecond() {
@@ -5989,7 +6604,7 @@ public class Simulation {
 
 	/**
 	 * Gets the user velocity in km/h.
-	 * 
+	 *
 	 * @return user velocity in km/h
 	 */
 	public double getUserVelocityInKmByHour() {
@@ -5998,7 +6613,7 @@ public class Simulation {
 
 	/**
 	 * Gets the user velocity in pixels/hour.
-	 * 
+	 *
 	 * @return user velocity in pixels/hour
 	 */
 	public double getUserVelocityInPixelByHour() {
@@ -6007,7 +6622,7 @@ public class Simulation {
 
 	/**
 	 * Gets the user velocity in pixels/second.
-	 * 
+	 *
 	 * @return user velocity in pixels/second
 	 */
 	public double getUserVelocityInPixelBySecond() {
@@ -6016,7 +6631,7 @@ public class Simulation {
 
 	/**
 	 * Gets the conversion factor from kilometers to pixels.
-	 * 
+	 *
 	 * @return kilometers to pixels conversion factor
 	 */
 	public double getKmToPixel() {
@@ -6025,7 +6640,7 @@ public class Simulation {
 
 	/**
 	 * Gets the TTL (Time To Live) for network messages.
-	 * 
+	 *
 	 * @return TTL value
 	 */
 	public int getTtl() {
@@ -6034,7 +6649,7 @@ public class Simulation {
 
 	/**
 	 * Gets the time users spend on stairs in seconds.
-	 * 
+	 *
 	 * @return time on stairs in seconds
 	 */
 	public int getTimeOnStairs() {
@@ -6043,7 +6658,7 @@ public class Simulation {
 
 	/**
 	 * Gets the minimum time required to update recommendations.
-	 * 
+	 *
 	 * @return minimum update time in seconds
 	 */
 	public int getMinimumTimeToUpdateRecommendation() {
@@ -6052,7 +6667,7 @@ public class Simulation {
 
 	/**
 	 * Gets the communication range for P2P data exchange.
-	 * 
+	 *
 	 * @return communication range in simulation units
 	 */
 	public int getCommunicationRange() {
@@ -6061,7 +6676,7 @@ public class Simulation {
 
 	/**
 	 * Gets the maximum knowledge base size for user data.
-	 * 
+	 *
 	 * @return maximum knowledge base size
 	 */
 	public int getMaxKnowledgeBaseSize() {
@@ -6070,7 +6685,7 @@ public class Simulation {
 
 	/**
 	 * Gets the communication bandwidth for data transmission.
-	 * 
+	 *
 	 * @return bandwidth in simulation units
 	 */
 	public int getCommunicationBandwidth() {
@@ -6079,7 +6694,7 @@ public class Simulation {
 
 	/**
 	 * Gets the latency of transmission for network communication.
-	 * 
+	 *
 	 * @return latency in milliseconds
 	 */
 	public int getLatencyOfTransmission() {
@@ -6088,16 +6703,16 @@ public class Simulation {
 
 	/**
 	 * Gets the time required to change user mood.
-	 * 
+	 *
 	 * @return time to change mood in seconds
 	 */
 	public int getTimeToChangeMood() {
 		return timeToChangeMood;
 	}
-	
+
 	/**
 	 * Gets the random seed used for simulation.
-	 * 
+	 *
 	 * @return simulation seed value
 	 */
 	public long getSeed() {
@@ -6107,7 +6722,7 @@ public class Simulation {
 	// Getters of Experimentation:
 	/**
 	 * Gets the number of special users in the simulation.
-	 * 
+	 *
 	 * @return number of special users
 	 */
 	public int getNumberOfSpecialUser() {
@@ -6116,7 +6731,7 @@ public class Simulation {
 
 	/**
 	 * Gets the number of non-special users in the simulation.
-	 * 
+	 *
 	 * @return number of non-special users
 	 */
 	public int getNumberOfNonSpecialUser() {
@@ -6125,7 +6740,7 @@ public class Simulation {
 
 	/**
 	 * Gets the paths for non-special users.
-	 * 
+	 *
 	 * @return non-special user paths as string
 	 */
 	public String getNonSpecialUserPaths() {
@@ -6134,7 +6749,7 @@ public class Simulation {
 
 	/**
 	 * Gets the path generation strategy being used.
-	 * 
+	 *
 	 * @return path strategy name
 	 */
 	public String getPathStrategy() {
@@ -6143,7 +6758,7 @@ public class Simulation {
 
 	/**
 	 * Gets the recommendation algorithm being used.
-	 * 
+	 *
 	 * @return recommendation algorithm name
 	 */
 	public String getRecommendationAlgorithm() {
@@ -6152,7 +6767,7 @@ public class Simulation {
 
 	/**
 	 * Gets the threshold for recommendation acceptance.
-	 * 
+	 *
 	 * @return recommendation threshold value
 	 */
 	public float getThresholdRecommendation() {
@@ -6161,7 +6776,7 @@ public class Simulation {
 
 	/**
 	 * Gets the similarity threshold for user matching.
-	 * 
+	 *
 	 * @return similarity threshold value
 	 */
 	public double getThresholdSimilarity() {
@@ -6170,7 +6785,7 @@ public class Simulation {
 
 	/**
 	 * Gets the number of items to recommend.
-	 * 
+	 *
 	 * @return number of items
 	 */
 	public int getHowMany() {
@@ -6179,7 +6794,7 @@ public class Simulation {
 
 	/**
 	 * Gets the network type for P2P communication.
-	 * 
+	 *
 	 * @return network type (e.g., flooding, opportunistic)
 	 */
 	public String getNetworkType() {
@@ -6188,7 +6803,7 @@ public class Simulation {
 
 	/**
 	 * Gets the propagation strategy for data dissemination.
-	 * 
+	 *
 	 * @return propagation strategy name
 	 */
 	public String getPropagationStrategy() {
@@ -6197,7 +6812,7 @@ public class Simulation {
 
 	/**
 	 * Gets the probability of user disobedience to recommendations.
-	 * 
+	 *
 	 * @return disobedience probability (0.0 to 1.0)
 	 */
 	public double getProbabilityUserDisobedience() {
@@ -6206,7 +6821,7 @@ public class Simulation {
 
 	/**
 	 * Gets the number of votes received in the simulation.
-	 * 
+	 *
 	 * @return number of votes received
 	 */
 	public int getNumberVoteReceived() {
@@ -6215,16 +6830,16 @@ public class Simulation {
 
 	/**
 	 * Gets the total number of users in the simulation.
-	 * 
+	 *
 	 * @return total number of users
 	 */
 	public int getNumberOfUser() {
 		return numberOfUser;
 	}
-	
+
 	/**
 	 * Gets all users participating in the simulation.
-	 * 
+	 *
 	 * @return list copy of all users
 	 */
 	public List<User> getAllUsers() {
@@ -6233,7 +6848,7 @@ public class Simulation {
 
 	/**
 	 * Gets the current iteration number.
-	 * 
+	 *
 	 * @return current iteration since simulation start
 	 */
 	private int getCurrentIteration() {
@@ -6242,7 +6857,7 @@ public class Simulation {
 
 	/**
 	 * Gets the epidemic manager for disease spread tracking.
-	 * 
+	 *
 	 * @return epidemic simulation manager instance
 	 */
 	public es.unizar.epidemic.general.EpidemicSimulationManager getEpidemicManager() {
@@ -6251,7 +6866,7 @@ public class Simulation {
 
 	/**
 	 * Gets the current simulation time in seconds.
-	 * 
+	 *
 	 * @return current simulated time
 	 */
 	private long getCurrentSimulationTime() {
@@ -6261,16 +6876,16 @@ public class Simulation {
 
 	/**
 	 * Checks if simulation is in mixed mode (independent + special users).
-	 * 
+	 *
 	 * @return true if mixed mode is enabled, false otherwise
 	 */
 	public boolean isMixedMode() {
         return mixCliqueAndIndependentUsers;
     }
-    
+
     /**
      * Gets the ratio of independent users in mixed mode.
-     * 
+     *
      * @return independent user ratio (0.0 to 1.0)
      */
     public double getIndependentUserRatio() {

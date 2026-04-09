@@ -18,6 +18,7 @@ public class SimulationUtils {
      * @return The completed Simulation instance
      */
     public static Simulation createAndRunSimulation(Scenarios.TestScenario scenario, String model) {
+        System.out.println("Creating and running simulation for scenario: " + scenario.name + " with model: " + model);
         EpidemicConfiguration config = EpidemicConfiguration.getInstance();
         config.setSelectedModel(model);
         config.setDefaultVentilationRate(scenario.ventilationRate);

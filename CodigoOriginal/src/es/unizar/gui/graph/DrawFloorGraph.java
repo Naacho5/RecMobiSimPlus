@@ -12,6 +12,7 @@ import es.unizar.util.Literals;
 import es.unizar.gui.MainSimulator;
 import es.unizar.gui.MyGraph;
 import es.unizar.gui.simulation.User;
+import es.unizar.gui.graph.FloorModel;
 
 import java.awt.Dimension;
 import java.awt.Polygon;
@@ -32,7 +33,7 @@ import java.util.logging.Logger;
  *
  * @author Maria del Carmen Rodriguez-Hernandez and Alejandro Piedrafita Barrantes
  */
-public class DrawFloorGraph {
+public class DrawFloorGraph implements FloorModel {
 
 	public static final double CORNER_DIM = 5; // Squared corners
 	public static final double HEIGHT = 10;
@@ -79,7 +80,10 @@ public class DrawFloorGraph {
 	 * @return
 	 */
 	public mxGraphComponent drawFloor(File roomFile, File itemFile, boolean removeVertexLabel, boolean removeEdges, int numberFloor) {
-		
+		if (MainSimulator.HEADLESS_MODE) {
+			return null;
+		}
+
 		// Graph Room
 		graph = new MyGraph();
 		
@@ -423,9 +427,8 @@ public class DrawFloorGraph {
 		long stairsID = 0;
 		long invisibleDoorID = 0;
 		String room = "";
-		System.out.println("loadDiccionaryItemLocation(). doorID starts at: " + doorID);
 
-		System.out.println("Loading diccionaryItemLocation...");
+		// System.out.println("Loading diccionaryItemLocation...");
 
 		for (int i = 0; i < vertices.length; i++) {
 			mxCell cell = vertices[i];
@@ -442,7 +445,7 @@ public class DrawFloorGraph {
 				long internalId = es.unizar.util.ElementIdMapper.convertToRangeId(itemID, es.unizar.util.ElementIdMapper.CATEGORY_ITEM);
 				diccionaryItemLocation.put(internalId, location);
 
-				System.out.println("Añadidos item: " + itemID + " -> " + internalId + " ; location: " + location);
+				// System.out.println("Añadidos item: " + itemID + " -> " + internalId + " ; location: " + location);
 			} else {
 				if (type.equalsIgnoreCase("door")) {
 					doorID++;
@@ -451,14 +454,14 @@ public class DrawFloorGraph {
 					long internalId = es.unizar.util.ElementIdMapper.convertToRangeId(doorID, es.unizar.util.ElementIdMapper.CATEGORY_DOOR);
 					diccionaryItemLocation.put(internalId, location);
 
-					System.out.println("Añadidos door: " + doorID + " -> " + internalId + " ; location: " + location);
+					// System.out.println("Añadidos door: " + doorID + " -> " + internalId + " ; location: " + location);
 				} else {
 					if (type.equalsIgnoreCase("stairs")) {
 						doorID++;
 						stairsID = doorID;
 						diccionaryItemLocation.put(stairsID, location);
 						//System.out.println(type + ";" + stairsID + ";" + "0" + ";" + location);
-						System.out.println("Añadidos stairs: " + stairsID + " ; location: " + location);
+						// System.out.println("Añadidos stairs: " + stairsID + " ; location: " + location);
 					}
 					else {
 						if (type.equalsIgnoreCase("invisibleDoor")) {
@@ -472,7 +475,7 @@ public class DrawFloorGraph {
 							}
 							diccionaryItemLocation.put(invisibleDoorID, location);
 							//System.out.println(type + ";" + invisibleDoorID + ";" + "0" + ";" + location);
-							System.out.println("Añadidos invisibleDoor: " + invisibleDoorID + " ; location: " + location);
+							// System.out.println("Añadidos invisibleDoor: " + invisibleDoorID + " ; location: " + location);
 							
 						}
 					}
@@ -928,5 +931,40 @@ public class DrawFloorGraph {
 			return rooms.size();
 		}
 		return 0;
+	}
+
+	/**
+	 * Returns the list of rooms (polygons)
+	 * 
+	 * @param itemId 
+	 * @return List<Polygon>
+	 */
+	@Override
+	public String getItemLocation(long itemId) {
+		return diccionaryItemLocation.get(itemId);
+	}
+
+	/**
+	 * Returns the room label given its index in the rooms list
+	 * 
+	 * @param roomIndex
+	 * @return int Room label || -1 if error
+	 */
+	@Override
+	public int getRoomLabel(int roomIndex) {
+		if (roomLabels != null && roomIndex >= 0 && roomIndex < roomLabels.size()) {
+			return roomLabels.get(roomIndex);
+		}
+		return -1;
+	}
+
+	/**
+	 * Returns the dictionary of item locations
+	 * 
+	 * @return Map<Long, String>
+	 */
+	@Override
+	public Map<Long, String> getItemLocationDictionary() {
+		return diccionaryItemLocation;
 	}
 }

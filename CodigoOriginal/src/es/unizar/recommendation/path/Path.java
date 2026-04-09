@@ -73,7 +73,9 @@ public abstract class Path {
 		Monitor mon = MonitorFactory.start("pathOperations");
 		// Load a map that contains the item locations (sculptures, paintings, doors and
 		// stairs).
-		this.diccionaryItemLocation = MainSimulator.floor.diccionaryItemLocation;
+		// this.diccionaryItemLocation = MainSimulator.floor.diccionaryItemLocation;
+		this.diccionaryItemLocation = MainSimulator.floor.getItemLocationDictionary();
+
 		// Load a map that contains the connected doors.
 		this.mapDoorConnected = mapDoorConnected();
 		// Load a map that contains the items by room. Initially, it is assumed that not

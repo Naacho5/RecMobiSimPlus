@@ -10,6 +10,7 @@ import javax.swing.SwingUtilities;
 import es.unizar.gui.Configuration;
 import es.unizar.gui.MainSimulator;
 import es.unizar.gui.UserInfo;
+import es.unizar.gui.graph.DrawFloorGraph;
 import es.unizar.util.DebugFilter;
 import es.unizar.util.DebugFormatter;
 import es.unizar.util.Literals;
@@ -115,13 +116,18 @@ public class UserRunnable implements Runnable { // , Cloneable
 				}
 
 				// It initializes the initial position of users.
-				// System.out.println("UserRunnable.run(): Antes de initializeUsers");
+				System.out.println("UserRunnable.run(): Antes de initializeUsers");
 				Configuration.simulation.initializeUsers();
 
 				// System.out.println(" Adding users to floor graph...");
 
 				// UserRunnable "user" list is null; Same for MainMuseumSimulator
-				MainSimulator.floor.addUsersToFloorGraph(Configuration.simulation.userList);
+				// MainSimulator.floor.addUsersToFloorGraph(Configuration.simulation.userList);
+
+				if (MainSimulator.floor instanceof DrawFloorGraph) {
+					DrawFloorGraph drawFloor = (DrawFloorGraph) MainSimulator.floor;
+					drawFloor.addUsersToFloorGraph(Configuration.simulation.userList);
+				}
 
 				// System.out.println(" UserRunnable.run(): After adding users to floor graph.");
 				
@@ -154,7 +160,8 @@ public class UserRunnable implements Runnable { // , Cloneable
 					User currentUser = Configuration.simulation.userList.get(userPosition);
 					// System.out.println(" UserRunnable.run(): Checking if user " + currentUser.userID + " has to change his/her mood.");
 					// System.out.println(" UserRunnable.run(): Current time of user " + currentUser.userID + " is " + Configuration.simulation.currentTimeOfUsers[currentUser.userID - 1] + ", time to change mood is " + Configuration.simulation.getTimeToChangeMood() + ".");
-					if (Configuration.simulation.currentTimeOfUsers[currentUser.userID - 1] >= Configuration.simulation.getTimeToChangeMood()) {
+					// if (Configuration.simulation.currentTimeOfUsers[currentUser.userID - 1] >= Configuration.simulation.getTimeToChangeMood()) {
+					if (Configuration.simulation.currentTimeOfUsers.get(currentUser.userID - 1) >= Configuration.simulation.getTimeToChangeMood()) {
 						Configuration.simulation.changeMoodOfUsers(currentUser);
 						MainSimulator.printConsole("User " + currentUser.userID + " has changed his/her mood.", Level.INFO);
 						// System.out.println(" UserRunnable.run(): User " + currentUser.userID + " has changed his/her mood.");

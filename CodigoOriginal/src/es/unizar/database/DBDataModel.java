@@ -76,10 +76,7 @@ public class DBDataModel extends AbstractDataModel {
 	 * @throws SQLException
 	 */
 	public DBDataModel(String dbURL, Database db, int numUsers) throws SQLException {
-		dataAccess = new DataAccessLayer(dbURL, db);
-
-		System.out.println("DBDataModel: Loading preferences from database at " + dbURL + " ...");
-		
+		dataAccess = new DataAccessLayer(dbURL, db);		
 
 		this.dbURL = dbURL;
 		//this.userIDs = dataAccess.getUserIDs();

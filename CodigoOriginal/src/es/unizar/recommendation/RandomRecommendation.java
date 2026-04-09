@@ -29,7 +29,6 @@ public class RandomRecommendation {
 	// public List<RecommendedItem> recommend(long userID, int howMany, List<Long> observedItems) throws TasteException {
 	// 	// Obtiene la preferencia de todos items del userID
 	// 	List<String> allPreferences = dataAccessLayer.getUserItemContextRatingRandomFor(userID);
-	// 	System.out.println("✅ RandomRecommendation.recommend: allPreferences size = " + allPreferences.size());
 		
 	// 	PreferenceArray seenPreferences;
 	// 	try {
@@ -94,7 +93,6 @@ public class RandomRecommendation {
 
 	public List<RecommendedItem> recommend(long userID, int howMany, List<Long> observedItems) throws TasteException {
         List<String> allPreferences = dataAccessLayer.getUserItemContextRatingRandomFor(userID);
-        System.out.println("✅ RandomRecommendation.recommend: allPreferences size = " + allPreferences.size());
         
         PreferenceArray seenPreferences;
         try {
@@ -114,15 +112,12 @@ public class RandomRecommendation {
             long itemID = ElementIdMapper.convertToRangeId(internalId, ElementIdMapper.CATEGORY_ITEM);
             float rating = Float.valueOf(array[3]).floatValue();
 
-            // ✅ MEJORADO: Verificar AMBAS fuentes de ítems visitados
             boolean alreadySeen = false;
             
-            // 1. Verificar en seenPreferences (DB)
             if (seenPreferences != null && seenPreferences.hasPrefWithItemID(itemID)) {
                 alreadySeen = true;
             }
             
-            // 2. Verificar en observedItems (memoria)
             if (observedItems != null && 
                 (observedItems.contains(internalId) || observedItems.contains(itemID) || observedItems.contains(objectId))) {
                 alreadySeen = true;
@@ -130,15 +125,15 @@ public class RandomRecommendation {
 
             if (!alreadySeen) {
                 topList.add(new GenericRecommendedItem(internalId, rating));
-                System.out.println("✅ RandomRecommendation: Recomendando item " + internalId + " con rating " + rating);
+                // System.out.println("✅ RandomRecommendation: Recomendando item " + internalId + " con rating " + rating);
             } else {
-                System.out.println(" RandomRecommendation: Saltando item " + internalId + " (ya visitado)");
+                // System.out.println(" RandomRecommendation: Saltando item " + internalId + " (ya visitado)");
             }
             
             posAll++;
         }
 
-        System.out.println("✅ RandomRecommendation: Total recomendados = " + topList.size());
+        // System.out.println("✅ RandomRecommendation: Total recomendados = " + topList.size());
         return topList;
     }
 

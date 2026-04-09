@@ -1306,7 +1306,7 @@ public class SimulationEpidemicValidator {
                 globalAvgRating = totalCount > 0 ? totalSum / totalCount : 0.0;
             }
             if (Configuration.simulation != null) {
-                globalAvgDistance = Configuration.simulation.calculateGlobalAverageDistanceBetweenVisitedItems();
+                // globalAvgDistance = Configuration.simulation.calculateGlobalAverageDistanceBetweenVisitedItems();
             }
 
             // 1. Lelieveld
@@ -1431,7 +1431,7 @@ public class SimulationEpidemicValidator {
             }
 
             if (Configuration.simulation != null) {
-                globalAvgDistance = Configuration.simulation.calculateGlobalAverageDistanceBetweenVisitedItems();
+                // globalAvgDistance = Configuration.simulation.calculateGlobalAverageDistanceBetweenVisitedItems();
             }
 
             

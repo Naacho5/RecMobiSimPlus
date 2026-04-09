@@ -1,6 +1,7 @@
 package es.unizar.epidemic.tests.comparison;
 
 import es.unizar.epidemic.tests.common.SimulationResult;
+import es.unizar.util.Pair;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -35,7 +36,11 @@ public class ModelComparisonAnalyzer {
      * @param results map of model names to their simulation results
      * @param scenarioName name of the scenario being compared
      */
-    public static void compareModelResults(Map<String, SimulationResult> results, String scenarioName) {
+    public static void compareModelResults(Map<String, SimulationResult> results, 
+                                        String scenarioName, 
+                                        String recommendationAlgorithm,
+                                        int totalUsers,
+                                        int simulationDurationSeconds) {
         File resultsDir = new File("./results");
         if (!resultsDir.exists()) {
             resultsDir.mkdirs();
@@ -43,8 +48,16 @@ public class ModelComparisonAnalyzer {
         
         String timestamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date());
         String sanitizedScenarioName = scenarioName.replaceAll("[^a-zA-Z0-9_-]", "_");
-        String csvFilename = String.format("./results/comparison_models_%s_%s.csv", sanitizedScenarioName, timestamp);
+        String sanitizedAlgorithm = recommendationAlgorithm.replaceAll("[^a-zA-Z0-9_-]", "_");
         
+        int durationMinutes = simulationDurationSeconds / 60;
+        String csvFilename = String.format("./results/comparison_models_%s_%s_%dusers_%dmin_%s.csv", 
+                                        sanitizedScenarioName, 
+                                        sanitizedAlgorithm, 
+                                        totalUsers,
+                                        durationMinutes,
+                                        timestamp);
+
         try (FileWriter csvWriter = new FileWriter(csvFilename)) {
             csvWriter.append("MODELO;TASA_ATAQUE_PCT;INFECTIVOS_TOTAL;METRICA_1;METRICA_2;VALORACION_MEDIA;DISTANCIA_MEDIA;TIEMPO_EJECUCION_SEG\n");
             
@@ -52,6 +65,7 @@ public class ModelComparisonAnalyzer {
 
             double globalAvgRating = 0.0;
             double globalAvgDistance = 0.0;
+            double averageDistanceRooms = 0.0;
             
             if (es.unizar.gui.Configuration.simulation != null && 
                 es.unizar.gui.Configuration.simulation.userRatings != null) {
@@ -67,8 +81,11 @@ public class ModelComparisonAnalyzer {
             }
             
             if (es.unizar.gui.Configuration.simulation != null) {
-                globalAvgDistance = es.unizar.gui.Configuration.simulation
-                    .calculateGlobalAverageDistanceBetweenVisitedItems();
+                // globalAvgDistance = es.unizar.gui.Configuration.simulation
+                //     .calculateGlobalAverageDistanceBetweenVisitedItems();
+                Pair<Double, Double> distances = es.unizar.gui.Configuration.simulation.calculateGlobalAverageDistanceBetweenVisitedItems();
+                globalAvgDistance = distances.getF();
+                averageDistanceRooms = distances.getS();
             }
 
             // 1. Lelieveld
@@ -92,13 +109,14 @@ public class ModelComparisonAnalyzer {
                     timeSec
                 );
                 
-                csvWriter.append(String.format("AEROSOL_LELIEVELD;%.2f;%d;%.6f;%.2f;%.2f;%.2f;%.2f\n",
+                csvWriter.append(String.format("AEROSOL_LELIEVELD;%.2f;%d;%.6f;%.2f;%.2f;%.2f;%.2f;%.2f\n",
                     attackRateL,
                     totalInfectiousL,
                     lelieveld.averageConcentration,
                     lelieveld.individualRisk,
                     globalAvgRating,
                     globalAvgDistance,
+                    averageDistanceRooms,
                     timeSec
                 ));
             }
@@ -124,13 +142,14 @@ public class ModelComparisonAnalyzer {
                     timeSec
                 );
                 
-                csvWriter.append(String.format("AEROSOL_PENG;%.2f;%d;%.6f;%.2f;%.2f;%.2f;%.2f\n",
+                csvWriter.append(String.format("AEROSOL_PENG;%.2f;%d;%.6f;%.2f;%.2f;%.2f;%.2f;%.2f\n",
                     attackRateP,
                     totalInfectiousP,
                     peng.averageConcentration,
                     peng.individualRisk,
                     globalAvgRating,
                     globalAvgDistance,
+                    averageDistanceRooms,
                     timeSec
                 ));
             }
@@ -156,13 +175,14 @@ public class ModelComparisonAnalyzer {
                     timeSec
                 );
                 
-                csvWriter.append(String.format("SIMPLE_PROXIMITY;%.2f;%d;%d;%d;%.2f;%.2f;%.2f\n",
+                csvWriter.append(String.format("SIMPLE_PROXIMITY;%.2f;%d;%d;%d;%.2f;%.2f;%.2f;%.2f\n",
                     attackRateS,
                     totalInfectiousS,
                     simple.totalContacts,
                     simple.infectiousContacts,
                     globalAvgRating,
                     globalAvgDistance,
+                    averageDistanceRooms,
                     timeSec
                 ));
             }
@@ -193,18 +213,25 @@ public class ModelComparisonAnalyzer {
             }
 
             if (es.unizar.gui.Configuration.simulation != null) {
-                globalAvgDistance = es.unizar.gui.Configuration.simulation
-                    .calculateGlobalAverageDistanceBetweenVisitedItems();
+                // globalAvgDistance = es.unizar.gui.Configuration.simulation
+                //     .calculateGlobalAverageDistanceBetweenVisitedItems();
+                Pair<Double, Double> distances = es.unizar.gui.Configuration.simulation.calculateGlobalAverageDistanceBetweenVisitedItems();
+                globalAvgDistance = distances.getF();
+                averageDistanceRooms = distances.getS();
             }
             
             // Resumen en CSV
             csvWriter.append(String.format("\n# Métricas globales para configuración: %s\n", scenarioName));
+            csvWriter.append(String.format("# Algoritmo de recomendación: %s\n", recommendationAlgorithm));
+            csvWriter.append(String.format("# Número de usuarios: %d\n", totalUsers));
+            csvWriter.append(String.format("# Duración de simulación: %d segundos (%d minutos)\n", 
+                                        simulationDurationSeconds, durationMinutes));
             csvWriter.append(String.format("# Valoración media global: %.2f\n", globalAvgRating));
             csvWriter.append(String.format("# Distancia media entre items visitados: %.2f\n", globalAvgDistance));
+            csvWriter.append(String.format("# Distancia media entre habitaciones: %.2f\n", averageDistanceRooms));
             
             csvWriter.flush();
-            System.out.println("\n✅ Model comparison saved to: " + csvFilename);
-            
+            System.out.println("\n✅ Model comparison saved to: " + csvFilename);     
         } catch (IOException e) {
             System.err.println(" Error writing model comparison CSV: " + e.getMessage());
             e.printStackTrace();

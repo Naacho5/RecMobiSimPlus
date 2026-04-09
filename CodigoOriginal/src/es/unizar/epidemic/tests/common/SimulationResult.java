@@ -33,6 +33,20 @@ public class SimulationResult {
     
     // PERFORMANCE
     public long executionTimeMs;            // Execution time in ms
+    public int simulationDurationSeconds;  // Simulation duration in seconds
+
+    public double intraCliqueAttackRate;    // Attack rate within cliques
+    public double isolationRate;            // Isolation rate between cliques
+
+    // MIXED MODE METRICS
+    public double cliqueAttackRate;         // Attack rate for clique users
+    public double independentAttackRate;    // Attack rate for independent users
+
+    // MACRO COMPARISON METRICS
+    public double averageRating;            // Average user rating
+    public double averageDistance;          // Average distance between items
+    public double averageDistanceRooms;     // Average rooms between visited items
+
     
     public SimulationResult() {
         this.scenarioName = "";
@@ -50,6 +64,13 @@ public class SimulationResult {
         this.averageConcentration = 0.0;
         this.individualRisk = 0.0;
         this.executionTimeMs = 0L;
+        this.intraCliqueAttackRate = 0.0;
+        this.isolationRate = 0.0;
+        this.cliqueAttackRate = 0.0;
+        this.independentAttackRate = 0.0;
+        this.averageRating = 0.0;
+        this.averageDistance = 0.0;
+        this.averageDistanceRooms = 0.0;
     }
     
     public SimulationResult(String scenarioName, String modelUsed, int totalUsers) {

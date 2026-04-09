@@ -6,6 +6,7 @@ import es.unizar.epidemic.general.UserEpidemicExtension;
 import es.unizar.epidemic.statistics.EpidemicStatistics;
 import es.unizar.epidemic.tests.Scenarios;
 import es.unizar.gui.Configuration;
+import es.unizar.gui.FloorPanelCombined;
 import es.unizar.gui.MainSimulator;
 import es.unizar.gui.UserInfo;
 import es.unizar.gui.graph.DrawFloorGraph;
@@ -18,6 +19,10 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.graphstream.ui.graphicGraph.stylesheet.Color;
+
+import com.mxgraph.swing.mxGraphComponent;
 
 /**
  * Shared utilities for all simulation tests
@@ -57,10 +62,8 @@ public class SimulationUtils {
         
         try {
             simulation.initializeUsers();
-            System.out.println("    Users initialized correctly");
 
             List<User> users = simulation.getAllUsers();
-            System.out.println("    Total users in simulation: " + users.size());
             
             User[] userArray = users.toArray(new User[0]);
             
@@ -70,8 +73,6 @@ public class SimulationUtils {
                 timeUsersInRooms
             );
             MainSimulator.userRunnable = realUserRunnable;
-            
-            System.out.println("    Initializing epidemic system...");
             
             if (simulation.epidemicManager == null) {
                 simulation.epidemicManager = new es.unizar.epidemic.general.EpidemicSimulationManager();
@@ -86,9 +87,7 @@ public class SimulationUtils {
                 stateOfUsers.put(user.userID, userState);
             }
             
-            simulation.epidemicManager.initializeEpidemicSystem(users);
-            System.out.println("   ✅ Epidemic system initialized correctly");
-           
+            simulation.epidemicManager.initializeEpidemicSystem(users);           
         } catch (Exception e) {
             System.err.println(" Error initializing users: " + e.getMessage());
             e.printStackTrace();
@@ -136,10 +135,6 @@ public class SimulationUtils {
         double simulatedTimeElapsed = 0.0;
         double timePerIteration = simulation.getTimeForIterationInSecond();
 
-        System.out.println("   ⏳ Starting simulation based on simulated time...");
-        System.out.println("   📏 Time per iteration: " + timePerIteration + " simulated seconds");
-        System.out.println("    Target time: " + getMaxSimulatedTime() + " simulated seconds");
-        
         startTime = System.currentTimeMillis();    
         try {
             while (!isSimulationComplete(simulation) && iteration < maxIterations) { 
@@ -154,11 +149,17 @@ public class SimulationUtils {
             e.printStackTrace();
             return;
         }
+
+        if (simulation.coincidenceTracker != null) {
+            System.out.println("\n📊 Closing all active coincidences...");
+            simulation.coincidenceTracker.closeAllActiveCoincidences(currentIteration);
+            System.out.println("✅ All coincidences finalized");
+        }
         
         System.out.println("   ✅ Simulation completed:");
-        System.out.println("      - Total iterations: " + iteration);
-        System.out.println("      - Simulated time: " + String.format("%.1f", simulatedTimeElapsed) + " seconds");
-        System.out.println("      - Real time: " + String.format("%.2f", (System.currentTimeMillis() - startTime) / 1000.0) + " seconds\n");
+        // System.out.println("      - Total iterations: " + iteration);
+        // System.out.println("      - Simulated time: " + String.format("%.1f", simulatedTimeElapsed) + " seconds");
+        // System.out.println("      - Real time: " + String.format("%.2f", (System.currentTimeMillis() - startTime) / 1000.0) + " seconds\n");
 
         MainSimulator.userRunnable = null;
     }
@@ -289,6 +290,14 @@ public class SimulationUtils {
                 }
             }
         }
+
+        // Antes de calcular attackRate:
+        int initialInfected = EpidemicConfiguration.getInstance().getInitialInfectedUsers();
+        int initialSusceptibles = result.totalUsers - initialInfected;
+        int newInfected = (result.totalUsers - result.susceptible) - initialInfected;
+
+        result.attackRate = initialSusceptibles > 0 ? 
+            (double) newInfected / initialSusceptibles : 0.0;
         
         try {
             EpidemicStatistics stats = EpidemicStatistics.getInstance();
@@ -298,9 +307,109 @@ public class SimulationUtils {
             double concentration = stats.getAverageAerosolConcentration();
             result.averageConcentration = Double.isNaN(concentration) ? 0.0 : concentration;
 
-            System.out.println("\n Calculating average individual risk...");
+            // System.out.println("\n Calculating average individual risk...");
             result.individualRisk = simulation.calculateAverageTheoreticalRiskForAllRooms();
-            System.out.printf("✅ Individual risk calculated: %.2f%%\n\n", result.individualRisk);
+            // System.out.printf("✅ Individual risk calculated: %.2f%%\n\n", result.individualRisk);
+
+            if (simulation.coincidenceTracker != null) {
+                // System.out.println("📊 Extracting contact-based metrics...");
+                
+                try {
+                    // Get isolation rate from coincidence tracker
+                    Map<String, Object> metrics = simulation.coincidenceTracker.getGlobalMetrics();
+                    
+                    // System.out.println("   Available metrics in tracker:");
+                    // for (Map.Entry<String, Object> entry : metrics.entrySet()) {
+                    //     System.out.println("      - " + entry.getKey() + " = " + entry.getValue());
+                    // }
+                    
+                    result.isolationRate = (double) metrics.getOrDefault("isolationRate", 0.0);
+                    
+                    if (result.isolationRate == 0.0 && metrics.containsKey("totalCoincidences")) {
+                        int totalCoincidences = (int) metrics.get("totalCoincidences");
+                        if (totalCoincidences > 0) {
+                            List<es.unizar.epidemic.data.CoincidenceRecord> interCliqueCoincidences = 
+                                simulation.coincidenceTracker.getCompletedCoincidences().stream()
+                                    .filter(r -> r.getClique1() != r.getClique2())
+                                    .collect(java.util.stream.Collectors.toList());
+                            
+                            if (!interCliqueCoincidences.isEmpty()) {
+                                double totalSimulationTime = EpidemicConfiguration.getInstance()
+                                    .getSimulationDurationSeconds();
+                                
+                                double totalCoincidenceTime = interCliqueCoincidences.stream()
+                                    .mapToDouble(r -> r.getDurationSeconds(
+                                        simulation.getTimeForIterationInSecond()))
+                                    .sum();
+                                
+                                int totalUsers = simulation.getAllUsers().size();
+                                double totalUserTime = totalSimulationTime * totalUsers;
+                                result.isolationRate = 1.0 - (totalCoincidenceTime / totalUserTime);
+                                
+                                // System.out.println("   ✅ Isolation rate calculated manually: " + 
+                                //                 String.format("%.2f%%", result.isolationRate * 100));
+                            }
+                        }
+                    } else {
+                        // System.out.printf("   ✅ Isolation rate: %.2f%%\n", result.isolationRate * 100);
+                    }
+                    
+                    // Calculate intra-clique attack rate if cliques exist
+                    if (simulation.cliqueUserMapping != null && !simulation.cliqueUserMapping.isEmpty()) {
+                        double totalIntraAttack = 0.0;
+                        int cliqueCount = 0;
+                        
+                        for (Map.Entry<Integer, List<Integer>> entry : simulation.cliqueUserMapping.entrySet()) {
+                            int cliqueId = entry.getKey();
+                            List<Integer> userIds = entry.getValue();
+                            
+                            initialSusceptibles = simulation.initialSusceptiblesByClique
+                                .getOrDefault(cliqueId, userIds.size());
+                            
+                            if (initialSusceptibles == 0) continue;
+
+                            int initialInfectedInClique = simulation.initialInfectedByClique
+                                .getOrDefault(cliqueId, 0);
+                            
+                            int totalInfected = 0;
+                            for (int userId : userIds) {
+                                User user = simulation.getAllUsers().get(userId - 1);
+                                if (user.getEpidemicExtension() != null &&
+                                    simulation.isUserInfected(user.getEpidemicExtension())) {
+                                    totalInfected++;
+                                }
+                            }
+                            
+                            int newInfections = totalInfected - initialInfectedInClique;
+                            
+                            
+                            double cliqueAttackRate = (double) newInfections / initialSusceptibles;
+                            totalIntraAttack += cliqueAttackRate;
+                            cliqueCount++;
+
+                            // System.out.printf("   Clique %d: %d susceptibles iniciales, %d infectados iniciales, " +
+                            //                 "%d infectados finales → %d nuevos infectados (%.1f%%)\n",
+                            //                 cliqueId + 1, initialSusceptibles, initialInfectedInClique, 
+                            //                 totalInfected, newInfections, cliqueAttackRate * 100);
+                        }
+                        
+                        result.intraCliqueAttackRate = cliqueCount > 0 ? totalIntraAttack / cliqueCount : 0.0;
+                        // System.out.printf("   ✅ Intra-clique attack rate: %.2f%%\n", result.intraCliqueAttackRate * 100);
+                    } else {
+                        result.intraCliqueAttackRate = 0.0;
+                        // System.out.println("     No clique data available");
+                    }
+                    
+                } catch (Exception e) {
+                    System.err.println("  Warning: Could not extract contact metrics: " + e.getMessage());
+                    e.printStackTrace();
+                    result.isolationRate = 0.0;
+                    result.intraCliqueAttackRate = 0.0;
+                }
+            } else {
+                result.isolationRate = 0.0;
+                result.intraCliqueAttackRate = 0.0;
+            }
             
         } catch (Exception e) {
             System.err.println(" Warning: Could not obtain epidemic statistics: " + e.getMessage());
@@ -310,11 +419,13 @@ public class SimulationUtils {
             result.individualRisk = 0.0;
         }
         
-        int initialInfected = EpidemicConfiguration.getInstance().getInitialInfectedUsers();
-        int initialSusceptibles = result.totalUsers - initialInfected;
-        int newInfected = (result.totalUsers - result.susceptible) - initialInfected;
+        initialInfected = EpidemicConfiguration.getInstance().getInitialInfectedUsers();
+        initialSusceptibles = result.totalUsers - initialInfected;
+        newInfected = (result.totalUsers - result.susceptible) - initialInfected;
         result.attackRate = initialSusceptibles > 0 ? (double) newInfected / initialSusceptibles : 0.0;
         result.infectionRate = (double) (result.infectiousSymp + result.infectiousAsymp + result.superSpreaders) / result.totalUsers;
+        result.simulationDurationSeconds = EpidemicConfiguration.getInstance()
+            .getSimulationDurationSeconds();
         
         return result;
     }
@@ -355,8 +466,17 @@ public class SimulationUtils {
         File itemFile = new File(mapDir, "item_floor_combined.txt");
         File graphFile = new File(mapDir, "graph_floor_combined.txt");
 
-        int nonSpecialUsers = 99;
-        int specialUsers = 1;
+        int specialUsers;
+        int nonSpecialUsers;
+        String recommendationAlgorithm = EpidemicConfiguration.getInstance().getRecommendationAlgorithm();
+        
+        if (requiresSpecialUsers(recommendationAlgorithm)) {
+            specialUsers = totalUsers;
+            nonSpecialUsers = 0;
+        } else {
+            specialUsers = 0;
+            nonSpecialUsers = totalUsers;
+        }
 
         if (useRealContacts) {
             try {
@@ -391,11 +511,16 @@ public class SimulationUtils {
         es.unizar.util.Literals.GRAPH_FLOOR_COMBINED = graphFile.getAbsolutePath();
 
         try {
+            double timeForIteration = 100.0;
+            int howMany = 10;
+
+            Simulation.resetStaticSimulationState();
+            
             Simulation simulation = new Simulation(
-                17, 30, 1.0, 1.0, 1.0,
+                17, 30, timeForIteration, 1.0, 1.0,
                 3.0, 6597, 180, 60, 30, 250,
                 1, 54, 1, specialUsers, nonSpecialUsers,
-                pathsFile.getAbsolutePath(), "Random Path", "Completely-random (FULLY-RAND)", 2.5f, 10,
+                pathsFile.getAbsolutePath(), "Random Path", recommendationAlgorithm, 2.5f, howMany,
                 "Opportunistic", 0.4, 40, 0.5, "Centralized (Centralized)", 1800,
                 false, System.currentTimeMillis(), false, false, 0.0
             );
@@ -412,24 +537,40 @@ public class SimulationUtils {
                     MainSimulator.DRAWING_WIDTH, MainSimulator.DRAWING_HEIGHT);
             }
             
-            DrawFloorGraph floor = new DrawFloorGraph();
+            // DrawFloorGraph floor = new DrawFloorGraph();
             
-            com.mxgraph.swing.mxGraphComponent graphComponent = floor.drawFloor(
-                roomFile, itemFile, true, false, 1);
-            
-            graphComponent.setToolTips(true);
-            graphComponent.getViewport().setBackground(new java.awt.Color(255, 255, 255));
-            graphComponent.getViewport().setOpaque(true);
-            
-            MainSimulator.floorPanelCombined.removeAll();
-            MainSimulator.floorPanelCombined.add(graphComponent);
-            MainSimulator.floorPanelCombined.revalidate();
-            MainSimulator.floorPanelCombined.repaint();
-            
-            floor.loadDiccionaryItemLocation();
-            
-            MainSimulator.floor = floor;
-            MainSimulator.graphComponent = graphComponent;
+            // com.mxgraph.swing.mxGraphComponent graphComponent = floor.drawFloor(
+            //     roomFile, itemFile, true, false, 1);
+
+            DrawFloorGraph floor = null;
+            mxGraphComponent graphComponent = null;
+
+            if (!MainSimulator.HEADLESS_MODE) {
+                if (MainSimulator.floorPanelCombined == null) {
+                    MainSimulator.floorPanelCombined =
+                        new FloorPanelCombined(MainSimulator.DRAWING_WIDTH,
+                                            MainSimulator.DRAWING_HEIGHT);
+                }
+
+                floor = new DrawFloorGraph();
+
+                graphComponent = floor.drawFloor(
+                    roomFile, itemFile, true, false, 1);
+
+                graphComponent.setToolTips(true);
+                graphComponent.getViewport().setBackground(new java.awt.Color(255, 255, 255));
+                graphComponent.getViewport().setOpaque(true);
+
+                MainSimulator.floorPanelCombined.removeAll();
+                MainSimulator.floorPanelCombined.add(graphComponent);
+                MainSimulator.floorPanelCombined.revalidate();
+                MainSimulator.floorPanelCombined.repaint();
+
+                floor.loadDiccionaryItemLocation();
+
+                MainSimulator.floor = floor;
+                MainSimulator.graphComponent = graphComponent;
+            }
             
             System.out.println("   ✅ " + scenarioName + " loaded correctly");
             
@@ -440,6 +581,78 @@ public class SimulationUtils {
             e.printStackTrace();
             return null;
         }
+    }
+
+    /**
+     * Creates simulation with specific contact mode.
+     * Configures a simulation using the specified contact trajectory mode
+     * (Rotational or Complex), enabling mode-specific testing and comparison.
+     * 
+     * @param totalUsers total number of users to simulate
+     * @param scenarioName name of the scenario directory
+     * @param contactMode the contact trajectory mode to use
+     * @return configured Simulation instance with specified contact mode
+     */
+    public static Simulation createSimulationWithContactMode(
+            int totalUsers,
+            String scenarioName,
+            Configuration.ContactTrajectoryMode contactMode) {
+                
+        if (Configuration.instance == null) {
+            System.out.println("        Configuration.instance is NULL - creating new instance");
+            try {
+                Configuration.instance = new Configuration(null, false);
+                System.out.println("      ✅ Configuration.instance created successfully");
+            } catch (Exception e) {
+                System.err.println("      ❌ Error creating Configuration instance: " + e.getMessage());
+                e.printStackTrace();
+                
+                try {
+                    Configuration.instance = new Configuration(null, false);
+                    System.out.println("      ✅ Configuration.instance created with alternative constructor");
+                } catch (Exception e2) {
+                    System.err.println("      ❌ Could not create Configuration instance");
+                    e2.printStackTrace();
+                    return null;
+                }
+            }
+        }
+        
+        Configuration.instance.contactTrajectoryMode = contactMode;
+        System.out.println("      ✅ Contact mode set to: " + Configuration.instance.contactTrajectoryMode.getDisplayName());
+        
+        
+        Simulation simulation = createSimulationForScenario(
+            null,
+            totalUsers,
+            1,
+            scenarioName,
+            true 
+        );
+        
+        // if (simulation != null && simulation.coincidenceTracker == null) {
+        //     System.err.println("  WARNING: coincidenceTracker is NULL after initialization!");
+        //     System.err.println("   Checking cliqueUserMapping...");
+            
+        //     if (simulation.cliqueUserMapping != null && !simulation.cliqueUserMapping.isEmpty()) {
+        //         System.out.println("   ✅ cliqueUserMapping exists, manually initializing tracker...");
+        //         try {
+        //             simulation.coincidenceTracker = new es.unizar.epidemic.data.InterCliqueCoincidenceTracker(
+        //                 simulation.cliqueUserMapping
+        //             );
+        //             System.out.println("   ✅ Tracker initialized successfully");
+        //         } catch (Exception e) {
+        //             System.err.println("   ❌ Error initializing tracker: " + e.getMessage());
+        //             e.printStackTrace();
+        //         }
+        //     } else {
+        //         System.err.println("   ❌ cliqueUserMapping is NULL or empty - cannot initialize tracker");
+        //     }
+        // } else if (simulation != null && simulation.coincidenceTracker != null) {
+        //     System.out.println("   ✅ coincidenceTracker already initialized correctly");
+        // }
+        
+        return simulation;
     }
     
     /**
@@ -458,6 +671,10 @@ public class SimulationUtils {
             String model) {
         
         config.setSelectedModel(model);
+
+        if (config.getRecommendationAlgorithm() == null) {
+            config.setRecommendationAlgorithm("Completely-random (FULLY-RAND)");
+        }
         
         String configName = config.getConfigName();
         boolean isBaseline = configName == null || configName.equals("Default") || configName.equals("Baseline_Control");
@@ -481,7 +698,7 @@ public class SimulationUtils {
                 break;
         }
         
-        System.out.println("   ✅ Epidemic configuration applied for " + model);
+        // System.out.println("   ✅ Epidemic configuration applied for " + model);
     }
     
     /**
@@ -507,7 +724,7 @@ public class SimulationUtils {
             int totalUsers = epidemicConfig.getTotalUsers();
             int infectiousUsers = epidemicConfig.getInitialInfectedUsers();
 
-            epidemicConfig.printCurrentConfiguration();
+            // epidemicConfig.printCurrentConfiguration();
 
             boolean useRealContacts = false;
 
@@ -523,7 +740,6 @@ public class SimulationUtils {
                 return new SimulationResult();
             }
             
-            System.out.println("   ⏳ Executing simulation...");
             runSimulationToCompletion(simulation);
 
             if (simulation.getEpidemicManager() != null) {
@@ -535,9 +751,6 @@ public class SimulationUtils {
         
             long endTime = System.currentTimeMillis();
             result.executionTimeMs = endTime - startTime;
-            
-            System.out.printf("     Execution time: %.2f seconds\n", 
-                            result.executionTimeMs / 1000.0);
             
             return result;
             
@@ -555,8 +768,31 @@ public class SimulationUtils {
      * 
      * @param results map of model names to their simulation results
      * @param scenarioName name of the scenario being compared
+     * @param recommendationAlgorithm the recommendation algorithm name
      */
-    public static void compareModelResults(Map<String, SimulationResult> results, String scenarioName) {
-        es.unizar.epidemic.tests.comparison.ModelComparisonAnalyzer.compareModelResults(results, scenarioName);
+    public static void compareModelResults(Map<String, SimulationResult> results, 
+                                        String scenarioName,
+                                        String recommendationAlgorithm,
+                                        int totalUsers,
+                                        int simulationDurationSeconds) {
+        es.unizar.epidemic.tests.comparison.ModelComparisonAnalyzer.compareModelResults(
+            results, scenarioName, recommendationAlgorithm, totalUsers, simulationDurationSeconds);
+    }
+    
+    /**
+     * Determines if a recommendation algorithm requires special users.
+     * 
+     * @param recommendationAlgorithm the recommendation algorithm name
+     * @return true if the algorithm requires special users, false otherwise
+     */
+    private static boolean requiresSpecialUsers(String recommendationAlgorithm) {
+        if (recommendationAlgorithm == null) {
+            System.out.println(" Warning: recommendation algorithm is null");
+            return false;
+        }
+        
+        // Algoritmos que necesitan usuarios especiales
+        return recommendationAlgorithm.contains("Risk-Aware") || 
+            recommendationAlgorithm.contains("Non-Risk-Aware");
     }
 }

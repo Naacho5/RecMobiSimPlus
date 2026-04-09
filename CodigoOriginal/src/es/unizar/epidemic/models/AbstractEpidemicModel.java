@@ -224,7 +224,6 @@ public abstract class AbstractEpidemicModel implements EpidemicModel {
 
     public int getAverageInfectiousCount(int roomId, List<Integer> exposureIterations) {
         if (exposureIterations == null || exposureIterations.isEmpty()) {
-            System.out.println("No exposure iterations provided for roomId=" + roomId);
             return 0;
         }
         
@@ -392,7 +391,7 @@ public abstract class AbstractEpidemicModel implements EpidemicModel {
      * @return list of iteration numbers when the user was exposed in the room
      */
     public List<Integer> getUserRoomExposureIterationsFromDisk(int userId, int roomId) {
-        System.out.println("Retrieving exposure iterations for userId=" + userId + ", roomId=" + roomId);
+        // System.out.println("Retrieving exposure iterations for userId=" + userId + ", roomId=" + roomId);
         if (iterationsWriter == null) {
             System.err.println(" ERROR: iterationsWriter is NULL");
             return new ArrayList<>();
@@ -404,12 +403,12 @@ public abstract class AbstractEpidemicModel implements EpidemicModel {
             return new ArrayList<>();
         }
         
-        System.out.println("Fetching exposure iterations from disk for userId=" + userId + ", roomId=" + roomId);
-        System.out.println("   - Total records in file: " + iterationsWriter.getTotalRecords());
-        System.out.println("   - Records for this user: " + iterationsWriter.getRecordCountForUser(userId));
+        // System.out.println("Fetching exposure iterations from disk for userId=" + userId + ", roomId=" + roomId);
+        // System.out.println("   - Total records in file: " + iterationsWriter.getTotalRecords());
+        // System.out.println("   - Records for this user: " + iterationsWriter.getRecordCountForUser(userId));
         
         List<Integer> iterations = iterationsWriter.getIterations(userId, roomId);
-        System.out.println("Retrieved " + iterations.size() + " iterations from disk for userId=" + userId + ", roomId=" + roomId);
+        // System.out.println("Retrieved " + iterations.size() + " iterations from disk for userId=" + userId + ", roomId=" + roomId);
         return iterations;
     }
     

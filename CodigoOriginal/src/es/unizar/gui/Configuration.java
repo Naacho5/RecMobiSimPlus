@@ -76,10 +76,13 @@ public class Configuration extends javax.swing.JDialog {
 	
 	// public JCheckBox useContactTrajectoriesCheckBox;
 
-	private ContactTrajectoryMode contactTrajectoryMode = ContactTrajectoryMode.DISABLED;
+	public ContactTrajectoryMode contactTrajectoryMode = ContactTrajectoryMode.DISABLED;
 	@SuppressWarnings("rawtypes")
 	public JComboBox contactTrajectoryModeComboBox;
 	private JLabel lblContactTrajectoryMode;
+	private JCheckBox mixedModeCheckBox;
+	private JTextField independentRatioTextField;
+	private JLabel lblIndependentRatio;
 
 
 	/**
@@ -422,12 +425,28 @@ public class Configuration extends javax.swing.JDialog {
 					propagationStrategy = "";
 					
 				}
+
+				boolean mixCliqueAndIndependent = mixedModeCheckBox.isSelected();
+				double independentRatio = 0.3;
+
+				if (mixCliqueAndIndependent) {
+					try {
+						independentRatio = Double.parseDouble(independentRatioTextField.getText());
+						if (independentRatio < 0.0 || independentRatio > 1.0) {
+							independentRatio = 0.3;
+						}
+					} catch (NumberFormatException e) {
+						System.err.println("Invalid independent ratio, using default 0.3");
+						independentRatio = 0.3;
+					}
+				}
+
 				System.out.println("simulation");
 				// Build a simulation object:
 				simulation = new Simulation(timeAvailableUser, delayObservingItem, timeForIteration, screenRefreshTime, timeForThePaths, userSpeed, kmToPixel, ttl, timeOnStairs,
 						minimumTimeToUpdateRecommendation, communicationRange, maxKnowledgeBaseSize, communicationBandwidth, latencyOfTransmission, numberOfSpecialUser, numberOfNonSpecialUser,
 						nonSpecialUserPaths, pathStrategy, recommendationAlgorithm, thresholdRecommendation, howMany, propagationStrategy, probabilityUserDisobedience, numberVoteReceived,
-						thresholdSimilarity, networkType, timeToChangeMood, useFixedSeed, seed, true, false, 0.0);
+						thresholdSimilarity, networkType, timeToChangeMood, useFixedSeed, seed, true, mixCliqueAndIndependent, independentRatio);
 	
 				/*
 				 *  FROM PREVIOUS VERSION -> We think the message printed isn't necessary (or compulsory)
@@ -850,7 +869,8 @@ public class Configuration extends javax.swing.JDialog {
 		contactTrajectoryModeComboBox.setModel(new DefaultComboBoxModel<>(new String[] {
 			ContactTrajectoryMode.DISABLED.getDisplayName(),
 			ContactTrajectoryMode.SIMPLIFIED_ROTATION.getDisplayName(),
-			ContactTrajectoryMode.COMPLEX_REAL_EVENTS.getDisplayName()
+			ContactTrajectoryMode.COMPLEX_REAL_EVENTS.getDisplayName(),
+			// ContactTrajectoryMode.MIXED.getDisplayName()
 		}));
 
 		contactTrajectoryModeComboBox.addActionListener(new ActionListener() {
@@ -879,13 +899,45 @@ public class Configuration extends javax.swing.JDialog {
 				} else if (selected.equals(ContactTrajectoryMode.COMPLEX_REAL_EVENTS.getDisplayName())) {
 					contactTrajectoryMode = ContactTrajectoryMode.COMPLEX_REAL_EVENTS;
 					configureContactTrajectoriesMode("Complejo (Eventos Reales)");
-				}
+				} 
+				// else if (selected.equals(ContactTrajectoryMode.MIXED.getDisplayName())) {
+				// 	contactTrajectoryMode = ContactTrajectoryMode.MIXED;
+				// 	configureContactTrajectoriesMode("Mixto (rotación + independientes)");
+				// }
 				
 				isUpdatingFromContactCheckbox = false;
 				
 				System.out.println(" Modo de trayectorias cambiado a: " + contactTrajectoryMode);
 			}
 		});
+
+		mixedModeCheckBox = new JCheckBox("Enable mixed mode (cliques + independent users)");
+		mixedModeCheckBox.setFont(new Font("SansSerif", Font.PLAIN, 14));
+		mixedModeCheckBox.setSelected(false);
+		mixedModeCheckBox.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				boolean enabled = mixedModeCheckBox.isSelected();
+				independentRatioTextField.setEnabled(enabled);
+				
+				if (enabled) {
+					contactTrajectoryModeComboBox.setSelectedItem(
+						ContactTrajectoryMode.SIMPLIFIED_ROTATION.getDisplayName());
+					contactTrajectoryModeComboBox.setEnabled(false);
+				} else {
+					contactTrajectoryModeComboBox.setEnabled(true);
+				}
+			}
+		});
+
+		lblIndependentRatio = new JLabel("Independent users ratio [0-1]");
+		lblIndependentRatio.setFont(new Font("SansSerif", Font.PLAIN, 14));
+
+		independentRatioTextField = new JTextField();
+		independentRatioTextField.setFont(new Font("SansSerif", Font.PLAIN, 14));
+		independentRatioTextField.setText("0.3");
+		independentRatioTextField.setEnabled(false);
+		independentRatioTextField.setColumns(10);
 
 
 		// Added by Nacho Palacio 2025-07-16
@@ -995,6 +1047,12 @@ public class Configuration extends javax.swing.JDialog {
 						.addComponent(lblContactTrajectoryMode)
 						.addGap(18)
 						.addComponent(contactTrajectoryModeComboBox, 0, 250, Short.MAX_VALUE))
+					.addComponent(mixedModeCheckBox)
+					.addGroup(gl_epidemicPanel.createSequentialGroup()
+						.addGap(21)
+						.addComponent(lblIndependentRatio)
+						.addGap(18)
+						.addComponent(independentRatioTextField, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE))
 						.addGroup(gl_epidemicPanel.createSequentialGroup()
 							.addComponent(lblEpidemicModel)
 							.addGap(18)
@@ -1048,6 +1106,12 @@ public class Configuration extends javax.swing.JDialog {
 					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
 						.addComponent(lblContactTrajectoryMode)
 						.addComponent(contactTrajectoryModeComboBox, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addGap(10)
+					.addComponent(mixedModeCheckBox)
+					.addGap(10)
+					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
+						.addComponent(lblIndependentRatio)
+						.addComponent(independentRatioTextField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
 					.addGap(10)
 					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
 						.addComponent(lblEpidemicModel)
@@ -2226,7 +2290,9 @@ public class Configuration extends javax.swing.JDialog {
 	public enum ContactTrajectoryMode {
 		DISABLED("Deshabilitado (modo tradicional)"),
 		SIMPLIFIED_ROTATION("Simplificado (rotación circular)"),
-		COMPLEX_REAL_EVENTS("Complejo (trayectorias reales)");
+		COMPLEX_REAL_EVENTS("Complejo (trayectorias reales)"),
+		MIXED("Mixto (rotación + independientes)");
+
 		
 		private final String displayName;
 		
@@ -2278,6 +2344,15 @@ public class Configuration extends javax.swing.JDialog {
 	 */
 	public boolean isComplexRealEventsMode() {
 		return contactTrajectoryMode == ContactTrajectoryMode.COMPLEX_REAL_EVENTS;
+	}
+
+	/**
+	 * Checks if the mixed mode is active.
+	 * 
+	 * @return True if mixed mode is active, false otherwise.
+	 */
+	public boolean isMixedMode() {
+		return contactTrajectoryMode == ContactTrajectoryMode.MIXED;
 	}
 
 	/**

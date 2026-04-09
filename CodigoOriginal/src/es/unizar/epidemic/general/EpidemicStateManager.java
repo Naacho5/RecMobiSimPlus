@@ -79,7 +79,7 @@ public class EpidemicStateManager {
         double superSpreaderProbability = EpidemicConfiguration.getInstance().getSuperSpreaderProbability();
         
         if (randomValue < superSpreaderProbability) {
-            System.out.println("User becomes a SuperSpreader!");
+            // System.out.println("User becomes a SuperSpreader!");
             extension.setHealthStatus(HealthStatus.SUPER_SPREADER);
         }  
         else {
@@ -136,9 +136,8 @@ public class EpidemicStateManager {
         for (int i = 0; i < toInfect; i++) {
             User user = susceptibleUsers.get(i);
             infectUser(user);
-        }
-        
-        System.out.println("Initially infected: " + toInfect + " users");
+            user.isInfected = true;
+        }        
     }
     
     /**

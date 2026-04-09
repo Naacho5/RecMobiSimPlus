@@ -51,9 +51,11 @@ public class ContactTracker {
      * @param userList List of users in the simulation
      * @param currentIteration Current simulation iteration
      */
-    public void trackContacts(List<User> userList, int currentIteration) {
+    // public void trackContacts(List<User> userList, int currentIteration) {
+    public void trackContacts(List<User> userList, double deltaSeconds) {
         this.currentUserList = userList;
-        LocalDateTime currentTime = LocalDateTime.now().plusSeconds(currentIteration);
+        // LocalDateTime currentTime = LocalDateTime.now().plusSeconds(currentIteration);
+        LocalDateTime currentTime = LocalDateTime.now().plusSeconds((long)deltaSeconds);
 
         List<ContactRecord> contactsEndingNow = new ArrayList<>();
         
@@ -87,10 +89,12 @@ public class ContactTracker {
                 if (distance <= proximityThresholdPixels) {
                     if (existingContact != null) {
                         if (existingContact.isActive()) {
-                            existingContact.setDuration(existingContact.getDuration() + 1);
+                            // existingContact.setDuration(existingContact.getDuration() + 1);
+                            existingContact.setDuration(existingContact.getDuration() + (int) Math.round(deltaSeconds));
                         } else {
                             existingContact.setActive(true);
-                            existingContact.setDuration(existingContact.getDuration() + 1);
+                            // existingContact.setDuration(existingContact.getDuration() + 1);
+                            existingContact.setDuration(existingContact.getDuration() + (int) Math.round(deltaSeconds));
                         }
                     } else {
                         ContactType contactType = determineContactType(user1, user2);

@@ -18,6 +18,7 @@ public class User {
 	public int userID;
 	public double x;
 	public double y;
+	public boolean isInfected = false;
 	//public BufferedImage nonSpecialUserImage;
 	//public BufferedImage specialUserImage;
 	//public ImageLabel userImage;
@@ -151,7 +152,7 @@ public class User {
 	 */
 	public void getRoomOfTheUser() {
 		this.room = MainSimulator.floor.getRoomFromPosition((int) x, (int) y);
-		}
+	}
 	
 	/**
 	 * Creates the user's mxCell to be inserted in the scenario graph.

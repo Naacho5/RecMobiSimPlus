@@ -31,7 +31,7 @@ public class EpidemicSimulationManager {
         this.stateManager = new EpidemicStateManager();
         this.contactTracker = new ContactTracker(config.getMaxTransmissionDistance(), config.getMinContactDuration());
 
-        this.config.printCurrentConfiguration();
+        // this.config.printCurrentConfiguration();
         
         if ("SIMPLE_PROXIMITY".equals(config.getSelectedModel())) {
             double maxDist = config.getMaxTransmissionDistance();
@@ -119,11 +119,6 @@ public class EpidemicSimulationManager {
         if (epidemicModel != null) {
             epidemicModel.updateHealthStates(users, 0);
         }
-        
-        System.out.printf(" Initial user state:\n");
-        System.out.printf("   - Immune: %d (%.1f%%)\n", immuneCount, (double)immuneCount/users.size()*100);
-        System.out.printf("   - Susceptible: %d (%.1f%%)\n", susceptibleCount, (double)susceptibleCount/users.size()*100);
-        System.out.printf("   - Infected: %d (%.1f%%)\n", infectedCount, (double)infectedCount/users.size()*100);
     }
     
     /**
@@ -144,7 +139,8 @@ public class EpidemicSimulationManager {
             ((LelieveldTransmissionModel) epidemicModel).recordExposureIteration(users, currentIteration); // Added by Nacho Palacio 2025-12-03
         }
         else if (epidemicModel instanceof SimpleProximityModel) { // Added by Nacho Palacio 2025-11-12
-            contactTracker.trackContacts(users, currentIteration);
+            // contactTracker.trackContacts(users, currentIteration);
+            contactTracker.trackContacts(users, getDeltaTimeHours() * 3600.0);
         }
         
         updateUserVisualStatus(users);
@@ -175,6 +171,7 @@ public class EpidemicSimulationManager {
                 double totalViralLoad = 0.0;
                 int infectivePeople = 0;
                 for (User user : usersInRoom) {
+                    if (user.hasFinishedVisit) continue;
                     UserEpidemicExtension ext = user.getEpidemicExtension();
                     if (ext != null && lelieveldModel.isInfectious(ext)) {
                         totalViralLoad += ext.getViralEmissionRate();
@@ -206,6 +203,7 @@ public class EpidemicSimulationManager {
 
             Map<Integer, List<User>> usersByRoom = new HashMap<>();
             for (User user : users) {
+                if (user.hasFinishedVisit) continue;
                 usersByRoom.computeIfAbsent(user.room, k -> new ArrayList<>()).add(user);
             }
 
@@ -224,6 +222,10 @@ public class EpidemicSimulationManager {
                     }
                 }
 
+                // Añadido para debug
+                double vol = pengModel.getParameters().getRoomVolume();
+                stats.recordRoomVolume(roomId, vol);
+
                 pengModel.recordRoomInfectiousCount(roomId, currentIteration, infectivePeople); //  Added by Nacho Palacio 2025-12-03
 
                 double concentration = pengModel.getParameters()
@@ -231,6 +233,7 @@ public class EpidemicSimulationManager {
 
                 if (infectivePeople > 0 && concentration > 0.0) {
                     stats.recordRoomAerosolConcentration(roomId, concentration, durationSeconds); // Modified by Nacho Palacio 2025-12-13
+                    stats.recordInfectiousVisit(roomId); // Añadido para debug
                 }
             }
         }
@@ -246,7 +249,7 @@ public class EpidemicSimulationManager {
      * @param users list of all users in the simulation
      */
     public void evaluateFinalAerosolTransmissions(List<User> users) {
-        System.out.println("Evaluating final aerosol transmissions...");
+        // System.out.println("Evaluating final aerosol transmissions...");
         boolean isPeng = epidemicModel instanceof es.unizar.epidemic.models.PengTransmissionModel;
         boolean isLelieveld = epidemicModel instanceof es.unizar.epidemic.models.LelieveldTransmissionModel;
 
@@ -261,22 +264,22 @@ public class EpidemicSimulationManager {
 
             double combinedRisk = 0.0;
             if (isPeng) {
-                System.out.println("Peng: Calculating combined risk for user " + user.userID);
+                // System.out.println("Peng: Calculating combined risk for user " + user.userID);
                 combinedRisk = ((es.unizar.epidemic.models.PengTransmissionModel)epidemicModel)
                     .calculateCombinedInfectionRiskForUser(user);
             } else if (isLelieveld) {
-                System.out.println("Lelieveld: Calculating combined risk for user " + user.userID);
+                // System.out.println("Lelieveld: Calculating combined risk for user " + user.userID);
                 combinedRisk = ((es.unizar.epidemic.models.LelieveldTransmissionModel)epidemicModel)
                     .calculateCombinedInfectionRiskForUser(user);
             }
 
             double randomValue = Math.random();
-            System.out.printf(" User %d: Combined risk %.4f, random value %.4f\n",
-                user.userID, combinedRisk, randomValue);
+           // System.out.printf(" User %d: Combined risk %.4f, random value %.4f\n",
+               // user.userID, combinedRisk, randomValue);
            
             if (randomValue < combinedRisk) {
-                System.out.printf("  User %d infected by aerosol transmission (risk %.4f < %.4f)\n",
-                    user.userID, randomValue, combinedRisk);
+               // System.out.printf("  User %d infected by aerosol transmission (risk %.4f < %.4f)\n",
+                //    user.userID, randomValue, combinedRisk);
                 stateManager.infectUser(user);
                 EpidemicStatistics.getInstance().recordInfection(user.userID, "Aerosol transmission (final)");
             }

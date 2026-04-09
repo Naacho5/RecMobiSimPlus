@@ -987,7 +987,8 @@ public class DatabaseAccess {
 			while(rs.next()) {
 				simList.add(rs.getInt(1)+"Simulation: "+Integer.toString(rs.getInt(1))+" || Map: "+rs.getString(2)+" || Date: "+rs.getTimestamp(3).toString());
 			}
-			simList.set(0, simList.getFirst()+" (last simulation)");
+			// simList.set(0, simList.getFirst()+" (last simulation)");
+			simList.set(0, simList.get(0)+" (last simulation)");
 			return simList;
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block

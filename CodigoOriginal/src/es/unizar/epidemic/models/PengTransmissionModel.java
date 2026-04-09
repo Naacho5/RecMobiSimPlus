@@ -301,7 +301,7 @@ public class PengTransmissionModel extends AbstractEpidemicModel {
         double lengthMeters = PengParameters.pixelsToMeters(roomLength);
 
         parameters.setRoomDimensions(lengthMeters, widthMeters, roomHeight);
-
+    
         EpidemicConfiguration config = EpidemicConfiguration.getInstance();
         if (config != null) {
             parameters.setVentilationRate(config.getDefaultVentilationRate());
@@ -441,7 +441,7 @@ public class PengTransmissionModel extends AbstractEpidemicModel {
      */
     // Final version using disk read
     public double calculateCombinedInfectionRiskForUser(User user) {
-        System.out.println("Calculating combined risk for user " + user.userID);
+        // System.out.println("Calculating combined risk for user " + user.userID);
         Map<Integer, Double> exposureByRoom = userRoomExposureTime.get(user.userID);
         if (exposureByRoom == null || exposureByRoom.isEmpty()) {
             return 0.0;
@@ -457,27 +457,16 @@ public class PengTransmissionModel extends AbstractEpidemicModel {
             
             List<Integer> roomIterations = getUserRoomExposureIterationsFromDisk(user.userID, roomId);
             
-            System.out.println("User " + user.userID + 
-                            " - Room " + roomId + 
-                            " - Exposure iterations: " + 
-                            (roomIterations != null ? roomIterations.size() : 0));
-            
             // Calculate average infected during exposure
             int avgInfectious = getAverageInfectiousCount(roomId, roomIterations);
-            
-            System.out.println("   -> Historical average of infected in room " + 
-                            roomId + ": " + avgInfectious);
-            
+           
             // Use overloaded method with historical count
             double pRoom = calculateAirborneTransmissionProbability(
                 user, roomId, exposureTime, avgInfectious);
             
-            System.out.println("   -> Infection probability in room " + 
-                            roomId + ": " + pRoom);
-            
             pNoInfect *= (1.0 - pRoom);
         }
-        
+
         return 1.0 - pNoInfect;
     }
 

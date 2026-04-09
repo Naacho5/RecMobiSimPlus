@@ -177,13 +177,13 @@ public class GraphForSpecialUser {
 			long d1 = dataAccesGraphFile.getDoorOfRoom(door1);
 			long d2 = dataAccesGraphFile.getDoorOfRoom(door2);
 
-			location1 = MainSimulator.floor.diccionaryItemLocation.get(d1);
+			location1 = MainSimulator.floor.getItemLocation(d1);;
 
 			// Added by Nacho Palacio 2025-06-10
 			if (location1 == null) {		
 				if (ElementIdMapper.isInCorrectRange(d1, ElementIdMapper.CATEGORY_DOOR)) {
 					long d1External = ElementIdMapper.getBaseId(d1);
-					location1 = MainSimulator.floor.diccionaryItemLocation.get(d1External);
+					location1 = MainSimulator.floor.getItemLocation(d1External);
 				}
 				
 				if (location1 == null) {
@@ -191,13 +191,13 @@ public class GraphForSpecialUser {
 				}
 			}
 
-			location2 = MainSimulator.floor.diccionaryItemLocation.get(d2);
+			location2 = MainSimulator.floor.getItemLocation(d2);
 
 			// Added by Nacho Palacio 2025-06-10
 			if (location2 == null) {
 				if (ElementIdMapper.isInCorrectRange(d2, ElementIdMapper.CATEGORY_DOOR)) {
 					long d2External = ElementIdMapper.getBaseId(d2);
-					location2 = MainSimulator.floor.diccionaryItemLocation.get(d2External);
+					location2 = MainSimulator.floor.getItemLocation(d2External);
 				}
 				
 				if (location2 == null) {
@@ -220,13 +220,13 @@ public class GraphForSpecialUser {
 			long invD1 = dataAccesGraphFile.getInvisibleDoorOfSubroom(invisibleDoor1);
 			long invD2 = dataAccesGraphFile.getInvisibleDoorOfSubroom(invisibleDoor2);
 
-			location1 = MainSimulator.floor.diccionaryItemLocation.get(invD1);
+			location1 = MainSimulator.floor.getItemLocation(invD1);
 
 			// Added by Nacho Palacio 2025-06-10
 			if (location1 == null) {		
 				if (ElementIdMapper.isInCorrectRange(invD1, ElementIdMapper.CATEGORY_DOOR)) {
 					long invD1External = ElementIdMapper.getBaseId(invD1);
-					location1 = MainSimulator.floor.diccionaryItemLocation.get(invD1External);
+					location1 = MainSimulator.floor.getItemLocation(invD1External);
 				}
 				
 				if (location1 == null) {
@@ -234,13 +234,13 @@ public class GraphForSpecialUser {
 				}
 			}
 
-			location2 = MainSimulator.floor.diccionaryItemLocation.get(invD2);
+			location2 = MainSimulator.floor.getItemLocation(invD2);
 
 			// Added by Nacho Palacio 2025-06-10
 			if (location2 == null) {		
 				if (ElementIdMapper.isInCorrectRange(invD2, ElementIdMapper.CATEGORY_DOOR)) {
 					long invD2External = ElementIdMapper.getBaseId(invD2);
-					location2 = MainSimulator.floor.diccionaryItemLocation.get(invD2External);
+					location2 = MainSimulator.floor.getItemLocation(invD2External);
 				}
 				
 				if (location2 == null) {
@@ -253,25 +253,25 @@ public class GraphForSpecialUser {
 			graph.setEdgeWeight(graph.addEdge(invD1, invD2), weight);
 		}
 
-		System.out.println("===== Puertas e ítems por habitación =====");
-		for (int roomId = 1; roomId <= dataAccesGraphFile.getNumberOfRoom(); roomId++) {
-			System.out.print("Habitación " + roomId + " - Ítems: ");
-			int numItems = dataAccesGraphFile.getNumberOfItemsByRoom(roomId);
-			for (int i = 1; i <= numItems; i++) {
-				long itemId = dataAccesGraphFile.getItemOfRoom(i, roomId);
-				long externalItemId = ElementIdMapper.getBaseId(itemId);
-				System.out.print(itemId + ":" + externalItemId + " ");
-			}
-			System.out.print(" | Puertas: ");
-			int numDoors = dataAccesGraphFile.getNumberOfDoorsByRoom(roomId);
-			for (int i = 1; i <= numDoors; i++) {
-				long doorId = dataAccesGraphFile.getDoorOfRoom(i, roomId);
-				long externalDoorId = ElementIdMapper.getBaseId(doorId);
-				System.out.print(doorId + ":" + externalDoorId + " ");
-			}
-			System.out.println();
-		}
-		System.out.println("==========================================");
+		// System.out.println("===== Puertas e ítems por habitación =====");
+		// for (int roomId = 1; roomId <= dataAccesGraphFile.getNumberOfRoom(); roomId++) {
+		// 	System.out.print("Habitación " + roomId + " - Ítems: ");
+		// 	int numItems = dataAccesGraphFile.getNumberOfItemsByRoom(roomId);
+		// 	for (int i = 1; i <= numItems; i++) {
+		// 		long itemId = dataAccesGraphFile.getItemOfRoom(i, roomId);
+		// 		long externalItemId = ElementIdMapper.getBaseId(itemId);
+		// 		System.out.print(itemId + ":" + externalItemId + " ");
+		// 	}
+		// 	System.out.print(" | Puertas: ");
+		// 	int numDoors = dataAccesGraphFile.getNumberOfDoorsByRoom(roomId);
+		// 	for (int i = 1; i <= numDoors; i++) {
+		// 		long doorId = dataAccesGraphFile.getDoorOfRoom(i, roomId);
+		// 		long externalDoorId = ElementIdMapper.getBaseId(doorId);
+		// 		System.out.print(doorId + ":" + externalDoorId + " ");
+		// 	}
+		// 	System.out.println();
+		// }
+		// System.out.println("==========================================");
 
 		// Added by Nacho Palacio 2025-12-08
 		this.cachedGraph = graph;
@@ -299,8 +299,12 @@ public class GraphForSpecialUser {
 			for (int j = k + 1; j < verticesRelated.size(); j++) {
 				long v2 = verticesRelated.get(j);
 
-				boolean v1ExistsInDict = MainSimulator.floor.diccionaryItemLocation.containsKey(v1);
-				boolean v2ExistsInDict = MainSimulator.floor.diccionaryItemLocation.containsKey(v2);
+				// boolean v1ExistsInDict = MainSimulator.floor.diccionaryItemLocation.containsKey(v1);
+				// boolean v2ExistsInDict = MainSimulator.floor.diccionaryItemLocation.containsKey(v2);
+
+				boolean v1ExistsInDict = MainSimulator.floor.getItemLocation(v1) != null;
+				boolean v2ExistsInDict = MainSimulator.floor.getItemLocation(v2) != null;
+
 				
 				if (!v1ExistsInDict) {
 					if (ElementIdMapper.isInCorrectRange(v1, ElementIdMapper.CATEGORY_ITEM)) {
@@ -319,32 +323,32 @@ public class GraphForSpecialUser {
 				}
 
 				//System.out.println("Vertices related: " + v1 + ", " + v2);
-				location1 = MainSimulator.floor.diccionaryItemLocation.get(v1);
-				location2 = MainSimulator.floor.diccionaryItemLocation.get(v2);
+				location1 = MainSimulator.floor.getItemLocation(v1);;
+				location2 = MainSimulator.floor.getItemLocation(v2);;
 
 				// Added by Nacho Palacio 2025-06-09
 				if (location1 == null) {
 					if (ElementIdMapper.isInCorrectRange(v1, ElementIdMapper.CATEGORY_ITEM)) {
 						long v1External = ElementIdMapper.getBaseId(v1);
-						location1 = MainSimulator.floor.diccionaryItemLocation.get(v1External);
+						location1 = MainSimulator.floor.getItemLocation(v1External);;
 					} else if (ElementIdMapper.isInCorrectRange(v1, ElementIdMapper.CATEGORY_DOOR)) {
 						long v1External = ElementIdMapper.getBaseId(v1);
-						location1 = MainSimulator.floor.diccionaryItemLocation.get(v1External);
+						location1 = MainSimulator.floor.getItemLocation(v1External);;
 					}
 				}
 
 				if (location2 == null) {
 					if (ElementIdMapper.isInCorrectRange(v2, ElementIdMapper.CATEGORY_ITEM)) {
 						long v2External = ElementIdMapper.getBaseId(v2);
-						location2 = MainSimulator.floor.diccionaryItemLocation.get(v2External);
+						location2 = MainSimulator.floor.getItemLocation(v2External);;
 					} else if (ElementIdMapper.isInCorrectRange(v2, ElementIdMapper.CATEGORY_DOOR)) {
 						long v2External = ElementIdMapper.getBaseId(v2);
-						location2 = MainSimulator.floor.diccionaryItemLocation.get(v2External);
+						location2 = MainSimulator.floor.getItemLocation(v2External);;
 					} else {
 						for (int categoryTest = 1; categoryTest <= 10; categoryTest++) {
 							if (ElementIdMapper.isInCorrectRange(v2, categoryTest)) {
 								long v2Alternative = ElementIdMapper.getBaseId(v2);
-								String testLocation = MainSimulator.floor.diccionaryItemLocation.get(v2Alternative);
+								String testLocation = MainSimulator.floor.getItemLocation(v2Alternative);;
 								if (testLocation != null) {
 									location2 = testLocation;
 									break;
@@ -445,12 +449,12 @@ public class GraphForSpecialUser {
 	public long getDoorClosestToTheItem(long startVertex, List<Long> doorsByRoom) {
 		long itemToVisit = 0;
 		double initialDistance = Integer.MAX_VALUE;
-		String startVertexLocation = MainSimulator.floor.diccionaryItemLocation.get(startVertex);
+		String startVertexLocation = MainSimulator.floor.getItemLocation(startVertex);
 		String[] arrayStartVertex = startVertexLocation.split(", ");
 		double x1 = Double.valueOf(arrayStartVertex[0]).doubleValue();
 		double y1 = Double.valueOf(arrayStartVertex[1]).doubleValue();
 		for (Long endVertex : doorsByRoom) {
-			String endVertexLocation = MainSimulator.floor.diccionaryItemLocation.get(endVertex);
+			String endVertexLocation = MainSimulator.floor.getItemLocation(endVertex);
 			String[] arrayEndVertex = endVertexLocation.split(", ");
 			double x2 = Double.valueOf(arrayEndVertex[0]).doubleValue();
 			double y2 = Double.valueOf(arrayEndVertex[1]).doubleValue();

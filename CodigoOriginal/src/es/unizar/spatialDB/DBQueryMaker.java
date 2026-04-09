@@ -661,7 +661,9 @@ public class DBQueryMaker {
 	private void loadAttributeButtons() {
 		for(Component c : buttons.getComponents()) {
 			JButton b = (JButton)c;
-			if(selectedTables.size() > 0 && selectedTables.getLast().equals(b.getText())) b.setEnabled(false);
+			// if(selectedTables.size() > 0 && selectedTables.getLast().equals(b.getText())) b.setEnabled(false);
+			if(selectedTables.size() > 0 && selectedTables.get(selectedTables.size()-1).equals(b.getText())) b.setEnabled(false);
+
 		}
 		List<Pair<String,String>> columns = db.getAttributesOfTables(selectedTables);
 		attributeButtons.removeAll();

@@ -27,7 +27,7 @@ public class LelieveldParameters {
 
     // DEPOSITION AND INFECTION PARAMETERS
     private double depositionProbability = 0.5;        // probability
-    private double infectiveDoseD50 = 316;             // RNA copies (previously 316)
+    private double infectiveDoseD50 = 316;             // RNA copies
 
     // ENVIRONMENT PARAMETERS
     // private double roomAreaM2 = 60.0;                  // m²

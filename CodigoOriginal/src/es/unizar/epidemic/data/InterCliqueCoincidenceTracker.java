@@ -565,14 +565,100 @@ public class InterCliqueCoincidenceTracker {
             .mapToDouble(r -> (r.getDurationSeconds(secondsPerIteration) / totalSimulationTime) * 100.0)
             .average()
             .orElse(0.0);
+
+        double isolationRate = calculateIsolationRate();
         
         metrics.put("totalCoincidences", totalCoincidences);
         metrics.put("averageCoincidenceTime", avgDuration);
         metrics.put("maxCoincidenceTime", maxDuration);
         metrics.put("usersWithCoincidences", usersWithCoincidences.size());
         metrics.put("averagePercentage", avgPercentage);
+        metrics.put("isolationRate", isolationRate);
         
         return metrics;
+    }
+
+    /**
+    * Calculates the isolation rate based on inter-clique coincidences.
+    * Isolation rate = 1 - (total inter-clique coincidence time / total available user time)
+    * 
+    * @return isolation rate as a value between 0.0 and 1.0
+    */
+    // private double calculateIsolationRate() {
+    //     // Filter only inter-clique coincidences
+    //     List<CoincidenceRecord> interCliqueCoincidences = completedCoincidences.stream()
+    //         .filter(r -> r.getClique1() != r.getClique2())
+    //         .collect(Collectors.toList());
+        
+    //     if (interCliqueCoincidences.isEmpty()) {
+    //         return 1.0; // Perfect isolation
+    //     }
+        
+    //     // Calculate total coincidence time
+    //     double totalCoincidenceTime = interCliqueCoincidences.stream()
+    //         .mapToDouble(r -> r.getDurationSeconds(secondsPerIteration))
+    //         .sum();
+        
+    //     // Calculate total available time
+    //     double totalSimulationTime = getTotalSimulationTime();
+    //     double totalUserTime = totalSimulationTime * userToClique.size();
+        
+    //     // Calculate isolation rate
+    //     return 1.0 - (totalCoincidenceTime / totalUserTime);
+    // }
+
+    /**
+     * Calculates the isolation rate based on inter-clique coincidences.
+     * Isolation rate = 1 - (total time users spent in inter-clique coincidences / total available user time)
+     * 
+     * @return isolation rate as a value between 0.0 and 1.0
+     */
+    private double calculateIsolationRate() {
+        // Filter only inter-clique coincidences
+        List<CoincidenceRecord> interCliqueCoincidences = completedCoincidences.stream()
+            .filter(r -> r.getClique1() != r.getClique2())
+            .collect(Collectors.toList());
+        
+        if (interCliqueCoincidences.isEmpty()) {
+            return 1.0; // Perfect isolation
+        }
+        
+        // ✅ CORRECCIÓN: Contar tiempo de coincidencia POR USUARIO
+        Map<Integer, Double> userCoincidenceTime = new HashMap<>();
+        
+        for (CoincidenceRecord record : interCliqueCoincidences) {
+            double duration = record.getDurationSeconds(secondsPerIteration);
+            
+            // Sumar tiempo para AMBOS usuarios involucrados
+            userCoincidenceTime.merge(record.getUser1(), duration, Double::sum);
+            userCoincidenceTime.merge(record.getUser2(), duration, Double::sum);
+        }
+        
+        // ✅ CORRECCIÓN: Sumar el tiempo de coincidencia de TODOS los usuarios
+        double totalCoincidenceTime = userCoincidenceTime.values().stream()
+            .mapToDouble(Double::doubleValue)
+            .sum();
+        
+        // Calculate total available time
+        double totalSimulationTime = getTotalSimulationTime();
+        double totalUserTime = totalSimulationTime * userToClique.size();
+        
+        // Calculate isolation rate
+        double isolationRate = 1.0 - (totalCoincidenceTime / totalUserTime);
+        
+        // ✅ DEBUG: Verificar que la tasa está en el rango válido
+        if (isolationRate < 0.0 || isolationRate > 1.0) {
+            System.err.println("⚠️  WARNING: Isolation rate out of range: " + isolationRate);
+            System.err.println("    Total coincidence time: " + totalCoincidenceTime + "s");
+            System.err.println("    Total user time: " + totalUserTime + "s");
+            System.err.println("    Users: " + userToClique.size());
+            System.err.println("    Simulation time: " + totalSimulationTime + "s");
+            
+            // Clamp to valid range
+            isolationRate = Math.max(0.0, Math.min(1.0, isolationRate));
+        }
+        
+        return isolationRate;
     }
     
     /**

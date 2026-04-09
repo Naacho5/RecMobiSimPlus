@@ -52,7 +52,6 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 		this.door = entranceDoor;
 		this.finalPath = null;
 		this.threshold = threshold;
-		System.out.println("✅ TrajectoryPostfilteringBasedRecommendation: Created with door " + door + " and threshold " + threshold);
 	}
 
 	// Para P2P
@@ -285,8 +284,6 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 	// Para Baseline: Random, ALL
 	public List<RecommendedItem> recommendBaseline(List<RecommendedItem> candidateItemsFromRecommender) throws TasteException {
 
-		// System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendBaseline: Iniciando cálculo de trayectoria.");
-		// System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendBaseline: candidateItemsFromRecommender size = " + candidateItemsFromRecommender.size());
 		// Added by Nacho Palacio 2025-10-21
 		this.finalPath = null; // limpiar antes de calcular
 		if (candidateItemsFromRecommender == null || candidateItemsFromRecommender.isEmpty()) {
@@ -296,23 +293,16 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 
 		// Added by Nacho Palacio 2025-10-22
 		long internalDoor = es.unizar.util.ElementIdMapper.convertToRangeId(door, es.unizar.util.ElementIdMapper.CATEGORY_DOOR);
-		// System.out.println(" [DEBUG recommendBaseline] door original: " + door + ", internalDoor: " + internalDoor);
 
 		// Las lista de items candidatos se lleva a una lista de entero.
 		List<Long> candidateItemsToLong = listRecommendedItemToListLong(candidateItemsFromRecommender);
-		// System.out.println(" [DEBUG recommendBaseline] candidateItemsToLong: " + candidateItemsToLong);
-
-		// Imprime los IDs de los items candidatos
-		// System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendBaseline: candidateItemsToLong = " + candidateItemsToLong);
 
 		// Added by Nacho Palacio 2025-10-22
 		List<Long> candidateItemsInternal = new ArrayList<>();
 		for (Long itemId : candidateItemsToLong) {
 			long internalId = es.unizar.util.ElementIdMapper.convertToRangeId(itemId, es.unizar.util.ElementIdMapper.CATEGORY_ITEM);
 			candidateItemsInternal.add(internalId);
-			// System.out.println(" [DEBUG recommendBaseline] Item externo: " + itemId + " -> interno: " + internalId);
 		}
-		// System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendBaseline: candidateItemsInternal = " + candidateItemsInternal);
 
 		// Candidate items from graph
 		// long initialVertex = candidateItemsToLong.get(0);
@@ -325,7 +315,6 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 		// System.out.println("   - ¿Grafo contiene door original (" + door + ")? " + trajectoryStrategy.graph.containsVertex(door));
 		// System.out.println("   - ¿Grafo contiene initialVertex (" + initialVertex + ")? " + trajectoryStrategy.graph.containsVertex(initialVertex));
 		
-		// ✅ DEBUG: Imprimir algunos vértices del grafo para comparar
 		// System.out.println("   - Primeros 20 vértices del grafo:");
 		// int count = 0;
 		// for (Long vertex : trajectoryStrategy.graph.vertexSet()) {
@@ -357,24 +346,27 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 			// System.out.println("El grafo si contiene el vértice de destino: " + initialVertex);
 		}
 
-		System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendBaseline: Calculando finalPath desde puerta " + internalDoor + " hasta initialVertex " + initialVertex);
-		finalPath = ShortestTrajectoryStrategy.preprocessingPath(internalDoor, DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, internalDoor, initialVertex).toString());
+		
+		// finalPath = ShortestTrajectoryStrategy.preprocessingPath(internalDoor, DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, internalDoor, initialVertex).toString());
+		// convertRecommendItemsToPath(candidateItemsInternal); // Modified by Nacho Palacio 2025-10-22
 
-		System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendBaseline: finalPath inicial calculado.");
-		System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendBaseline: finalPath = " + finalPath);
-
-		convertRecommendItemsToPath(candidateItemsInternal); // Modified by Nacho Palacio 2025-10-22
-		System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendBaseline: finalPath completo calculado.");
+		// Modificado por Nacho Palacio 2026-03-30
+		var pathToFirst = DijkstraShortestPath.findPathBetween(trajectoryStrategy.graph, internalDoor, initialVertex);
+		if (pathToFirst == null) {
+			System.err.println(" [recommendBaseline] No existe camino entre internalDoor=" + internalDoor
+			+ " e initialVertex=" + initialVertex + ". Se devuelve la recomendación sin path inicial.");
+			finalPath = "";
+			return candidateItemsFromRecommender;
+		}
+		finalPath = ShortestTrajectoryStrategy.preprocessingPath(internalDoor, pathToFirst.toString());
 
 		// Obtiene nuevamente la lista de RecommendedItem pero teniendo en
 		// cuenta la trayectoria.
 		// List<RecommendedItem> finalRecommendedItems = new LinkedList<>();
 		// for (int i = 0; i < candidateItemsToLong.size(); i++) {
 		// 	long itemGraph = candidateItemsToLong.get(i);
-		// 	System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendBaseline: Procesando itemGraph = " + itemGraph);
 		// 	for (int j = 0; j < candidateItemsFromRecommender.size(); j++) {
 		// 		RecommendedItem itemRecommender = candidateItemsFromRecommender.get(j);
-		// 		System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendBaseline: -- Comparando con itemRecommender = " + itemRecommender.getItemID());
 		// 		if (itemGraph == itemRecommender.getItemID()) {
 		// 			if (finalRecommendedItems.isEmpty()) {
 		// 				finalRecommendedItems.add(itemRecommender);
@@ -406,7 +398,6 @@ public class TrajectoryPostfilteringBasedRecommendation extends PostfilteringBas
 			}
 		}
 
-		System.out.println("✅ TrajectoryPostfilteringBasedRecommendation.recommendBaseline: finalRecommendedItems size = " + finalRecommendedItems.size());
 		return finalRecommendedItems;
 	}
 

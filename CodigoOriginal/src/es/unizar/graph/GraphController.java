@@ -1,6 +1,7 @@
 package es.unizar.graph;
 
 import java.awt.event.MouseEvent;
+import java.util.stream.Collectors;
 
 import javax.swing.JTextArea;
 import javax.swing.event.MouseInputListener;
@@ -35,7 +36,8 @@ public class GraphController implements ViewerListener{
 		}else {
 			Node n = graph.getNode(arg0);
 			String info = "ID: "+arg0+System.lineSeparator()+"nodeType: "+n.getAttribute("nodeType")+System.lineSeparator();
-			for(String key: n.attributeKeys().toList()) {
+			// for(String key: n.attributeKeys().toList()) {
+			for(String key: n.attributeKeys().collect(Collectors.toList())) {
 				if(!key.contains(".") && !key.equals("xyz") && !key.equals("nodeType")) info += key+": "+n.getAttribute(key)+System.lineSeparator();
 			}
 			infoText.setText(info);

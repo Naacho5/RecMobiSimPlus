@@ -23,11 +23,11 @@ public class SimulationTestRunner {
                 break;
                 
             case "contacts":
-                es.unizar.epidemic.tests.scenarios.ContactBasedTests.runAll();
+                es.unizar.epidemic.tests.contacts.ContactBasedTests.runAll();
                 break;
                 
             case "mixed":
-                es.unizar.epidemic.tests.mixedmode.MixedModeValidator.run();
+                es.unizar.epidemic.tests.contacts.MixedModeTests.run();
                 break;
                 
             case "compare":
@@ -49,8 +49,8 @@ public class SimulationTestRunner {
      */
     private static void runAllTests() {
         es.unizar.epidemic.tests.scenarios.SyntheticScenarioTests.runAll();
-        es.unizar.epidemic.tests.scenarios.ContactBasedTests.runAll();
-        es.unizar.epidemic.tests.mixedmode.MixedModeValidator.run();
+        es.unizar.epidemic.tests.contacts.ContactBasedTests.runAll();
+        es.unizar.epidemic.tests.contacts.MixedModeTests.run();
         es.unizar.epidemic.tests.comparison.ModelComparisonAnalyzer.compare();
     }
     
