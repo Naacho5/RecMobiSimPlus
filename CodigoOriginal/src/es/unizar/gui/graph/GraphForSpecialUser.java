@@ -262,25 +262,25 @@ public class GraphForSpecialUser {
 				addOrUpdateWeightedEdge(graph, invD1, invD2, weight);
 			}
 
-			System.out.println("===== Puertas e ítems por habitación =====");
-			for (int roomId = 1; roomId <= dataAccesGraphFile.getNumberOfRoom(); roomId++) {
-				System.out.print("Habitación " + roomId + " - Ítems: ");
-				int numItems = dataAccesGraphFile.getNumberOfItemsByRoom(roomId);
-				for (int i = 1; i <= numItems; i++) {
-					long itemId = dataAccesGraphFile.getItemOfRoom(i, roomId);
-					long externalItemId = ElementIdMapper.getBaseId(itemId);
-					System.out.print(itemId + ":" + externalItemId + " ");
-				}
-				System.out.print(" | Puertas: ");
-				int numDoors = dataAccesGraphFile.getNumberOfDoorsByRoom(roomId);
-				for (int i = 1; i <= numDoors; i++) {
-					long doorId = dataAccesGraphFile.getDoorOfRoom(i, roomId);
-					long externalDoorId = ElementIdMapper.getBaseId(doorId);
-					System.out.print(doorId + ":" + externalDoorId + " ");
-				}
-				System.out.println();
-			}
-			System.out.println("==========================================");
+			// System.out.println("===== Puertas e ítems por habitación =====");
+			// for (int roomId = 1; roomId <= dataAccesGraphFile.getNumberOfRoom(); roomId++) {
+			// 	System.out.print("Habitación " + roomId + " - Ítems: ");
+			// 	int numItems = dataAccesGraphFile.getNumberOfItemsByRoom(roomId);
+			// 	for (int i = 1; i <= numItems; i++) {
+			// 		long itemId = dataAccesGraphFile.getItemOfRoom(i, roomId);
+			// 		long externalItemId = ElementIdMapper.getBaseId(itemId);
+			// 		System.out.print(itemId + ":" + externalItemId + " ");
+			// 	}
+			// 	System.out.print(" | Puertas: ");
+			// 	int numDoors = dataAccesGraphFile.getNumberOfDoorsByRoom(roomId);
+			// 	for (int i = 1; i <= numDoors; i++) {
+			// 		long doorId = dataAccesGraphFile.getDoorOfRoom(i, roomId);
+			// 		long externalDoorId = ElementIdMapper.getBaseId(doorId);
+			// 		System.out.print(doorId + ":" + externalDoorId + " ");
+			// 	}
+			// 	System.out.println();
+			// }
+			// System.out.println("==========================================");
 
 			// Added by Nacho Palacio 2025-12-08
 			this.cachedGraph = graph;

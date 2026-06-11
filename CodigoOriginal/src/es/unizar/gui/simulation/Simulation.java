@@ -734,7 +734,7 @@ public class Simulation {
         System.out.println(" INITIALIZATION WITH SIMPLIFIED MODEL (CIRCULAR ROTATION)");
         System.out.println("=".repeat(80));
 
-        String cliquesJsonPath = "../src/es/unizar/epidemic/data/cliques.json";
+        String cliquesJsonPath = Literals.CLIQUES_JSON;
 
         java.io.File cliquesFile = new java.io.File(cliquesJsonPath);
         if (!cliquesFile.exists()) {
@@ -1184,7 +1184,7 @@ public class Simulation {
 		int independentUsers = (int) Math.ceil(totalUsers * independentUserRatio);
 		int cliqueUsers = totalUsers - independentUsers;
 
-		String cliquesJsonPath = "../src/es/unizar/epidemic/data/cliques.json";
+		String cliquesJsonPath = Literals.CLIQUES_JSON;
 
 		File cliquesFile = new File(cliquesJsonPath);
 		if (!cliquesFile.exists()) {
@@ -3517,7 +3517,6 @@ public class Simulation {
 			}
 
 			if (recommendationType.equalsIgnoreCase("Completely-random (FULLY-RAND)")) {
-				System.out.println("Recommendation type: " + recommendationType);
 				RandomRecommendation recommender = new RandomRecommendation(dataModelSpecialUser, dataAccesLayerDBMuseum);
 				recommendedItems = recommender.recommend(currentUser.userID, getHowMany());
 				//log.log(Level.WARNING, "Recommended items: " + recommendedItems.toString());
@@ -3692,7 +3691,6 @@ public class Simulation {
 					
 					if (recommendedItems.size() == 1) {
 						currentUser.hasFinishedVisit = true;
-						System.out.println("One item left for user " + currentUser.userID);
 					}
 
 					postfiltering.recommendBaseline(recommendedItems);
@@ -3917,7 +3915,6 @@ public class Simulation {
 					if (finishPath) {
 						currentPath = pathStrategy.generatePath(endVertex);
 					} else {
-						System.out.println("Generating path with NPOI strategy as fallback for user " + currentUser.userID);
 						// currentPath = pathStrategy.generatePath(startVertex);
 						RandomRecommendation recommender = new RandomRecommendation(dataModelSpecialUser, dataAccesLayerDBMuseum);
 						recommendedItems = recommender.recommend(currentUser.userID, getHowMany());

@@ -4,10 +4,10 @@ public class DistancesBetweenUsersAndTime {
 	
 	long specialUser;
 	long nonSpecialUser;
-	int startTime;
-	int endTime;
+	double startTime;
+	double endTime;
 	
-	public DistancesBetweenUsersAndTime(long specialUser, long nonSpecialUser, int startTime, int endTime) {
+	public DistancesBetweenUsersAndTime(long specialUser, long nonSpecialUser, double startTime, double endTime) {
 		super();
 		this.specialUser = specialUser;
 		this.nonSpecialUser = nonSpecialUser;
@@ -31,23 +31,23 @@ public class DistancesBetweenUsersAndTime {
 		this.nonSpecialUser = nonSpecialUser;
 	}
 
-	public int getStartTime() {
+	public double getStartTime() {
 		return startTime;
 	}
 
-	public void setStartTime(int startTime) {
+	public void setStartTime(double startTime) {
 		this.startTime = startTime;
 	}
 
-	public int getEndTime() {
+	public double getEndTime() {
 		return endTime;
 	}
 
-	public void setEndTime(int endTime) {
+	public void setEndTime(double endTime) {
 		this.endTime = endTime;
 	}
 	
-	public int getTimeTogether() {
+	public double getTimeTogether() {
 		return endTime-startTime;
 	}
 

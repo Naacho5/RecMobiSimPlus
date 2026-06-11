@@ -492,7 +492,7 @@ public class SimulationUtils {
 
         if (useRealContacts) {
             try {
-                String csvPath = "../src/es/unizar/epidemic/data/contactos.csv";
+                String csvPath = Literals.CONTACTOS_CSV;
                 int uniqueUsersInCSV = ContactTrajectoryBuilder.getUniqueUserCount(csvPath);
 
                 System.out.println("    Total users in CSV: " + uniqueUsersInCSV);
