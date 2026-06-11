@@ -24,7 +24,6 @@ public abstract class AbstractEpidemicModel implements EpidemicModel {
     
     protected Map<Integer, Map<Integer, Double>> userRoomExposureTime;
     protected Map<Integer, Map<Integer, Integer>> roomInfectiousHistory = new HashMap<>();
-    // protected Map<Integer, Map<Integer, List<Integer>>> userRoomExposureIterations = new HashMap<>();
 
     public EpidemicIterationsBinaryWriter iterationsWriter;
     
@@ -157,8 +156,6 @@ public abstract class AbstractEpidemicModel implements EpidemicModel {
         roomInfectiousHistory
             .computeIfAbsent(roomId, k -> new HashMap<>())
             .put(iteration, infectiousCount);
-
-        // System.out.println("Recorded infectious count for room " + roomId + " at iteration " + iteration + ": " + infectiousCount);
     }
 
     /**
@@ -184,7 +181,6 @@ public abstract class AbstractEpidemicModel implements EpidemicModel {
     // }
 
     public void recordUserRoomExposureIteration(int userId, int roomId, int iteration) {
-        // System.out.println("Recording exposure iteration: userId=" + userId + ", roomId=" + roomId + ", iteration=" + iteration);
         iterationsWriter.recordIteration(userId, roomId, iteration);
     }
 
@@ -391,7 +387,6 @@ public abstract class AbstractEpidemicModel implements EpidemicModel {
      * @return list of iteration numbers when the user was exposed in the room
      */
     public List<Integer> getUserRoomExposureIterationsFromDisk(int userId, int roomId) {
-        // System.out.println("Retrieving exposure iterations for userId=" + userId + ", roomId=" + roomId);
         if (iterationsWriter == null) {
             System.err.println(" ERROR: iterationsWriter is NULL");
             return new ArrayList<>();
@@ -403,12 +398,7 @@ public abstract class AbstractEpidemicModel implements EpidemicModel {
             return new ArrayList<>();
         }
         
-        // System.out.println("Fetching exposure iterations from disk for userId=" + userId + ", roomId=" + roomId);
-        // System.out.println("   - Total records in file: " + iterationsWriter.getTotalRecords());
-        // System.out.println("   - Records for this user: " + iterationsWriter.getRecordCountForUser(userId));
-        
         List<Integer> iterations = iterationsWriter.getIterations(userId, roomId);
-        // System.out.println("Retrieved " + iterations.size() + " iterations from disk for userId=" + userId + ", roomId=" + roomId);
         return iterations;
     }
     
@@ -417,10 +407,7 @@ public abstract class AbstractEpidemicModel implements EpidemicModel {
      * Should be called at the end of the simulation to ensure data persistence.
      */
     public void closeIterationsWriter() {
-        if (iterationsWriter != null) {
-            System.out.println("🔴 closeIterationsWriter() called from:");
-            new Exception().printStackTrace(System.out);
-            
+        if (iterationsWriter != null) {     
             iterationsWriter.close();
         }
     }

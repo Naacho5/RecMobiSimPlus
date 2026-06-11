@@ -77,6 +77,7 @@ public class EpidemicStatistics {
     public void endSimulation() {
         this.simulationEndTime = System.currentTimeMillis();
         if (csvWriter != null) {
+            // System.out.println("\n🔒 Cerrando CSV writer de EpidemicStatistics...");
             csvWriter.close();
         }
     }
@@ -234,7 +235,6 @@ public class EpidemicStatistics {
     //     RoomStatistics roomStat = roomStats.computeIfAbsent(roomId, k -> new RoomStatistics(roomId));
     //     roomStat.addAerosolMeasurement(concentration);
         
-    //     // Escribir a CSV (NO bloquea, es asincrónico lógicamente)
     //     csvWriter.recordAerosolMeasurement(simulationStartTime + System.currentTimeMillis(), roomId, concentration, durationSeconds);
         
     //     integratedConcentration += concentration * durationSeconds;

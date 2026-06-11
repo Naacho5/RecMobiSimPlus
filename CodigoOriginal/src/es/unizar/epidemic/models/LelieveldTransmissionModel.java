@@ -121,25 +121,19 @@ public class LelieveldTransmissionModel extends AbstractEpidemicModel {
             return 0.0;
         }
         
-        // Configurar parámetros de la habitación
         configureModelForRoom(roomId);
-        
-        // Verificar inmunidad
         UserEpidemicExtension extension = susceptible.getEpidemicExtension();
         if (extension != null && extension.isImmune()) {
             return 0.0;
         }
         
-        // Si no hay infectados históricos, no hay riesgo
         if (infectiousPeopleCount <= 0) {
             return 0.0;
         }
         
-        // Factor de protección por mascarilla del susceptible
         double maskProtectionFactor = (extension != null && extension.isMaskWearing()) ? 
                                     (1.0 - parameters.getMaskEfficiencyInh()) : 1.0;
         
-        // Calcular probabilidad usando parámetros históricos
         double infectionProb = parameters.calculateInfectionProbability(
                             timeInRoomHours, totalViralLoad, maskProtectionFactor, infectiousPeopleCount);
         

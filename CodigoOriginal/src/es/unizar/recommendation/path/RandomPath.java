@@ -150,7 +150,6 @@ public class RandomPath extends Path {
 	 * @param roomItems map of room IDs to their corresponding item IDs.
 	 */
 	public void initializeItemsByRoom(Map<Integer, List<Long>> roomItems) {	
-		// Crear nuevo mapa si es nulo
 		if (itemsDoorVisited == null) {
 			itemsDoorVisited = new HashMap<>();
 		}
@@ -178,7 +177,7 @@ public class RandomPath extends Path {
 			
 			if (allRoomElements.isEmpty()) {
 				LinkedList<Long> defaultItems = new LinkedList<>();
-				defaultItems.add(1001L); // Un ítem genérico
+				defaultItems.add(1001L);
 				itemsDoorVisited.put(roomId, defaultItems);
 			}
 		}

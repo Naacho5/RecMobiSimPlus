@@ -14,6 +14,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -329,33 +330,85 @@ public class UserInfo extends JDialog {
 		add(tableScroll3,gbc);
 	}
 	
+// 	public void reloadTables() {
+// //		System.out.println("update");
+// 		tableModel1.setRowCount(0);
+// 		for (Map.Entry<Integer,UserState> entry : stateOfUsers.entrySet()) {
+// 			UserState ui = entry.getValue();
+// 			if(roomFilter == -1 || ui.room == roomFilter) tableModel1.addRow(new Object[]{entry.getKey(),ui.room,ui.action,ui.item, ui.healthStatus}); // Modified by Nacho Palacio 2025-07-21
+// 	    }
+// 		locationOfUsers.repaint();
+// 		locationOfUsers.revalidate();
+		
+// 		tableModel2.setRowCount(0);
+// 		timeUsersInRooms.entrySet().stream().sorted((e1,e2) -> e1.getKey().getF().compareTo(e2.getKey().getF())).forEach(entry -> {
+// //		for (Map.Entry<Pair<Integer,Integer>,Double> entry : timeUsersInRooms.entrySet()) {
+// 			if(roomFilter == -1 || entry.getKey().getS() == roomFilter) tableModel2.addRow(new Object[]{entry.getKey().getF(),entry.getKey().getS(),entry.getValue()});
+// 	    });
+// 		timeOfUsersInRooms.repaint();
+// 		timeOfUsersInRooms.revalidate();
+		
+// 		tableModel3.setRowCount(0);
+// 		List<Integer> roomsWithUsers = new ArrayList<Integer>();
+// 		stateOfUsers.values().stream().distinct().sorted(Comparator.comparingInt(v -> v.room)).forEach(v -> {			
+// 			int numUsersInRoom = (int)stateOfUsers.entrySet().stream().filter(e -> e.getValue().room == v.room).count();						
+// 			if((roomFilter == -1 || v.room == roomFilter) && !roomsWithUsers.contains(v.room)) {
+// 				tableModel3.addRow(new Object[]{v.room,numUsersInRoom});
+// 				roomsWithUsers.add(v.room);
+// 			}
+// 		});
+// 		usersInRooms.repaint();
+// 		usersInRooms.revalidate();
+// 	}
+
+	// Modificado por Nacho Palacio 2026-06-02
 	public void reloadTables() {
-//		System.out.println("update");
+		// Crear snapshots sincronizados para evitar race conditions
+		Map<Integer, UserState> stateSnapshot;
+		Map<Pair<Integer, Integer>, Double> timeSnapshot;
+		
+		synchronized(stateOfUsers) {
+			stateSnapshot = new HashMap<>(stateOfUsers);
+		}
+		synchronized(timeUsersInRooms) {
+			timeSnapshot = new HashMap<>(timeUsersInRooms);
+		}
+
+		// Tabla 1: Usar stateSnapshot
 		tableModel1.setRowCount(0);
-		for (Map.Entry<Integer,UserState> entry : stateOfUsers.entrySet()) {
+		for (Map.Entry<Integer,UserState> entry : stateSnapshot.entrySet()) {
 			UserState ui = entry.getValue();
-			if(roomFilter == -1 || ui.room == roomFilter) tableModel1.addRow(new Object[]{entry.getKey(),ui.room,ui.action,ui.item, ui.healthStatus}); // Modified by Nacho Palacio 2025-07-21
-	    }
+			if(roomFilter == -1 || ui.room == roomFilter) 
+				tableModel1.addRow(new Object[]{entry.getKey(),ui.room,ui.action,ui.item,ui.healthStatus});
+		}
 		locationOfUsers.repaint();
 		locationOfUsers.revalidate();
 		
+		// Tabla 2: Usar timeSnapshot
 		tableModel2.setRowCount(0);
-		timeUsersInRooms.entrySet().stream().sorted((e1,e2) -> e1.getKey().getF().compareTo(e2.getKey().getF())).forEach(entry -> {
-//		for (Map.Entry<Pair<Integer,Integer>,Double> entry : timeUsersInRooms.entrySet()) {
-			if(roomFilter == -1 || entry.getKey().getS() == roomFilter) tableModel2.addRow(new Object[]{entry.getKey().getF(),entry.getKey().getS(),entry.getValue()});
-	    });
+		timeSnapshot.entrySet().stream()
+			.sorted((e1,e2) -> e1.getKey().getF().compareTo(e2.getKey().getF()))
+			.forEach(entry -> {
+				if(roomFilter == -1 || entry.getKey().getS() == roomFilter) 
+					tableModel2.addRow(new Object[]{entry.getKey().getF(),entry.getKey().getS(),entry.getValue()});
+			});
 		timeOfUsersInRooms.repaint();
 		timeOfUsersInRooms.revalidate();
 		
+		// Tabla 3: Usar stateSnapshot
 		tableModel3.setRowCount(0);
-		List<Integer> roomsWithUsers = new ArrayList<Integer>();
-		stateOfUsers.values().stream().distinct().sorted(Comparator.comparingInt(v -> v.room)).forEach(v -> {			
-			int numUsersInRoom = (int)stateOfUsers.entrySet().stream().filter(e -> e.getValue().room == v.room).count();						
-			if((roomFilter == -1 || v.room == roomFilter) && !roomsWithUsers.contains(v.room)) {
-				tableModel3.addRow(new Object[]{v.room,numUsersInRoom});
-				roomsWithUsers.add(v.room);
-			}
-		});
+		List<Integer> roomsWithUsers = new ArrayList<>();
+		stateSnapshot.values().stream()
+			.distinct()
+			.sorted(Comparator.comparingInt(v -> v.room))
+			.forEach(v -> {
+				int numUsersInRoom = (int)stateSnapshot.entrySet().stream()
+					.filter(e -> e.getValue().room == v.room).count();
+				if((roomFilter == -1 || v.room == roomFilter) && !roomsWithUsers.contains(v.room)) {
+					tableModel3.addRow(new Object[]{v.room, numUsersInRoom});
+					roomsWithUsers.add(v.room);
+				}
+			});
 		usersInRooms.repaint();
 		usersInRooms.revalidate();
 	}

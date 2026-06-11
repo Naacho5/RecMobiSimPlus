@@ -87,8 +87,6 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 	public void connect(String dbURL) throws ClassNotFoundException, SQLException {
 		dbInstance.connect(dbURL);
 		
-		//System.out.println(getConnection() + " -> " + dbURL);
-		
 		/*
 		 * PREVIOUS - Now there's only one connection
 		 * First implementation and info. Now only one connection and connecting (if it isn't open yet) to that connection)
@@ -109,7 +107,6 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 		
 		// PreparedStatement pr = connection.prepareStatement("PRAGMA journal_mode=WAL");
 		// boolean pragmaWAL = pr.execute();
-		// System.out.println(connection + ";PRAGMA journal_mode=WAL: "+pragmaWAL);
 		
 		// VITAL -> DB PERFORMANCE SUPER OPTIMIZED
 		// @see https://dba.stackexchange.com/questions/252445/how-does-autocommit-off-affects-bulk-inserts-performance-in-mysql-using-innodb
@@ -344,7 +341,6 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 		List<String> list = new LinkedList<>();
 		try {
 			String dbName = getConnection().getMetaData().getURL();
-        	// System.out.println("[getUserItemRatingFrom] Accediendo a la base de datos: " + dbName);
 
 			// Añadido id_item_internal 2025-10-29
 			// Query
@@ -361,7 +357,6 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 				float rating = resultSet.getFloat(3);
 				// long itemIdInternal = resultSet.getLong(4);
 
-				// System.out.println("DataAccessLayer.getUserItemRatingFrom: userId=" + userId + ", itemId=" + itemId + ", rating=" + rating + ", itemIdInternal=" + itemIdInternal);
 				list.add(userId + ";" + itemId + ";" + rating + ";");
 			}
 			
@@ -387,7 +382,6 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 		List<String> list = new LinkedList<>();
 		try {
 			String dbName = getConnection().getMetaData().getURL();
-        	System.out.println("[getUserItemContextRatingFor] Accediendo a la base de datos: " + dbName);
 
 			// Añadido id_item_internal 2025-10-29
 			// Query
@@ -416,6 +410,12 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 		return list;
 	}
 
+	/**
+	 * Gets the users, items, contexts and ratings for a specific user, ordered randomly.
+	 *
+	 * @param userID the ID of the user.
+	 * @return A list of strings representing the user-item-context-rating combinations.
+	 */
 	@Override
 	public List<String> getUserItemContextRatingRandomFor(long userID) {
 		ResultSet resultSet = null;
@@ -439,24 +439,13 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 				float rating = resultSet.getLong(4);
 				// long itemIdInternal = resultSet.getLong(5);
 				notOrdered.add(userId + ";" + itemId + ";" + context + ";" + rating + ";");
-				// System.out.println("✅ RandomRecommendation: Retrieved preference string: " + userId + ";" + itemId + ";" + context + ";" + rating + ";");
 			}
-			// System.out.println("✅ RandomRecommendation: Retrieved " + notOrdered.size() + " preferences for userID "+ userID);
-			// System.out.println("✅ RandomRecommendation: Seed used for random ordering: " + Configuration.simulation.getSeed());
-			// System.out.println("✅ RandomRecommendation: Ordering preferences randomly...");
-
-			
+	
 			resultSet.close();
 			select.close();
 			
 			// Order list by rand
 			list = orderListByRand(notOrdered);
-			// System.out.println("✅ RandomRecommendation: Preferences randomly ordered.");
-			// System.out.println("✅ RandomRecommendation: Final list size: " + list.size());
-			// System.out.println("✅ RandomRecommendation: First 20 preferences in final list:");
-			for (int i = 0; i < Math.min(20, list.size()); i++) {
-				System.out.println("    " + list.get(i));
-			}
 
 		} catch (SQLException e) {
 			log.log(Level.SEVERE, e.getClass().getName() + ": " + e.getMessage());
@@ -466,9 +455,11 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 		return list;
 	}
 
-	// SELECT id_user,id_item,id_context,rating FROM user_item_context WHERE
-	// id_user==176 ORDER BY RANDOM() LIMIT 10;
-
+	/**
+	 * Orders a list by random, using a seed for reproducibility.
+	 * @param notOrdered The list to order.
+	 * @return The ordered list.
+	 */
 	private List<String> orderListByRand(List<String> notOrdered) {
 		long variableSeed = System.nanoTime() + Configuration.simulation.getSeed(); // Added by Nacho Palacio 2025-12-09
 		// Collections.shuffle(notOrdered, new Random(Configuration.simulation.getSeed()));
@@ -983,7 +974,6 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 		try {
 			// Imprimir nombre de la base de datos ANTES del try-with-resources
 			String dbName = getConnection().getMetaData().getURL();
-			// System.out.println("[getPreferenceFor] Accediendo a la base de datos: " + dbName);
 			
 			// PreparedStatement select = getConnection().prepareStatement(
 			// 	"SELECT rating FROM user_item_context WHERE id_user = ? AND id_item_internal = ? AND id_context = ?")
@@ -998,18 +988,13 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 				select.setLong(2, itemId);
 				// select.setLong(3, contextId);
 
-				// System.out.println("[getPreferenceFor] Executing query for userId=" + userId + ", itemId=" + itemId + ", contextId=" + contextId);
-
 				try (ResultSet rs = select.executeQuery()) {
 					if (rs.next()) {
 						rating = rs.getFloat("rating");
-						// System.out.println("[getPreferenceFor] Found rating in database.");
 					}
-					//System.out.println("[getPreferenceFor] Retrieved rating: " + rating);
 				}
 			}
 		} catch (SQLException e) {
-			// System.out.println("[getPreferenceFor] ERROR: userId=" + userId + ", itemId=" + itemId + ", contextId=" + contextId);
 			log.log(Level.SEVERE, e.getClass().getName() + ": " + e.getMessage());
 			e.printStackTrace();
 		}
@@ -1062,7 +1047,6 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 
 		int currentUserCount = 0;
 		
-		// Obtener el número actual de usuarios
 		try (PreparedStatement stmt = conn.prepareStatement("SELECT COUNT(*) FROM user");
 			ResultSet rs = stmt.executeQuery()) {
 			if (rs.next()) {
@@ -1070,17 +1054,13 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 			}
 		}
 		
-		// Si ya hay suficientes usuarios, no hacer nada
 		if (currentUserCount >= totalRequiredUsers) {
-			// System.out.println("Database already has enough users.");
 			return false;
 		}
 		
-		// Comenzar una transacción para insertar los nuevos usuarios
 		conn.setAutoCommit(false);
 		try {
-			// Determinar el último id_ca_profile usado para distribuir perfiles de manera equitativa
-			int[] profileDistribution = {0, 0, 0, 0}; // Para contar cuántos usuarios hay de cada perfil (1-4)
+			int[] profileDistribution = {0, 0, 0, 0};
 			
 			try (PreparedStatement profileStmt = conn.prepareStatement("SELECT id_ca_profile, COUNT(*) FROM user GROUP BY id_ca_profile");
 				ResultSet profileRs = profileStmt.executeQuery()) {
@@ -1116,12 +1096,10 @@ public class DataAccessLayer extends DBConnection implements DataAccess {
 					insertStmt.setInt(6, profileToUse); // id_ca_profile 
 					
 					insertStmt.executeUpdate();
-					// System.out.println("Added user with ID: " + id + " and profile: " + profileToUse);
 				}
 			}
 
 			conn.commit();
-			// System.out.println("Successfully added " + (totalRequiredUsers - currentUserCount) + " new users to the database.");
 		} catch (SQLException e) {
 			// Si hay un error, hacer rollback
 			conn.rollback();

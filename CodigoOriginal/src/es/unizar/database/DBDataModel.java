@@ -110,11 +110,7 @@ public class DBDataModel extends AbstractDataModel {
 			int numberOfItems = entry.getValue(); // Added by Nacho Palacio 2025-04-15.
 
 			if (numberOfItems > 0) { // Added by Nacho Palacio 2025-04-15. Modified by Nacho Palacio 2025-05-08, antes == 0
-				// System.out.println("DBDataModel: Loading preferences for user ID " + userIDKey + " with " + numberOfItems + " items.");
 				List<String> listByUser = dataAccess.getUserItemRatingFrom(userIDKey);
-				// System.out.println("DBDataModel: Retrieved " + listByUser.size() + " preferences for user ID " + userIDKey + ".");
-				// System.out.println("DBDataModel: listByUser: " + listByUser);
-				// int numberOfItems = hashWithNumberItemsByUser.get(userIDKey);
 				preferenceArray = new GenericUserPreferenceArray(numberOfItems);
 
 				// Modified by Nacho Palacio 2025-05-08.
@@ -136,14 +132,12 @@ public class DBDataModel extends AbstractDataModel {
 					// preferenceArray.setItemID(k, internalItemID);
 					preferenceArray.setItemID(k, itemID); // Modified by Nacho Palacio 2025-10-26
 					preferenceArray.setValue(k, rating);
-					// System.out.println("DBDataModel:   Preference " + k + ": userID=" + internalUserID + ", itemID=" + itemID + " (internal: " + internalItemID + "), rating=" + rating);
 				}
 			} else { 
 				preferenceArray = new GenericUserPreferenceArray(0);
 			}
 			this.preferenceFromUsers.put(userIDKey, preferenceArray);
 		}
-		// System.out.println("DBDataModel: Loaded preferences from " + hashWithNumberItemsByUser.size() + " users.");
 
 		FastByIDMap<Collection<Preference>> prefsForItems = new FastByIDMap<Collection<Preference>>();
 		FastIDSet itemIDSet = new FastIDSet();

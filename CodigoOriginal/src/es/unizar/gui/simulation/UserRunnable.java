@@ -74,7 +74,7 @@ public class UserRunnable implements Runnable { // , Cloneable
 		int iteration = 1;
 		
 		if(MainSimulator.db.isConnected() && Configuration.simulation.registerSimInDB) {
-			MainSimulator.db.registerSimulation(Configuration.simulation.getTimeAvailableUserInSecond(),Configuration.simulation.getDelayObservingPaintingInSecond(),Configuration.simulation.getUserVelocityInKmByHour(),Configuration.simulation.getKmToPixel(),Configuration.simulation.getTimeOnStairs());
+			MainSimulator.db.registerSimulation((int)Configuration.simulation.getTimeAvailableUserInSecond(),Configuration.simulation.getDelayObservingPaintingInSecond(),Configuration.simulation.getUserVelocityInKmByHour(),Configuration.simulation.getKmToPixel(),Configuration.simulation.getTimeOnStairs());
 		}
 		
 		while (running) {
@@ -116,7 +116,6 @@ public class UserRunnable implements Runnable { // , Cloneable
 				}
 
 				// It initializes the initial position of users.
-				System.out.println("UserRunnable.run(): Antes de initializeUsers");
 				Configuration.simulation.initializeUsers();
 
 				// System.out.println(" Adding users to floor graph...");

@@ -219,22 +219,10 @@ public class EpidemicIterationsBinaryWriter {
         
         try {
             channel.force(true);
-            
-            long totalRecords = getTotalRecords();
-            long fileSizeBytes = currentOffset;
-            
-            System.out.println("[EpidemicIterationsBinaryWriter] Closing file.");
-            System.out.println("  Total records: " + totalRecords);
-            System.out.println("  Unique users: " + userRecordCount.size());
-            System.out.println("  File size: " + fileSizeBytes + " bytes");
-            
             channel.close();
             raf.close();
             
             isInitialized = false;
-            
-            System.out.println("[EpidemicIterationsBinaryWriter] File closed correctly.");
-            
         } catch (IOException e) {
             System.err.println("[EpidemicIterationsBinaryWriter] Error closing: " + e.getMessage());
             e.printStackTrace();

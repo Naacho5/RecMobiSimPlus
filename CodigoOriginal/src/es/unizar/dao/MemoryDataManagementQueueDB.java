@@ -350,14 +350,9 @@ public class MemoryDataManagementQueueDB implements DataManagementQueueDB {
 	 * Save operation for persisting user_context_item info at the end of the simulation
 	 */
 	public void save() {
-		
-		//System.out.println("*Saving QUEUE data*");
-		
 		Connection conn = getConnection();
 		
 		int count = 0;
-		
-		//System.out.println("Set elements: " + infoToPropagate.size());
 		
 		try {
 			
@@ -369,8 +364,6 @@ public class MemoryDataManagementQueueDB implements DataManagementQueueDB {
 					.prepareStatement("INSERT INTO information VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 			
 			for (InformationToPropagate i: infoToPropagate) {
-				
-				//System.out.println(i+i.getLocation()+";"+i.getCurrentTime());
 				
 				// Set prepared statement parameters
 				p.setString(1, Long.toString(i.getId_user()));
@@ -391,8 +384,6 @@ public class MemoryDataManagementQueueDB implements DataManagementQueueDB {
 				
 				count++;
 			}
-			
-			//System.out.println("Inserted in database: " + count);
 			
 			p.close();
 			

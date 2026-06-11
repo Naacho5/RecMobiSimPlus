@@ -46,7 +46,8 @@ public class SimulationResult {
     public double averageRating;            // Average user rating
     public double averageDistance;          // Average distance between items
     public double averageDistanceRooms;     // Average rooms between visited items
-
+    public double averageRecommendationRisk; // Average risk of recommended items (same risk as the macro simulator)
+    public double averageBridgeRisk;        // Average risk of recommended items (risk calculated in the recommender bridge)
     
     public SimulationResult() {
         this.scenarioName = "";
@@ -71,6 +72,8 @@ public class SimulationResult {
         this.averageRating = 0.0;
         this.averageDistance = 0.0;
         this.averageDistanceRooms = 0.0;
+        this.averageRecommendationRisk = 0.0;
+        this.averageBridgeRisk = 0.0;
     }
     
     public SimulationResult(String scenarioName, String modelUsed, int totalUsers) {

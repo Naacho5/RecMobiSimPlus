@@ -50,12 +50,6 @@ public class InterCliqueCoincidenceTracker {
         } else {
             this.secondsPerIteration = 1.0; // Fallback
         }
-        
-        System.out.println(" InterCliqueCoincidenceTracker initialized:");
-        System.out.println("   - Mapped users: " + userToClique.size());
-        System.out.println("   - Unique cliques: " + 
-                         userToClique.values().stream().distinct().count());
-        System.out.println("   - Seconds per iteration: " + secondsPerIteration);
     }
     
     /**
@@ -241,9 +235,6 @@ public class InterCliqueCoincidenceTracker {
         
         activeCoincidences.clear();
         coincidenceMap.clear();
-        
-        System.out.println(" All coincidences closed:");
-        System.out.println("   - Total coincidences recorded: " + completedCoincidences.size());
     }
 
     /**
@@ -335,7 +326,6 @@ public class InterCliqueCoincidenceTracker {
         Set<Integer> allUserIds = userToClique.keySet();
 
         // Preprocess: for each user pair, sum total coincidence time
-        // Map<userIdA, Map<userIdB, coincidenceTime>>
         Map<Integer, Map<Integer, Double>> coincidenceMatrix = new HashMap<>();
         for (int userA : allUserIds) {
             coincidenceMatrix.put(userA, new HashMap<>());
@@ -578,34 +568,6 @@ public class InterCliqueCoincidenceTracker {
         return metrics;
     }
 
-    /**
-    * Calculates the isolation rate based on inter-clique coincidences.
-    * Isolation rate = 1 - (total inter-clique coincidence time / total available user time)
-    * 
-    * @return isolation rate as a value between 0.0 and 1.0
-    */
-    // private double calculateIsolationRate() {
-    //     // Filter only inter-clique coincidences
-    //     List<CoincidenceRecord> interCliqueCoincidences = completedCoincidences.stream()
-    //         .filter(r -> r.getClique1() != r.getClique2())
-    //         .collect(Collectors.toList());
-        
-    //     if (interCliqueCoincidences.isEmpty()) {
-    //         return 1.0; // Perfect isolation
-    //     }
-        
-    //     // Calculate total coincidence time
-    //     double totalCoincidenceTime = interCliqueCoincidences.stream()
-    //         .mapToDouble(r -> r.getDurationSeconds(secondsPerIteration))
-    //         .sum();
-        
-    //     // Calculate total available time
-    //     double totalSimulationTime = getTotalSimulationTime();
-    //     double totalUserTime = totalSimulationTime * userToClique.size();
-        
-    //     // Calculate isolation rate
-    //     return 1.0 - (totalCoincidenceTime / totalUserTime);
-    // }
 
     /**
      * Calculates the isolation rate based on inter-clique coincidences.
@@ -623,18 +585,14 @@ public class InterCliqueCoincidenceTracker {
             return 1.0; // Perfect isolation
         }
         
-        // ✅ CORRECCIÓN: Contar tiempo de coincidencia POR USUARIO
         Map<Integer, Double> userCoincidenceTime = new HashMap<>();
         
         for (CoincidenceRecord record : interCliqueCoincidences) {
             double duration = record.getDurationSeconds(secondsPerIteration);
-            
-            // Sumar tiempo para AMBOS usuarios involucrados
             userCoincidenceTime.merge(record.getUser1(), duration, Double::sum);
             userCoincidenceTime.merge(record.getUser2(), duration, Double::sum);
         }
         
-        // ✅ CORRECCIÓN: Sumar el tiempo de coincidencia de TODOS los usuarios
         double totalCoincidenceTime = userCoincidenceTime.values().stream()
             .mapToDouble(Double::doubleValue)
             .sum();
@@ -646,7 +604,6 @@ public class InterCliqueCoincidenceTracker {
         // Calculate isolation rate
         double isolationRate = 1.0 - (totalCoincidenceTime / totalUserTime);
         
-        // ✅ DEBUG: Verificar que la tasa está en el rango válido
         if (isolationRate < 0.0 || isolationRate > 1.0) {
             System.err.println("⚠️  WARNING: Isolation rate out of range: " + isolationRate);
             System.err.println("    Total coincidence time: " + totalCoincidenceTime + "s");

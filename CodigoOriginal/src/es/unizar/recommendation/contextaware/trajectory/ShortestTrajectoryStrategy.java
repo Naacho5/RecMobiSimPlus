@@ -1,11 +1,14 @@
 package es.unizar.recommendation.contextaware.trajectory;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.alg.DijkstraShortestPath;
 import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.SimpleWeightedGraph;
 
 public class ShortestTrajectoryStrategy extends AbstractTrajectoryStrategy {
 
@@ -21,39 +24,70 @@ public class ShortestTrajectoryStrategy extends AbstractTrajectoryStrategy {
 	 */
 	@Override
 	public List<Long> getOptimalTrajectory(List<Long> vertices, long initialVertex) {
+		if (vertices == null || vertices.isEmpty()) {
+			return new LinkedList<>();
+		}
+
+		SimpleWeightedGraph<Long, DefaultWeightedEdge> localSubgraph =
+        	new SimpleWeightedGraph<>(DefaultWeightedEdge.class);
+    	Map<String, String> localPaths = new TreeMap<>();
+
+		// Clean subgraph
+		// subgraph = new SimpleWeightedGraph<>(DefaultWeightedEdge.class);  // reset
+    	// pathsBetweenVertices.clear();
+
 		// Add vertex
 		for (int v = 0; v < vertices.size(); v++) {
-			subgraph.addVertex(vertices.get(v));
+			// subgraph.addVertex(vertices.get(v));
+			localSubgraph.addVertex(vertices.get(v));
 		}
 		// Add weights
-		addWeights(vertices);
-
+		// addWeights(vertices);
+		addWeights(vertices, localSubgraph, localPaths);
+		
 		// A Hamiltonian path is a path that visits each vertex exactly once.
-		List<Long> pathHamiltonianPath = HamiltonianPath.getApproximateOptimalForCompleteGraph(subgraph, initialVertex);
-
+		// List<Long> pathHamiltonianPath = HamiltonianPath.getApproximateOptimalForCompleteGraph(subgraph, initialVertex);
+		List<Long> pathHamiltonianPath = HamiltonianPath.getApproximateOptimalForCompleteGraph(localSubgraph, initialVertex);
+		System.out.println("ShortestTrajectoryStrategy: pathHamiltonianPath=" + pathHamiltonianPath); // Debugging line
 		//log.debug(pathHamiltonianPath.toString());
 		return pathHamiltonianPath;
 	}
 
-	public void addWeights(List<Long> vertices) {
-		// Shortest paths between peers of recommended items
+	/**
+	 * Add weights to the subgraph based on the shortest paths in the original graph.
+	 * @param vertices the list of vertices to consider for the subgraph
+	 * @param localSubgraph the subgraph to which weights will be added
+	 * @param localPaths a map to store the paths between vertices for debugging purposes
+	 */
+	public void addWeights(List<Long> vertices,
+						SimpleWeightedGraph<Long, DefaultWeightedEdge> localSubgraph,
+						Map<String, String> localPaths) {
 		for (int i = 0; i < vertices.size(); i++) {
 			long startVertex = vertices.get(i);
 			for (int j = i + 1; j < vertices.size(); j++) {
 				long endVertex = vertices.get(j);
 				List<DefaultWeightedEdge> pathTemp = DijkstraShortestPath.findPathBetween(graph, startVertex, endVertex);
 
+				if (pathTemp == null || pathTemp.isEmpty()) {
+					continue;
+				}
+
 				String path = preprocessingPath(startVertex, pathTemp.toString());
-				pathsBetweenVertices.put(startVertex + ", " + endVertex, path);
-				pathsBetweenVertices.put(endVertex + ", " + startVertex, reversePath(path));
+				localPaths.put(startVertex + ", " + endVertex, path);
+				localPaths.put(endVertex + ", " + startVertex, reversePath(path));
 
 				double weight = 0;
 				for (int k = 0; k < pathTemp.size(); k++) {
-					DefaultWeightedEdge edge = pathTemp.get(k);
-					weight += graph.getEdgeWeight(edge);
+					weight += graph.getEdgeWeight((DefaultWeightedEdge) pathTemp.get(k));
 				}
-				subgraph.setEdgeWeight(subgraph.addEdge(startVertex, endVertex), weight);
-				//log.debug(startVertex + ", " + endVertex + "-> " + weight);
+
+				DefaultWeightedEdge e = localSubgraph.getEdge(startVertex, endVertex);
+				if (e == null) {
+					e = localSubgraph.addEdge(startVertex, endVertex);
+				}
+				if (e != null) {
+					localSubgraph.setEdgeWeight(e, weight);
+				}
 			}
 		}
 	}
@@ -72,7 +106,6 @@ public class ShortestTrajectoryStrategy extends AbstractTrajectoryStrategy {
 	public static String preprocessingPath(long startVertex, String pathTemp) {
 		String[] arrayPaths = pathTemp.split(", ");
 		String path = "";
-		// path += "(" + startVertex + " : " + startVertex + ")";
 		String[] arrayEdge = null;
 		String[] arrayNextEdge = null;
 		// The first edge:

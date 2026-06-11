@@ -131,13 +131,9 @@ public class MemoryDataManagementUserDB implements DataManagementUserDB {
 	 */
 	public void save() {
 		
-		//System.out.println("*Saving user data*");
-		
 		Connection conn = getConnection();
 		
 		int count = 0;
-		
-		//System.out.println("Set elements: " + infoToPropagate.size());
 		
 		try {
 			
@@ -165,8 +161,6 @@ public class MemoryDataManagementUserDB implements DataManagementUserDB {
 				
 				count++;
 			}
-			
-			//System.out.println("Inserted in database: " + count);
 			
 			p.close();
 			
@@ -208,24 +202,7 @@ public class MemoryDataManagementUserDB implements DataManagementUserDB {
 		String sql = "SELECT * FROM " + USER_ITEM_CONTEXT_TB;
 		Statement selectStatement = getConnection().createStatement();
 
-		ResultSet results = selectStatement.executeQuery(sql);
-
-		/*
-		ResultSetMetaData rsmd = results.getMetaData();
-		int columnsNumber = rsmd.getColumnCount();
-		
-		System.out.println(columnsNumber);
-		
-		
-		while (results.next()) {
-		    for (int i = 1; i <= columnsNumber; i++) {
-		        if (i > 1) System.out.print(",  ");
-		        String columnValue = results.getString(i);
-		        System.out.print(columnValue + " " + rsmd.getColumnName(i));
-		    }
-		    System.out.println("");
-		}*/
-		
+		ResultSet results = selectStatement.executeQuery(sql);		
 		
 		// id_user, id_item, id_context, rating, opinion, user_provided
 		while (results.next()) {

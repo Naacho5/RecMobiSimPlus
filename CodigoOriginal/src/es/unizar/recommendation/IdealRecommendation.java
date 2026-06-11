@@ -14,23 +14,18 @@ import es.unizar.util.GenericRecommendedItem;
 
 public class IdealRecommendation {
 
-
-	// Data model donde estan todos los items votados por el userID.
 	public DBDataModel dataModelUserID;
 	public DataAccessLayer dataAccessLayer;
 
 	public IdealRecommendation(final DBDataModel dataModelUserID, DataAccessLayer dataAccessLayer) {
-		// Data Model con los items vistos hasta el momento.
 		this.dataModelUserID = dataModelUserID;
 		this.dataAccessLayer = dataAccessLayer;
 	}
 
 	public List<RecommendedItem> recommend(long userID, int howMany, long context) throws TasteException {
-		// Obtiene la preferencia de todos items del userID
 		List<String> allPreferences = dataAccessLayer.getUserItemContextRatingFor(userID);
 		PreferenceArray seenPreferences;
 		try {
-			// Quita los items vistos de la lista.
 			seenPreferences = dataModelUserID.getPreferencesFromUser(userID);
 		} catch (NoSuchUserException e) {
 			seenPreferences = null;
@@ -38,17 +33,13 @@ public class IdealRecommendation {
 
 		List<RecommendedItem> topList = new LinkedList<RecommendedItem>();
 		int posAll = 0;
-		while (topList.size() != howMany && posAll <= allPreferences.size()) {
+		while (topList.size() != howMany && posAll < allPreferences.size()) { // Modificado por Nacho Palacio 2026-06-10
 			String[] array = allPreferences.get(posAll).split(";");
 			long itemID = Long.valueOf(array[1]).longValue();
 			long contextID = Long.valueOf(array[2]).longValue();
 			float rating = Float.valueOf(array[3]).floatValue();
-			// long itemIDInternal = Long.valueOf(array[4]).longValue();
 
-			// Obtiene solo los items no vistos.
-			if ((seenPreferences == null || !seenPreferences.hasPrefWithItemID(itemID)) && contextID == context) {
-				// topList.add(new GenericRecommendedItem(itemID, rating));
-				System.out.println("IdealRecommendation: Recomendando itemID " + itemID + " con rating " + rating + " para userID " + userID + " en contexto " + context);
+			if ((seenPreferences == null || !seenPreferences.hasPrefWithItemID(itemID))) {
 				topList.add(new GenericRecommendedItem(itemID, rating)); // Modified by Nacho Palacio 2025-11-05
 			}
 			posAll++;

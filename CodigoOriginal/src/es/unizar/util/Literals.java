@@ -21,6 +21,10 @@ public class Literals {
 	//public static final String IMAGES_PATH = file.getAbsolutePath() + File.separator + "src" + File.separator + "es" + File.separator + "unizar" + File.separator + "images" + File.separator;
 	public static final String LOGO_PATH = IMAGES_PATH + "RecMobiSim.png";
 
+	public static final String PATH_EPIDEMIC = PATH + "epidemic" + File.separator;
+	public static final String CLIQUES_JSON = PATH_EPIDEMIC + "cliques.json";
+	public static final String CONTACTOS_CSV = PATH_EPIDEMIC + "contactosFinal.csv";
+
 	/**
 	 * File names
 	 */

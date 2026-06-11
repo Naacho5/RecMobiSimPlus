@@ -59,15 +59,12 @@ public class DataAccessGraphFile extends DataAccess {
 	public long getDoorOfRoom(int door, int room) {
 		// String doorId = getPropertyValue(Literals.DOOR + door + "_" + room);
 		String doorId = getPropertyValue(Literals.DOOR_OF_ROOM + door + "_" + room); // Modified by Nacho Palacio 2025-05-02
-		// System.out.println("GraphFile: Obteniendo Door ID externo de " + Literals.DOOR_OF_ROOM + door + "_" + room + " = " + doorId);
 		if (doorId == null || doorId.isEmpty()) {
 			return -1;
 		}
 		
 		long rawId = Long.parseLong(doorId);
-		// System.out.println("GraphFile: Door ID externo obtenido: " + rawId);
 		long internalId = ElementIdMapper.convertToRangeId(rawId, ElementIdMapper.CATEGORY_DOOR);
-		// System.out.println("GraphFile: Convirtiendo Door ID externo " + rawId + " a interno " + internalId);
 		return internalId;
 	}
 
@@ -140,33 +137,23 @@ public class DataAccessGraphFile extends DataAccess {
 		int totalRoom = this.getNumberOfRoom();
 		int posRoom = randInt(1, totalRoom);
 		long door = -1;
-		// System.out.println("Selected room: " + posRoom);
 		if (this.getRoomNumberSubrooms(posRoom) > 0) {
 			int posSubroom = randInt(1, this.getRoomNumberSubrooms(posRoom));
-			//posRoom = this.getSubroom(posSubroom, posRoom);
 			int totalDoor = this.getNumberOfDoorsBySubroom(posSubroom, posRoom) + this.getNumberOfInvisibleDoorsBySubroom(posSubroom, posRoom);
 			int posDoor = randInt(1, totalDoor);
-			// System.out.println("Selected subRoom: " + posSubroom);
-			// System.out.println("Selected door: " + posDoor + " (total doors: " + totalDoor + ")");
 			if (posDoor > this.getNumberOfDoorsBySubroom(posSubroom, posRoom)) {
-				// System.out.println("It's an invisible door");
 				door = this.getInvisibleDoorOfSubroom(posDoor - this.getNumberOfDoorsBySubroom(posSubroom, posRoom), posSubroom, posRoom);
 			}
 			else {
-				// System.out.println("It's a normal door");
 				door = this.getDoorOfSubroom(posDoor, posSubroom, posRoom);
 			}
 		}
 		else {
-			// System.out.println("Selected room: " + posRoom);
 			int totalDoor = this.getNumberOfDoorsByRoom(posRoom);
 			int posDoor = randInt(1, totalDoor);
 			door = this.getDoorOfRoom(posDoor, posRoom);
-
-			// System.out.println("Selected door: " + posDoor + " (total doors: " + totalDoor + ")");
 		}
 		
-		// System.out.println("Selected door ID: " + door);
 		return door;
 	}
 
@@ -474,7 +461,6 @@ public class DataAccessGraphFile extends DataAccess {
 			}
 			
 			int numDoors = getNumberOfDoorsBySubroom(sr, r) + getNumberOfInvisibleDoorsBySubroom(sr, r);
-			// System.out.println("Room " + r + ", subroom " + sr + "; numDoors = " + numDoors);
 			return numDoors;
 		}
 	}

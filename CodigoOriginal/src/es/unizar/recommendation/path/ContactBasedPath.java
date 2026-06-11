@@ -18,6 +18,7 @@ public class ContactBasedPath extends Path {
     
     private Map<Integer, List<ContactTrajectoryBuilder.UserRoomEvent>> trajectories;
     private int userId;
+    private static final double MAX_BASE_EVENT_TIME_SECONDS = 0.0;
     
     public ContactBasedPath(
             Map<Integer, List<ContactTrajectoryBuilder.UserRoomEvent>> trajectories, 
@@ -25,6 +26,12 @@ public class ContactBasedPath extends Path {
         super();
         this.trajectories = trajectories;
         this.userId = userId;
+    }
+
+    private boolean isBaseEvent(ContactTrajectoryBuilder.UserRoomEvent event) {
+        return event != null &&
+            event.scope != null &&
+            event.scope.equalsIgnoreCase("BASE");
     }
     
     /**
@@ -35,8 +42,13 @@ public class ContactBasedPath extends Path {
      */
     @Override
     public String generatePath(long startVertex) {
-        startVertex = ensureInternalId(startVertex, ElementIdMapper.CATEGORY_ITEM);
-        
+        // startVertex = ensureInternalId(startVertex, ElementIdMapper.CATEGORY_ITEM);
+        if (!ElementIdMapper.isInCorrectRange(startVertex, ElementIdMapper.CATEGORY_ITEM) &&
+            !ElementIdMapper.isInCorrectRange(startVertex, ElementIdMapper.CATEGORY_DOOR) &&
+            !ElementIdMapper.isInCorrectRange(startVertex, ElementIdMapper.CATEGORY_STAIRS)) {
+            startVertex = ensureInternalId(startVertex, ElementIdMapper.CATEGORY_ITEM);
+        }
+
         StringBuilder pathBuilder = new StringBuilder();
         
         // Get user events (already sorted)
@@ -67,29 +79,102 @@ public class ContactBasedPath extends Path {
         
         // Iterate over contact events
         for (int eventIndex = 0; eventIndex < events.size(); eventIndex++) {
+            System.out.println("Processing event " + (eventIndex + 1) + "/" + events.size() + " for user " + userId);
+
             ContactTrajectoryBuilder.UserRoomEvent currentEvent = events.get(eventIndex);
             int currentRoom = currentEvent.roomId;
 
             // Added by Nacho Palacio 2025-11-25
             int effectiveRoom = currentRoom; // Room to use (can be redirected)
-            
+            System.out.println("Event " + (eventIndex + 1) + " - Effective room: " + effectiveRoom);
             currentRoom = effectiveRoom;
 
-            // DEBUG
-            // System.out.println("\n--- EVENT " + (eventIndex + 1) + "/" + events.size() + " ---");
-            // System.out.println("   - Event: " + currentEvent);
-            // System.out.println("   - Current room: " + currentRoom);
-            // System.out.println("   - UserId: " + currentEvent.userId);
-            // System.out.println("   - Start time: " + currentEvent.startTime + "s");
-            // System.out.println("   - End time: " + currentEvent.endTime + "s");
-            // System.out.println("   - Accumulated current time: " + currentTime + "s");
-            // System.out.println("   - Maximum allowed time: " + inputTime + "s");
-            
-            roomVisited.add(currentRoom);
+            // roomVisited.add(currentRoom);
+            if (roomVisited.isEmpty() || roomVisited.get(roomVisited.size() - 1) != currentRoom) {
+                System.out.println("Visited new room: " + currentRoom);
+                roomVisited.add(currentRoom);
+            }
+
+            double eventDuration = currentEvent.endTime - currentEvent.startTime;
+            if (eventDuration <= 0) {
+                System.out.println("      Warning! Event with non-positive duration: " + eventDuration + " seconds");
+                continue;
+            }
+
+            boolean isBaseEvent = isBaseEvent(currentEvent);
+
+            // BASE = waiting state: no item visits, only possible transition to next room
+            if (isBaseEvent) {
+                System.out.println("      Base event detected. Duration: " + eventDuration + " seconds");
+                if (eventIndex < events.size() - 1) {
+                    ContactTrajectoryBuilder.UserRoomEvent nextEvent = events.get(eventIndex + 1);
+                    int nextRoom = nextEvent.roomId;
+
+                    if (currentRoom > 0 && nextRoom > 0 && currentRoom != nextRoom) {
+                        System.out.println("      Transition from room " + currentRoom + " to room " + nextRoom);
+                        int indexDoor = isDirectlyConnected(currentRoom, nextRoom);
+
+                        if (indexDoor == -1) {
+                            List<Integer> roomPath = findRoomPathBFS(currentRoom, nextRoom);
+                            System.out.println("DEBUG roomPath (BASE) = " + roomPath);
+
+                            if (roomPath == null || roomPath.size() < 2) {
+                                System.err.println(" Route not found between rooms " + currentRoom + " and " + nextRoom);
+                            } else {
+                                for (int i = 0; i < roomPath.size() - 1; i++) {
+                                    int fromRoom = roomPath.get(i);
+                                    int toRoom = roomPath.get(i + 1);
+                                    long doorId = findConnectingDoor(fromRoom, toRoom);
+                                    long connectedDoor = getConnectedDoor(doorId);
+
+                                    System.out.println(
+                                        "DEBUG BFS step (BASE): " + fromRoom + " -> " + toRoom +
+                                        " doorId=" + doorId +
+                                        " connectedDoor=" + connectedDoor +
+                                        " connectedDoorRoom=" + getRoomFromItem(connectedDoor)
+                                    );
+
+                                    if (doorId > 0 && connectedDoor > 0) {
+                                        String transition = getToConnectedDoor(currentVertex, doorId, itemVisited, connectedDoor);
+                                        pathBuilder.append(transition);
+                                        currentTime += getCurrentTimeConnectedDoors(transition);
+                                        currentVertex = getEndVertex(transition);
+                                    } else {
+                                        break;
+                                    }
+                                }
+                            }
+                        } else {
+                            try {
+                                System.out.println("      Direct connection found between rooms " + currentRoom + " and " + nextRoom + " through door index " + indexDoor);
+                                int numDoors = accessGraphFile.getNumDoorsByRoom(currentRoom);
+                                if (numDoors > 0) {
+                                    System.out.println("      Number of doors in current room: " + numDoors);
+                                    long doorId = accessGraphFile.getDoorOfRoomWithIndex(indexDoor, currentRoom);
+                                    long connectedDoor = getConnectedDoor(doorId);
+                                    int connectedDoorRoom = getRoomFromItem(connectedDoor);
+
+                                    if (connectedDoorRoom == nextRoom) {
+                                        String transition = getToConnectedDoor(currentVertex, doorId, itemVisited, connectedDoor);
+                                        pathBuilder.append(transition);
+                                        currentTime += getCurrentTimeConnectedDoors(transition);
+                                        currentVertex = getEndVertex(transition);
+                                    }
+                                }
+                            } catch (Exception e) {
+                                // Ignore transition error in BASE events
+                            }
+                        }
+                    }
+                }
+
+                continue;
+            }
+
             LinkedList<Long> itemsByRoom = (LinkedList<Long>) itemsDoorVisited_cloned.get(currentRoom);
             
             if (itemsByRoom == null) {
-                System.err.println("      Warning! Room " + currentRoom + " without items in cache");
+                System.out.println("      Warning! Room " + currentRoom + " without items in cache");
                 itemsByRoom = new LinkedList<>();
                 itemsDoorVisited_cloned.put(currentRoom, itemsByRoom);
             }
@@ -108,18 +193,32 @@ public class ContactBasedPath extends Path {
                     doorsOnlyInRoom.add(element);
                 }
             }
-            
-            // Calculate available time in this room
-            double timeInRoom = currentEvent.endTime - currentEvent.startTime;
+
+            double timeInRoom = Math.max(0, Math.min(eventDuration, inputTime));
             double startTimeInRoom = currentTime;
+
+            double timePerItem;
+            if (Configuration.instance != null && 
+                Configuration.instance.getContactTrajectoryMode() == Configuration.ContactTrajectoryMode.REAL_CHRONOLOGY) {
+                // REAL_CHRONOLOGY: distribute event time among all items in the room
+                int availableItems = itemsOnlyInRoom.size();
+                timePerItem = (availableItems > 0) ? (timeInRoom / availableItems) : timeInRoom;
+                System.out.println("      REAL_CHRONOLOGY mode: " + availableItems + " items available, " + 
+                                   String.format("%.2f", timePerItem) + " seconds per item");
+            } else {
+                // Traditional modes: use delayObservingPainting
+                System.out.println("      TRADITIONAL mode: using fixed time per item: " + Configuration.simulation.getDelayObservingPaintingInSecond() + " seconds");
+                timePerItem = Configuration.simulation.getDelayObservingPaintingInSecond();
+            }
             
             // Visit items inside the room (RandomPath LOGIC)
             while (currentTime - startTimeInRoom < timeInRoom && 
                 itemVisited.size() < numberOfItems && 
                 !itemsOnlyInRoom.isEmpty()) {
                 
-                double random = Math.random();
-                int indexRandom = (int) (random * itemsOnlyInRoom.size());
+                // double random = Math.random();
+                // int indexRandom = (int) (random * itemsOnlyInRoom.size());
+                int indexRandom = Configuration.simulation.random.nextInt(itemsOnlyInRoom.size()); // MOdificado por Nacho Palacio 2026-06-04
                 long itemToVisit = itemsOnlyInRoom.get(indexRandom);
                 
                 if (ElementIdMapper.isInCorrectRange(itemToVisit, ElementIdMapper.CATEGORY_ITEM)) {
@@ -130,22 +229,20 @@ public class ContactBasedPath extends Path {
                     pathBuilder.append(edge);
                     
                     itemVisited.add(itemToVisit);
-                    currentTime += getCurrentTime(currentVertex, itemToVisit) + 
-                                Configuration.simulation.getDelayObservingPaintingInSecond();
+                    // currentTime += getCurrentTime(currentVertex, itemToVisit) + 
+                    //             Configuration.simulation.getDelayObservingPaintingInSecond();
+                    currentTime += getCurrentTime(currentVertex, itemToVisit) + timePerItem;
+                    
+                    System.out.println("      Visiting item " + itemToVisit + " in room " + currentRoom + 
+                        " - Current time in room: " + (currentTime - startTimeInRoom) + "/" + timeInRoom + " seconds, currentTime: " + currentTime + " seconds");
                     
                     currentVertex = itemToVisit;
                 } else {
                     // If for some reason there's a door, remove it
-                    System.err.println("         Warning! Unexpected element in items pool: " + itemToVisit);
+                    System.out.println("         Warning! Unexpected element in items pool: " + itemToVisit);
                     itemsOnlyInRoom.remove(itemToVisit);
                 }
 
-                // Event progress log
-                // System.out.println("    Event " + (eventIndex+1) + ":");
-                // System.out.println("      - Event time: " + timeInRoom + "s");
-                // System.out.println("      - Time consumed (path): " + (currentTime - startTimeInRoom) + "s");
-                // System.out.println("      - Generated items: " + itemVisited.size());
-                // System.out.println("      - Difference: " + (timeInRoom - (currentTime - startTimeInRoom)) + "s");
             }
 
             // Perform transition between rooms when event ends
@@ -153,21 +250,32 @@ public class ContactBasedPath extends Path {
                 ContactTrajectoryBuilder.UserRoomEvent nextEvent = events.get(eventIndex + 1);
                 int nextRoom = nextEvent.roomId;
 
-                if (currentRoom != nextRoom) {
+                // if (currentRoom != nextRoom) {
+                if (currentRoom > 0 && nextRoom > 0 && currentRoom != nextRoom) {
                    // Search for a door connecting both rooms
                     int indexDoor = isDirectlyConnected(currentRoom, nextRoom);
+                    System.out.println("      Transition to next room " + nextRoom + " - Direct connection index: " + indexDoor);
                     if (indexDoor == -1) {
+                        System.out.println("      No direct connection found between rooms " + currentRoom + " and " + nextRoom + ". Searching for path...");
                         StringBuilder debugPath = new StringBuilder();
                         List<Integer> roomPath = findRoomPathBFS(currentRoom, nextRoom);
+                        System.out.println("DEBUG roomPath (END_EVENT) = " + roomPath);
+
                         if (roomPath == null || roomPath.size() < 2) {
-                           System.err.println("          Route not found between rooms " + currentRoom + " and " + nextRoom);
+                        System.out.println("          Route not found between rooms " + currentRoom + " and " + nextRoom);
                         } else {
-                            // Generate intermediate transitions
                             for (int i = 0; i < roomPath.size() - 1; i++) {
                                 int fromRoom = roomPath.get(i);
                                 int toRoom = roomPath.get(i + 1);
                                 long doorId = findConnectingDoor(fromRoom, toRoom);
                                 long connectedDoor = getConnectedDoor(doorId);
+
+                                System.out.println(
+                                    "DEBUG BFS step (END_EVENT): " + fromRoom + " -> " + toRoom +
+                                    " doorId=" + doorId +
+                                    " connectedDoor=" + connectedDoor +
+                                    " connectedDoorRoom=" + getRoomFromItem(connectedDoor)
+                                );
 
                                 if (doorId > 0 && connectedDoor > 0) {
                                     String transition = getToConnectedDoor(currentVertex, doorId, itemVisited, connectedDoor);
@@ -177,7 +285,6 @@ public class ContactBasedPath extends Path {
                                     currentVertex = getEndVertex(transition);
                                 } 
                                 else {
-                                    // System.err.println("          Could not generate transition between " + fromRoom + " and " + toRoom);
                                     break;
                                 }
                             }
@@ -185,6 +292,7 @@ public class ContactBasedPath extends Path {
                     } else {
                         // Rooms are connected, perform direct transition between rooms
                        try {
+                            System.out.println("      Direct connection found between rooms " + currentRoom + " and " + nextRoom + " through door index " + indexDoor);
                             int numDoors = accessGraphFile.getNumDoorsByRoom(currentRoom);
                             if (numDoors > 0) {
                                 long doorId = accessGraphFile.getDoorOfRoomWithIndex(indexDoor, currentRoom);
@@ -213,14 +321,13 @@ public class ContactBasedPath extends Path {
         
         finalPath = eraseRepeatedObjects(finalPath);
 
-        // System.out.println("   📤 Path after cleaning: " + finalPath);
-
         // Remove the last comma
         if (finalPath.length() >= 2) {
-            // System.out.println("   📤 Final path: " + finalPath.substring(0, finalPath.length() - 2));
+            System.out.println("Generated path for user " + userId + ": " + finalPath);
             return finalPath.substring(0, finalPath.length() - 2);
         }
 
+        System.out.println("Generated path for user " + userId + ": " + finalPath);
         
         return finalPath;
     }

@@ -821,29 +821,6 @@ public class MainSimulator {
 		JSeparator separator_simulation_2 = new JSeparator();
 		simulationMenu.add(separator_simulation_2);
 
-		// JMenuItem testModelMenuItem4 = new JMenuItem("Test Gráficas");
-		// testModelMenuItem4.addActionListener(new ActionListener() {
-		// 	public void actionPerformed(ActionEvent arg0) {
-		// 		new Thread(() -> {
-		// 			MainSimulator.printConsole("Ejecutando tests de gráficas...", Level.WARNING);
-		// 			es.unizar.epidemic.tests.TestGraficas.main(new String[]{});
-		// 		}).start();
-		// 	}
-		// });
-		// testModelMenuItem4.setFont(new Font("SansSerif", Font.PLAIN, 16));
-		// simulationMenu.add(testModelMenuItem4);
-
-		// JMenuItem simulationValidatorMenuItem = new JMenuItem("Test Simulación Completa");
-		// simulationValidatorMenuItem.addActionListener(new ActionListener() {
-		// 	public void actionPerformed(ActionEvent arg0) {
-		// 		new Thread(() -> {
-		// 			MainSimulator.printConsole("Ejecutando validador de simulaciones completas...", Level.WARNING);
-		// 			es.unizar.epidemic.tests.SimulationEpidemicValidator.main(new String[]{});
-		// 		}).start();
-		// 	}
-		// });
-		// simulationValidatorMenuItem.setFont(new Font("SansSerif", Font.PLAIN, 16));
-		// simulationMenu.add(simulationValidatorMenuItem);
 		JMenuItem simulationValidatorMenuItem = new JMenuItem("Test sintéticos");
 		simulationValidatorMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
@@ -856,64 +833,6 @@ public class MainSimulator {
 		simulationValidatorMenuItem.setFont(new Font("SansSerif", Font.PLAIN, 16));
 		simulationMenu.add(simulationValidatorMenuItem);
 
-		// JMenuItem contactsValidatorMenuItem = new JMenuItem("Test Validación de Contactos");
-		// contactsValidatorMenuItem.addActionListener(new ActionListener() {
-		// 	public void actionPerformed(ActionEvent arg0) {
-		// 		new Thread(() -> {
-		// 			MainSimulator.printConsole("Ejecutando validador de contactos...", Level.WARNING);
-		// 			es.unizar.epidemic.tests.ContactValidationTest.main(new String[]{});
-		// 		}).start();
-		// 	}
-		// });
-		// contactsValidatorMenuItem.setFont(new Font("SansSerif", Font.PLAIN, 16));
-		// simulationMenu.add(contactsValidatorMenuItem);
-
-		// JMenuItem contactComparisonMenuItem = new JMenuItem("Comparar Sintéticas vs Reales");
-		// contactComparisonMenuItem.addActionListener(new ActionListener() {
-		// 	public void actionPerformed(ActionEvent arg0) {
-		// 		new Thread(() -> {
-		// 			MainSimulator.printConsole("Ejecutando comparación de enfoques...", Level.WARNING);
-		// 			es.unizar.epidemic.tests.SimulationEpidemicValidator.compareApproaches();
-		// 		}).start();
-		// 	}
-		// });
-		// contactComparisonMenuItem.setFont(new Font("SansSerif", Font.PLAIN, 16));
-		// simulationMenu.add(contactComparisonMenuItem);
-		// JMenuItem contactComparisonMenuItem = new JMenuItem("Comparar Sintéticas vs Reales");
-		// contactComparisonMenuItem.addActionListener(new ActionListener() {
-		// 	public void actionPerformed(ActionEvent arg0) {
-		// 		new Thread(() -> {
-		// 			MainSimulator.printConsole("Ejecutando comparación entre modelos...", Level.WARNING);
-		// 			es.unizar.epidemic.tests.comparison.ModelComparisonAnalyzer.compare();
-		// 		}).start();
-		// 	}
-		// });
-		// contactComparisonMenuItem.setFont(new Font("SansSerif", Font.PLAIN, 16));
-		// simulationMenu.add(contactComparisonMenuItem);
-
-		// JMenuItem spatialValidationMenuItem = new JMenuItem("Validar Contactos Espaciales");
-		// spatialValidationMenuItem.addActionListener(new ActionListener() {
-		// 	public void actionPerformed(ActionEvent arg0) {
-		// 		new Thread(() -> {
-		// 			MainSimulator.printConsole("Ejecutando validación de contactos espaciales...", Level.WARNING);
-		// 			es.unizar.epidemic.tests.SpatialIsolationIntegrationTest.main(new String[]{});
-		// 		}).start();
-		// 	}
-		// });
-		// spatialValidationMenuItem.setFont(new Font("SansSerif", Font.PLAIN, 16));
-		// simulationMenu.add(spatialValidationMenuItem);
-
-		// JMenuItem mixContactModelTest = new JMenuItem("Validar Modelo de Contactos Mixto");
-		// mixContactModelTest.addActionListener(new ActionListener() {
-		// 	public void actionPerformed(ActionEvent arg0) {
-		// 		new Thread(() -> {
-		// 			MainSimulator.printConsole("Ejecutando validación de contactos modelo mixto...", Level.WARNING);
-		// 			es.unizar.epidemic.tests.SimulationEpidemicValidator.testMixedModeValidation();
-		// 		}).start();
-		// 	}
-		// });
-		// mixContactModelTest.setFont(new Font("SansSerif", Font.PLAIN, 16));
-		// simulationMenu.add(mixContactModelTest);
 		JMenuItem contactsTestsMenuItem = new JMenuItem("Test 1 contactos");
 		contactsTestsMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
@@ -938,17 +857,17 @@ public class MainSimulator {
 		mixContactModelTest.setFont(new Font("SansSerif", Font.PLAIN, 16));
 		simulationMenu.add(mixContactModelTest);
 
-		// JMenuItem testModelMenuItem5 = new JMenuItem("Test Escenarios");
-		// testModelMenuItem5.addActionListener(new ActionListener() {
-		// 	public void actionPerformed(ActionEvent arg0) {
-		// 		new Thread(() -> {
-		// 			MainSimulator.printConsole("Ejecutando tests de escenarios...", Level.WARNING);
-		// 			es.unizar.epidemic.tests.TestScenarios.main(new String[]{});
-		// 		}).start();
-		// 	}
-		// });
-		// testModelMenuItem5.setFont(new Font("SansSerif", Font.PLAIN, 16));
-		// simulationMenu.add(testModelMenuItem5);
+		JMenuItem realChronologyTestMenuItem = new JMenuItem("Test 3 contactos");
+        realChronologyTestMenuItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent arg0) {
+                new Thread(() -> {
+                    MainSimulator.printConsole("Ejecutando prueba 3 de contactos", Level.WARNING);
+                    es.unizar.epidemic.tests.contacts.RealChronologyTests.run();
+                }).start();
+            }
+        });
+        realChronologyTestMenuItem.setFont(new Font("SansSerif", Font.PLAIN, 16));
+        simulationMenu.add(realChronologyTestMenuItem);
 
 		JMenuItem macroTestsMenuItem = new JMenuItem("Test macro");
 		macroTestsMenuItem.addActionListener(new ActionListener() {
@@ -1256,7 +1175,7 @@ public class MainSimulator {
 
 				// Load the dictionary
 				drawFloor.loadDiccionaryItemLocation();
-				System.out.println("Dictionary of items loaded.");
+				// System.out.println("Dictionary of items loaded.");
 			}
 
 			// The loaded floors are printed on the console.
@@ -1331,7 +1250,6 @@ public class MainSimulator {
 		
 		int totalItems = itemFile.getNumberOfItems();
 		data.totalItems = totalItems;
-		// System.out.println("analizeSystemRangesDirectly: totalItems = " + totalItems);
 		
 		for (int i = 1; i <= totalItems; i++) {
 			try {
@@ -1344,22 +1262,17 @@ public class MainSimulator {
 				// Continuar
 			}
 		}
-		// System.out.println("analizeSystemRangesDirectly: minItemId = " + data.minItemId);
-		// System.out.println("analizeSystemRangesDirectly: maxItemId = " + data.maxItemId);
-
+		
 		int totalRooms = graphFile.getNumberOfRoom();
 		int totalDoors = 0;
-		// System.out.println("analizeSystemRangesDirectly: totalRooms = " + totalRooms);
 		
 		for (int roomId = 1; roomId <= totalRooms; roomId++) {
 			int doorsInRoom = graphFile.getNumberOfDoorsByRoom(roomId);
-			// System.out.println("Numero de puertas en habitacion " + roomId + " es: " + doorsInRoom);
 			totalDoors += doorsInRoom;
 			
 			for (int j = 1; j <= doorsInRoom; j++) {
 				try {
 					long doorId = graphFile.getDoorOfRoom(j, roomId);
-					// System.out.println("Door ID of door " + j + " in room " + roomId + " is: " + doorId);
 					if (doorId > 0) {
 						data.minDoorId = Math.min(data.minDoorId, doorId);
 						data.maxDoorId = Math.max(data.maxDoorId, doorId);
@@ -1370,13 +1283,8 @@ public class MainSimulator {
 			}
 		}
 		data.totalDoors = totalDoors;
-		// System.out.println("analizeSystemRangesDirectly: totalDoors = " + totalDoors);
-		// System.out.println("analizeSystemRangesDirectly: minDoorId = " + data.minDoorId);
-		// System.out.println("analizeSystemRangesDirectly: maxDoorId = " + data.maxDoorId);
-
 		int totalStairs = graphFile.getNumberOfStairs();
 		data.totalStairs = totalStairs;
-		// System.out.println("analizeSystemRangesDirectly: totalStairs = " + totalStairs);
 		
 		for (int i = 1; i <= totalStairs; i++) {
 			try {
@@ -1432,6 +1340,12 @@ public class MainSimulator {
 				printConsole("Running contact test 2...", Level.WARNING);
 				es.unizar.epidemic.tests.contacts.MixedModeTests.run();
 				break;
+			
+			case "contacts3":
+            case "contactos3":
+                printConsole("Running contact test 3...", Level.WARNING);
+                es.unizar.epidemic.tests.contacts.RealChronologyTests.run();
+                break;
 				
 			case "macro":
 				printConsole("Running macro tests...", Level.WARNING);

@@ -213,8 +213,6 @@ public class ModelComparisonAnalyzer {
             }
 
             if (es.unizar.gui.Configuration.simulation != null) {
-                // globalAvgDistance = es.unizar.gui.Configuration.simulation
-                //     .calculateGlobalAverageDistanceBetweenVisitedItems();
                 Pair<Double, Double> distances = es.unizar.gui.Configuration.simulation.calculateGlobalAverageDistanceBetweenVisitedItems();
                 globalAvgDistance = distances.getF();
                 averageDistanceRooms = distances.getS();

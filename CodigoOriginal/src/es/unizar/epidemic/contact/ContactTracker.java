@@ -40,9 +40,6 @@ public class ContactTracker {
         // Added by Nacho Palacio 2025-11-07
         double pixelsPerMeter = es.unizar.gui.Configuration.getPixelsPerMeter();
         this.proximityThresholdPixels = maxTransmissionDistance * pixelsPerMeter;
-
-        System.out.printf("ContactTracker initialized: threshold = %.2fm (%.2f pixels)%n",
-                maxTransmissionDistance, proximityThresholdPixels);
     }
     
     /**

@@ -6,8 +6,8 @@
 		value="../../../../../../../../../eclipse/java-photon/eclipse/" />
 		
 	<property name="debuglevel" value="source,lines,vars" />
-	<property name="target" value="21" />
-	<property name="source" value="21" />
+	<property name="target" value="11" />
+	<property name="source" value="11" />
 	<property name="projectName" value="RecMobiSim" />
 	<property name="build.dir" location="bin" />
 	<property name="dist.dir" location="dist" />
@@ -20,8 +20,8 @@
 		<pathelement location="bin" />
 		<pathelement location="lib/jgraphx-4.2.2.jar" />
 		<pathelement location="lib/jamon-2.82.jar" />
-		<pathelement location="lib/sqlite-jdbc-3.7.2.jar" />
-		<pathelement location="lib/slf4j-api-1.7.5.jar" />
+		<pathelement location="lib/sqlite-jdbc-3.50.3.0.jar" />
+		<pathelement location="lib/slf4j-api-2.0.11.jar" />
 		<pathelement location="lib/mahout-math-0.9.jar" />
 		<pathelement location="lib/mahout-core-0.9.jar" />
 		<pathelement location="lib/jgrapht-core-1.0.0.jar" />
@@ -43,11 +43,12 @@
 		<pathelement location="lib/netty-transport-4.1.100.Final.jar"/>
 		<pathelement location="lib/netty-transport-native-unix-common-4.1.100.Final.jar"/>
 		<pathelement location="lib/reactor-core-3.5.11.jar"/>
-		<pathelement location="lib/slf4j-simple-2.0.9.jar"/>
+		<pathelement location="lib/slf4j-simple-2.0.11.jar" />
 		<pathelement location="lib/neo4j-java-driver-5.14.0.jar"/>
 		<pathelement location="lib/gs-algo-2.0.jar"/>
 		<pathelement location="lib/gs-core-2.0.jar"/>
 		<pathelement location="lib/gs-ui-swing-2.0.jar"/>
+		<pathelement location="lib/gson-2.13.2.jar" />
 	</path>
 	<pathconvert property="classpath.name" pathsep=" ">
 		<path refid="NewSimulator.classpath" />
@@ -87,7 +88,7 @@
 	<target depends="init" name="build-project">
 		<echo message="${ant.project.name}: ${ant.file}" />
 		<javac debug="true" debuglevel="${debuglevel}" destdir="bin"
-			includeantruntime="false" source="${source}" target="${target}">
+			includeantruntime="false" source="${source}" target="${target}" encoding="UTF-8" release="11">
 			<src path="src" />
 			<exclude
 				name="es/unizar/dao/MemoryDataManagementQueueDB.java" />

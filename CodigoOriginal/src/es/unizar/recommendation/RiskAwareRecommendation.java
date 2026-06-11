@@ -23,6 +23,7 @@ public class RiskAwareRecommendation {
 
     private final String pythonScriptPath;
     private final boolean considerRisk;
+    private List<Double> lastRecommendationRisks = new ArrayList<>();
 
     private static volatile Map<Long, Long> cachedOrigToSeq = null;
     private static volatile Map<Long, Long> cachedSeqToOrig = null;
@@ -57,9 +58,6 @@ public class RiskAwareRecommendation {
             List<Long> favoriteArtworks
     ) throws IOException {
 
-        // System.out.println("RiskAwareRecommendation.recommend():");
-        // System.out.println("    userId: " + userId);
-        
         if (visitedArtworks == null) {
             visitedArtworks = new ArrayList<>();
         }
@@ -78,9 +76,6 @@ public class RiskAwareRecommendation {
         
         Set<Long> visitedOriginalsSet = new HashSet<>(visitedOriginals);
 
-        // System.out.println("[RiskAwareRecommendation] Items already visited (sequential): " + visitedArtworks.size());
-        // System.out.println("[RiskAwareRecommendation] Items already visited (original): " + visitedOriginals.size());
-
         // Translate favoriteArtworks from sequential IDs to original ones
         List<Long> favoriteOriginals = new ArrayList<>();
         for (Long seqId : favoriteArtworks) {
@@ -97,23 +92,19 @@ public class RiskAwareRecommendation {
         input.put("favorites", favoriteOriginals);
         input.put("consider_risk", considerRisk);
 
-        if (considerRisk) {
-            input.put("occupancy", occupancy);
-            input.put("duration", duration);
-        }
+        // if (considerRisk) {
+        //     input.put("occupancy", occupancy);
+        //     input.put("duration", duration);
+        // }
+        input.put("occupancy", occupancy);
+        input.put("duration", duration);
 
         Gson gson = new Gson();
         String inputJson = gson.toJson(input);
 
-        // System.out.println("[RiskAwareRecommendation] 📤 Sending to Python:");
-        // System.out.println(inputJson);
-
         // Launch Python process
         ProcessBuilder pb = new ProcessBuilder("python3", pythonScriptPath);
-        // pb.environment().put("PYTHONPATH", "/home/nacho/universidad/cuarto/TFG/RecMobiSimPlus/Backups/moma.recommender-main-snapshot20251005/moma.recommender-main/");
         pb.environment().put("PYTHONPATH", "../../Backups/moma.recommender-main-snapshot20251005/moma.recommender-main/");
-        // pb.redirectErrorStream(true);
-        
         Process process = null;
         StringBuilder output = new StringBuilder();
         StringBuilder errorOutput = new StringBuilder();
@@ -121,13 +112,11 @@ public class RiskAwareRecommendation {
         
         try {
             process = pb.start();
-            // System.out.println("[RiskAwareRecommendation] 🐍 Python process started.");
 
             try (OutputStream os = process.getOutputStream();
                  BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os))) {
                 writer.write(inputJson);
                 writer.flush();
-                // System.out.println("[RiskAwareRecommendation] 📤 JSON sent to Python.");
             } 
 
             // Read the response
@@ -139,11 +128,9 @@ public class RiskAwareRecommendation {
                 }
             }
 
-            // System.out.println("[RiskAwareRecommendation] ⏳ Waiting for Python to finish...");
             boolean finished = process.waitFor(30, TimeUnit.SECONDS);
             
             if (!finished) {
-                System.err.println("⚠️ Python process timeout (30s) - User " + userId);
                 process.destroyForcibly();
                 throw new IOException("Python process timeout (30s)");
             }
@@ -151,82 +138,9 @@ public class RiskAwareRecommendation {
             // Wait for the process to finish
             int exitCode = process.waitFor();
             if (exitCode != 0) {
-                System.err.println("[RiskAwareRecommendation] Warning! Python ended with code: " + exitCode);
                 throw new IOException("Python process failed with exit code: " + exitCode);
             }
-
-            // System.out.println("[RiskAwareRecommendation] ✅ Python process completed successfully.");
-
-        } 
-
-        // try {
-        //     process = pb.start();
-
-        //     final InputStream stdout = process.getInputStream();
-        //     final InputStream stderr = process.getErrorStream();
-
-        //     // Escribir input JSON
-        //     try (OutputStream os = process.getOutputStream();
-        //         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os))) {
-        //         writer.write(inputJson);
-        //         writer.flush();
-        //     } 
-
-        //     // ✅ NUEVO: Leer STDOUT y STDERR en hilos separados
-        //     Thread stdoutReader = new Thread(() -> {
-        //         try (BufferedReader reader = new BufferedReader(new InputStreamReader(stdout))) {
-        //             String line;
-        //             while ((line = reader.readLine()) != null) {
-        //                 output.append(line).append("\n");
-        //             }
-        //         } catch (IOException e) {
-        //             e.printStackTrace();
-        //         }
-        //     });
-
-        //     Thread stderrReader = new Thread(() -> {
-        //         try (BufferedReader reader = new BufferedReader(new InputStreamReader(stderr))) {
-        //             String line;
-        //             while ((line = reader.readLine()) != null) {
-        //                 errorOutput.append(line).append("\n");
-        //             }
-        //         } catch (IOException e) {
-        //             e.printStackTrace();
-        //         }
-        //     });
-
-        //     stdoutReader.start();
-        //     stderrReader.start();
-
-        //     // Esperar a que termine el proceso
-        //     int exitCode = process.waitFor();
-            
-        //     // Esperar a que terminen los threads de lectura
-        //     stdoutReader.join(5000);
-        //     stderrReader.join(5000);
-
-        //     // ✅ NUEVO: Mostrar STDOUT y STDERR por separado
-        //     if (output.length() > 0) {
-        //         System.out.println("[RiskAwareRecommendation] 📥 STDOUT from Python:");
-        //         System.out.println(output.toString());
-        //     }
-
-        //     if (errorOutput.length() > 0) {
-        //         System.err.println("[RiskAwareRecommendation] 🔴 STDERR from Python:");
-        //         System.err.println(errorOutput.toString());
-        //     }
-
-        //     if (exitCode != 0) {
-        //         String errorMsg = String.format(
-        //             "Python ended with code %d\nSTDERR:\n%s\nSTDOUT:\n%s",
-        //             exitCode, errorOutput.toString(), output.toString()
-        //         );
-        //         throw new IOException(errorMsg);
-        //     }
-
-        // }
-        
-        catch (InterruptedException e) {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IOException("Python process interrupted", e);
         } finally {
@@ -275,24 +189,22 @@ public class RiskAwareRecommendation {
 
             JsonArray path = response.getAsJsonArray("recommended_path");
             JsonArray scores = response.has("scores") ? response.getAsJsonArray("scores") : null;
+            JsonArray risks = response.has("risks") ? response.getAsJsonArray("risks") : null;
 
             int skippedCount = 0;
             for (int i = 0; i < path.size(); i++) {
                 long itemIdOriginal = path.get(i).getAsLong();
 
-                if (visitedOriginalsSet.contains(itemIdOriginal)) {
-                    skippedCount++;
-                    continue;
-                }
-
                 float score = (scores != null && scores.size() > i) ? scores.get(i).getAsFloat() : 1.0f;
                 recommendedItems.add(new es.unizar.util.GenericRecommendedItem(itemIdOriginal, score));
             }
 
-            // System.out.println("[RiskAwareRecommendation] Items from Python: " + path.size() +
-            //         ", Filtered (already visited): " + skippedCount +
-            //         ", Valid items: " + recommendedItems.size());
-
+            lastRecommendationRisks = new ArrayList<>();
+            if (risks != null) {
+                for (int i = 0; i < risks.size(); i++) {
+                    lastRecommendationRisks.add(risks.get(i).getAsDouble());
+                }
+            }
         } catch (Exception e) {
             throw new IOException("Error parsing Python recommender response: " + output, e);
         }
@@ -380,6 +292,14 @@ public class RiskAwareRecommendation {
             cachedOrigToSeq = null;
             cachedSeqToOrig = null;
         }
-        System.out.println("[RiskAwareRecommendation] ✅ Map caches cleared");
+    }
+
+    /**
+     * Gets the risk values of the last recommendation 
+     * @return list of risk values corresponding to the last recommendation, or empty list if not available
+     */
+    public List<Double> getLastRecommendationRisks() {
+        return lastRecommendationRisks;
     }
 }
+

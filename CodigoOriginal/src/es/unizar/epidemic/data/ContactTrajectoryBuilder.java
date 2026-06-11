@@ -35,6 +35,62 @@ public class ContactTrajectoryBuilder {
         }
     }
 
+    private static final String BASE_SCOPE = "BASE";
+    private static final long DEFAULT_DAY_OFFSET_SECONDS = 12 * 3600;
+
+    public enum ContactScopeDuration {
+        OTROS("Otros", 0.25),
+        MEDIO_TRANSPORTE("Medio de transporte", 0.25),
+        SOCIAL("Social", 0.5),
+        ESCOLAR("Escolar", 2.0),
+        LABORAL("Laboral", 2.0),
+        CUIDADOR_NO_SANITARIO("Cuidador no sanitario", 2.0),
+        DOMICILIO("Domicilio", 4.0),
+        DEFAULT("Default", 0.25);
+
+        private final String label;
+        private final long seconds;
+
+        ContactScopeDuration(String label, double hours) {
+            this.label = label;
+            this.seconds = Math.round(hours * 3600.0);
+        }
+
+        public long getSeconds() {
+            return seconds;
+        }
+
+        public static ContactScopeDuration fromScope(String scope) {
+            if (scope == null) {
+                return DEFAULT;
+            }
+            String normalized = scope.trim().toLowerCase(Locale.ROOT);
+            for (ContactScopeDuration value : values()) {
+                if (value.label.toLowerCase(Locale.ROOT).equals(normalized)) {
+                    return value;
+                }
+            }
+            return DEFAULT;
+        }
+    }
+
+    public static class RealChronologyResult {
+        public final Map<Integer, List<UserRoomEvent>> userEvents;
+        public final long startTime;
+        public final long endTime;
+        public final long durationSeconds;
+
+        public RealChronologyResult(Map<Integer, List<UserRoomEvent>> userEvents,
+                                    long startTime,
+                                    long endTime,
+                                    long durationSeconds) {
+            this.userEvents = userEvents;
+            this.startTime = startTime;
+            this.endTime = endTime;
+            this.durationSeconds = durationSeconds;
+        }
+    }
+
     private static Map<Integer, Integer> realToSimulationIdMap = new HashMap<>();
     private static int nextSimulationId = 1;
     private static long minDate = Long.MAX_VALUE;
@@ -71,7 +127,6 @@ public class ContactTrajectoryBuilder {
     private static int mapToSimulationRoom(int zonaBasica) {
         int numRooms = getNumberOfRoomsInSimulator();
         
-        //  DEBUG: Print obtained value
         if (numRooms <= 0) {
             System.err.println("Warning! WARNING: getNumberOfRoomsInSimulator() returned " + numRooms);
             System.err.println("   Using default value: 26 rooms");
@@ -362,6 +417,331 @@ public class ContactTrajectoryBuilder {
     }
 
     /**
+     * Reads CSV and builds user-room events while preserving real chronology.
+     * This method processes contact data from CSV file and creates detailed event trajectories with accurate timing based on real contact times.
+     * @param csvPath path to the CSV file containing contact data
+     * @param realUserIds set of real user IDs to include in the output (only contacts involving these users will be processed)
+     * @return RealChronologyResult containing the map of user IDs to their list of room events, as well as overall timing information
+     * @throws IOException
+     */
+    public static RealChronologyResult buildUserRoomEventsFromCSVRealChronology(
+            String csvPath,
+            Set<Integer> realUserIds) throws IOException {
+
+        System.out.println("\n" + "=".repeat(80));
+        System.out.println(" BUILDING EVENTS FROM CSV (REAL CHRONOLOGY)");
+        System.out.println("=".repeat(80));
+
+        if (realUserIds == null || realUserIds.isEmpty()) {
+            throw new IllegalArgumentException("realUserIds is empty");
+        }
+
+        realToSimulationIdMap.clear();
+        nextSimulationId = 1;
+        minDate = Long.MAX_VALUE;
+        resetRoomAssignments();
+
+        List<Integer> sortedUsers = new ArrayList<>(realUserIds);
+        sortedUsers.sort(Integer::compareTo);
+
+        final int totalUsers = sortedUsers.size();
+
+        for (int realUserId : sortedUsers) {
+            getSimulationId(realUserId);
+        }
+
+        class ContactRecord {
+            int simUser1;
+            int simUser2;
+            long start;
+            long end;
+            String scope;
+            int meetingRoomId;
+
+            ContactRecord(int simUser1, int simUser2, long start, long end, String scope, int meetingRoomId) {
+                this.simUser1 = simUser1;
+                this.simUser2 = simUser2;
+                this.start = start;
+                this.end = end;
+                this.scope = scope;
+                this.meetingRoomId = meetingRoomId;
+            }
+        }
+
+        List<ContactRecord> contacts = new ArrayList<>();
+        int linesProcessed = 0;
+        int validLines = 0;
+        long minStart = Long.MAX_VALUE;
+        long maxEnd = Long.MIN_VALUE;
+
+        try (BufferedReader br = new BufferedReader(new FileReader(csvPath))) {
+            String line = br.readLine(); // header
+
+            while ((line = br.readLine()) != null) {
+                linesProcessed++;
+                // System.out.println("    Processing line " + linesProcessed + ": " + line);
+
+                String[] parts = line.split(",");
+                if (parts.length < 6) {
+                    // System.out.println("      Skipping line due to insufficient columns");
+                    continue;
+                }
+
+                int realUser1 = parseInt(parts[0]);
+                int realUser2 = parseInt(parts[1]);
+
+                // System.out.println("      Parsed users: " + realUser1 + ", " + realUser2);
+
+                if (realUser1 <= 0 || realUser2 <= 0) {
+                    System.out.println("      Skipping line due to invalid user IDs");
+                    continue;
+                }
+
+                if (!realUserIds.contains(realUser1) || !realUserIds.contains(realUser2)) {
+                    // System.out.println("      Skipping line because it does not involve selected users");
+                    continue;
+                }
+
+                System.out.println("      Line involves selected users, processing line " + linesProcessed + ": " + line);
+
+                long absoluteDay = parseDate(parts[3]);
+                System.out.println("      Parsed date: " + parts[3] + " -> " + absoluteDay);
+                if (absoluteDay <= 0) {
+                    System.out.println("      Skipping line due to invalid date: " + parts[3]);
+                    continue;
+                }
+
+                if (absoluteDay < minDate) {
+                    System.out.println("      Updating minDate: " + minDate + " -> " + absoluteDay);
+                    minDate = absoluteDay;
+                }
+
+                String scope = parts[5].trim();
+                System.out.println("      Parsed scope: " + scope);
+                long durationSeconds = ContactScopeDuration.fromScope(scope).getSeconds();
+                System.out.println("      Mapped scope to duration (seconds): " + durationSeconds);
+                if (durationSeconds <= 0) {
+                    System.out.println("      Skipping line due to invalid duration: " + durationSeconds);
+                    continue;
+                }
+
+                int simUser1 = getSimulationId(realUser1);
+                int simUser2 = getSimulationId(realUser2);
+                System.out.println("      Mapped real users to simulation IDs: " + simUser1 + ", " + simUser2);
+
+                long start = absoluteDay + DEFAULT_DAY_OFFSET_SECONDS;
+                long end = start + durationSeconds;
+
+                int meetingAnchorUser = Math.min(simUser1, simUser2);
+                int meetingRoomId = totalUsers + meetingAnchorUser;
+
+                System.out.println("      Calculated contact times: start=" + start + ", end=" + end);
+                System.out.println("      Calculated meeting room ID: " + meetingRoomId);
+
+                contacts.add(new ContactRecord(
+                        simUser1,
+                        simUser2,
+                        start,
+                        end,
+                        scope,
+                        meetingRoomId
+                ));
+
+                if (start < minStart) {
+                    System.out.println("      Updating minStart: " + minStart + " -> " + start);
+                    minStart = start;
+                }
+                if (end > maxEnd) {
+                    System.out.println("      Updating maxEnd: " + maxEnd + " -> " + end);
+                    maxEnd = end;
+                }
+
+                validLines++;
+            }
+        }
+
+        if (contacts.isEmpty() || minStart == Long.MAX_VALUE || maxEnd == Long.MIN_VALUE) {
+            throw new IOException("No valid contacts found for selected users");
+        }
+
+        contacts.sort(Comparator
+                .comparingLong((ContactRecord c) -> c.start)
+                .thenComparingLong(c -> c.end)
+                .thenComparingInt(c -> c.meetingRoomId)
+                .thenComparingInt(c -> c.simUser1)
+                .thenComparingInt(c -> c.simUser2));
+        
+        Map<Integer, Long> lastEndByUser = new HashMap<>();
+
+        for (ContactRecord contact : contacts) {
+            long latestEnd = 0;
+
+            long prevEnd1 = lastEndByUser.getOrDefault(contact.simUser1, 0L);
+            long prevEnd2 = lastEndByUser.getOrDefault(contact.simUser2, 0L);
+            latestEnd = Math.max(prevEnd1, prevEnd2);
+
+            if (latestEnd > contact.start) {
+                long shift = latestEnd - contact.start;
+                contact.start += shift;
+                contact.end   += shift;
+            }
+
+            lastEndByUser.put(contact.simUser1, contact.end);
+            lastEndByUser.put(contact.simUser2, contact.end);
+        }
+
+        // Recalcular minStart y maxEnd tras la serialización
+        minStart = contacts.stream().mapToLong(c -> c.start).min().getAsLong();
+        maxEnd   = contacts.stream().mapToLong(c -> c.end).max().getAsLong();
+
+        Map<Integer, List<UserRoomEvent>> userEvents = new HashMap<>();
+        Map<Integer, Long> userAvailableFrom = new HashMap<>();
+
+        for (int realUserId : sortedUsers) {
+            int simUserId = getSimulationId(realUserId);
+            userEvents.put(simUserId, new ArrayList<>());
+            userAvailableFrom.put(simUserId, minStart);
+            System.out.println("    Initialized user " + simUserId + " with availableFrom=" + minStart);
+        }
+
+        for (ContactRecord contact : contacts) {
+            int simUser1 = contact.simUser1;
+            int simUser2 = contact.simUser2;
+
+            int baseRoom1 = simUser1;
+            int baseRoom2 = simUser2;
+
+            System.out.println("    Processing contact between user " + simUser1 + " and user " + simUser2);
+
+            long available1 = userAvailableFrom.get(simUser1);
+            if (available1 < contact.start) {
+                userEvents.get(simUser1).add(
+                        new UserRoomEvent(simUser1, baseRoom1, available1, contact.start, BASE_SCOPE)
+                );
+                System.out.println("      Added base room event for user " + simUser1 + ": " +
+                        "room=" + baseRoom1 + ", start=" + available1 + ", end=" + contact.start);
+            }
+
+            long available2 = userAvailableFrom.get(simUser2);
+            if (available2 < contact.start) {
+                userEvents.get(simUser2).add(
+                        new UserRoomEvent(simUser2, baseRoom2, available2, contact.start, BASE_SCOPE)
+                );
+                System.out.println("      Added base room event for user " + simUser2 + ": " +
+                        "room=" + baseRoom2 + ", start=" + available2 + ", end=" + contact.start);
+            }
+
+            long effectiveStart1 = Math.max(userAvailableFrom.get(simUser1), contact.start);
+            long effectiveStart2 = Math.max(userAvailableFrom.get(simUser2), contact.start);
+            long effectiveStart = Math.max(effectiveStart1, effectiveStart2);
+
+            System.out.println("      Calculated effective start time for contact: " + effectiveStart);
+
+            if (effectiveStart < contact.end) {
+                userEvents.get(simUser1).add(
+                        new UserRoomEvent(simUser1, contact.meetingRoomId, effectiveStart, contact.end, contact.scope)
+                );
+                userEvents.get(simUser2).add(
+                        new UserRoomEvent(simUser2, contact.meetingRoomId, effectiveStart, contact.end, contact.scope)
+                );
+
+                userAvailableFrom.put(simUser1, contact.end);
+                userAvailableFrom.put(simUser2, contact.end);
+                System.out.println("      Added meeting room event for users " + simUser1 + " and " + simUser2 + ": " +
+                        "room=" + contact.meetingRoomId + ", start=" + effectiveStart + ", end=" + contact.end);
+            } else {
+                userAvailableFrom.put(simUser1, Math.max(userAvailableFrom.get(simUser1), contact.end));
+                userAvailableFrom.put(simUser2, Math.max(userAvailableFrom.get(simUser2), contact.end));
+                System.out.println("      Contact skipped due to effective start time being after contact end time");
+            }
+        }
+
+        for (int realUserId : sortedUsers) {
+            int simUserId = getSimulationId(realUserId);
+            long available = userAvailableFrom.get(simUserId);
+            int baseRoomId = simUserId;
+
+            System.out.println("    Finalizing events for user " + simUserId + ": availableFrom=" + available);
+
+            if (available < maxEnd) {
+                userEvents.get(simUserId).add(
+                        new UserRoomEvent(simUserId, baseRoomId, available, maxEnd, BASE_SCOPE)
+                );
+                System.out.println("      Added final base room event for user " + simUserId + ": " +
+                        "room=" + baseRoomId + ", start=" + available + ", end=" + maxEnd);
+            }
+        }
+
+        for (List<UserRoomEvent> events : userEvents.values()) {
+            events.sort(Comparator
+                    .comparingLong((UserRoomEvent e) -> e.startTime)
+                    .thenComparingLong(e -> e.endTime)
+                    .thenComparingInt(e -> e.roomId));
+
+            List<UserRoomEvent> normalizedEvents = new ArrayList<>();
+            UserRoomEvent previous = null;
+
+            for (UserRoomEvent event : events) {
+                if (event.endTime <= event.startTime) {
+                    System.out.println("      Skipping invalid event for user " + event.userId + ": " +
+                            "room=" + event.roomId + ", start=" + event.startTime + ", end=" + event.endTime);
+                    continue;
+                }
+
+                if (previous != null &&
+                    previous.roomId == event.roomId &&
+                    Objects.equals(previous.scope, event.scope) &&
+                    previous.endTime == event.startTime) {
+
+                    previous.endTime = event.endTime;
+
+                    System.out.println("      Merged event for user " + event.userId + ": " +
+                            "room=" + event.roomId + ", start=" + previous.startTime + ", end=" + previous.endTime);
+                } else {
+                    UserRoomEvent copy = new UserRoomEvent(
+                            event.userId,
+                            event.roomId,
+                            event.startTime,
+                            event.endTime,
+                            event.scope
+                    );
+                    normalizedEvents.add(copy);
+                    previous = copy;
+
+                    System.out.println("      Added event for user " + event.userId + ": " +
+                            "room=" + event.roomId + ", start=" + event.startTime + ", end=" + event.endTime);
+                }
+            }
+
+            events.clear();
+            events.addAll(normalizedEvents);
+
+            for (UserRoomEvent e : events) {
+                e.startTime -= minStart;
+                e.endTime -= minStart;
+
+                System.out.println("      Normalized event for user " + e.userId + ": " +
+                        "room=" + e.roomId + ", start=" + e.startTime + ", end=" + e.endTime);
+            }
+        }
+
+        long totalDuration = maxEnd - minStart;
+
+        System.out.println("\n LOADING STATISTICS:");
+        System.out.println(" - Lines processed: " + linesProcessed);
+        System.out.println(" - Valid lines: " + validLines);
+        System.out.println(" - Simulation IDs mapped: " + realToSimulationIdMap.size());
+        System.out.println(" - Users with events: " + userEvents.size());
+        System.out.println(" - Total events created: " +
+                userEvents.values().stream().mapToInt(List::size).sum());
+        System.out.println(" - Base rooms: 1.." + totalUsers);
+        System.out.println(" - Meeting rooms: " + (totalUsers + 1) + ".." + (2 * totalUsers));
+        System.out.println("=".repeat(80) + "\n");
+
+        return new RealChronologyResult(userEvents, 0, totalDuration, totalDuration);
+    }
+
+    /**
      * Builds a map from simulation user IDs to clique indices based on selected cliques.
      * 
      * @param selectedCliques list of cliques, where each clique is a list of user ID strings
@@ -457,7 +837,7 @@ public class ContactTrajectoryBuilder {
      * @param dateStr the date string to parse
      * @return Unix timestamp in seconds, or -1 if parsing fails
      */
-    private static long parseDate(String dateStr) {
+    public static long parseDate(String dateStr) {
         try {
             String[] parts = dateStr.trim().split("-");
             if (parts.length != 3) return -1;
@@ -559,7 +939,6 @@ public class ContactTrajectoryBuilder {
         List<List<String>> sortedCliques = new ArrayList<>(cliqueData.cliques);
         sortedCliques.sort((c1, c2) -> Integer.compare(c2.size(), c1.size()));
         
-        System.out.println("    Clique size distribution:");
         Map<Integer, Integer> cliqueSizeDistribution = new HashMap<>();
         for (List<String> clique : sortedCliques) {
             int size = clique.size();
@@ -568,15 +947,9 @@ public class ContactTrajectoryBuilder {
         
         List<Integer> sizes = new ArrayList<>(cliqueSizeDistribution.keySet());
         sizes.sort((a, b) -> Integer.compare(b, a));
-        for (Integer size : sizes) {
-            int count = cliqueSizeDistribution.get(size);
-            System.out.println("      - Cliques of " + size + " users: " + count);
-        }
         
         Set<Integer> selectedUsers = new HashSet<>();
         List<List<String>> selectedCliques = new ArrayList<>();
-        
-        System.out.println("\n    Selecting cliques:");
         
         for (int i = 0; i < sortedCliques.size() && selectedUsers.size() < maxUsers; i++) {
             List<String> clique = sortedCliques.get(i);
@@ -605,9 +978,6 @@ public class ContactTrajectoryBuilder {
                         partialCliqueStrings.add(clique.get(j));
                     }
                     selectedCliques.add(partialCliqueStrings);
-                    
-                    System.out.println("      Warning! Clique " + (selectedCliques.size()) + " PARTIAL (" + remainingSlots + "/" + 
-                                    cliqueUsers.size() + " users) -> Total: " + selectedUsers.size() + "/" + maxUsers);
                 }
                 
                 break;
@@ -618,7 +988,39 @@ public class ContactTrajectoryBuilder {
         System.out.println("      - Selected users: " + selectedUsers.size());
         System.out.println("      - Selected cliques: " + selectedCliques.size());
         
-        //  RETURN BOTH
+        return new SelectedUsersResult(selectedUsers, selectedCliques);
+    }
+
+    /**
+     * Selects users from a specific clique by its ID.
+     * @param cliquesJsonPath path to JSON file containing clique data
+     * @param cliqueId ID of the clique to select users from
+     * @return SelectedUsersResult containing selected users and their cliques
+     * @throws IOException if there's an error reading the cliques file or if the clique ID is invalid
+     */
+    public static SelectedUsersResult selectUsersFromCliqueId(
+            String cliquesJsonPath, int cliqueId) throws IOException {
+
+        CliqueData cliqueData = loadCliquesFromJson(cliquesJsonPath);
+
+        if (cliqueId < 0 || cliqueId >= cliqueData.cliques.size()) {
+            throw new IOException("Invalid cliqueId: " + cliqueId +
+                " (valid range: 0.." + (cliqueData.cliques.size() - 1) + ")");
+        }
+
+        List<String> clique = cliqueData.cliques.get(cliqueId);
+
+        Set<Integer> selectedUsers = new HashSet<>();
+        List<List<String>> selectedCliques = new ArrayList<>();
+        selectedCliques.add(clique);
+
+        for (String userIdStr : clique) {
+            int realUserId = parseInt(userIdStr);
+            if (realUserId > 0) {
+                selectedUsers.add(realUserId);
+            }
+        }
+
         return new SelectedUsersResult(selectedUsers, selectedCliques);
     }
 

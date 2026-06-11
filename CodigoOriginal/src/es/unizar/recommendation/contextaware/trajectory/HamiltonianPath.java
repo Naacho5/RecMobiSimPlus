@@ -10,14 +10,14 @@ public class HamiltonianPath {
 	public static <V, E> List<Long> getApproximateOptimalForCompleteGraph(SimpleWeightedGraph<Long, DefaultWeightedEdge> g, long initialVertex) {
 		/* Added by Nacho Palacio 2025-04-14. */
 		if (g == null || g.vertexSet().isEmpty()) {
-			System.out.println("Warning: Empty graph received, unable to calculate Hamiltonian path");
 			return new LinkedList<>();
 		}
 
 		List<Long> vertices = new LinkedList<Long>(g.vertexSet());
 
 		if (vertices.size() * (vertices.size() - 1) / 2 != g.edgeSet().size()) {
-			return null;
+			// return null;
+			return new LinkedList<>();
 		}
 
 		List<Long> tour = new LinkedList<>();

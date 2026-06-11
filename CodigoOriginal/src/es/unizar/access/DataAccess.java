@@ -233,6 +233,7 @@ public class DataAccess {
      * Added by Nacho Palacio 2025-04-13.
      */
     public void printAllProperties() {
+        System.out.println("Properties loaded from file " + file.getName() + ":");
         for (String key : properties.stringPropertyNames()) {
             System.out.println(key + " = " + properties.getProperty(key));
         }

@@ -52,7 +52,6 @@ public class SQLiteDataManagementUserDB extends DBConnection implements DataMana
 	 */
 	@Override
 	public void connect(String dbURL) throws ClassNotFoundException, SQLException {
-		System.out.println("SQLiteDataManagementUserDB: Connecting to database with url " + dbURL);
 		
 		dbInstance.connect(dbURL);
 		
@@ -162,8 +161,6 @@ public class SQLiteDataManagementUserDB extends DBConnection implements DataMana
 		boolean ifExist = verifyIfExist(information.getUser(), information.getItem(), information.getContext(), information.getRating());
 		
 		//finalTimeRecommender = System.currentTimeMillis();
-		//System.out.println("[verifyIfExist]: " + (finalTimeRecommender - initialTimeRecommender));
-		
 		//initialTimeRecommender = System.currentTimeMillis();
 		boolean ifInsertOK = false;
 		if (!ifExist && information.getItem() <= numMaxItems) {
@@ -175,8 +172,6 @@ public class SQLiteDataManagementUserDB extends DBConnection implements DataMana
 		}
 		
 		//finalTimeRecommender = System.currentTimeMillis();
-		//System.out.println("[insert]: " + (finalTimeRecommender - initialTimeRecommender));
-		
 		return ifInsertOK;
 	}
 
@@ -187,7 +182,6 @@ public class SQLiteDataManagementUserDB extends DBConnection implements DataMana
 	public boolean insert(long user, long item, long context, double rating, String opinion, int userProvided) {
 		
 		boolean ifInsertOK = true;
-		//System.out.println("[insert]:");
 		//long initialTimeRecommender = 0, finalTimeRecommender = 0;
 		
 		try {
@@ -201,8 +195,6 @@ public class SQLiteDataManagementUserDB extends DBConnection implements DataMana
 			statement = conn.createStatement();
 			
 			//finalTimeRecommender = System.currentTimeMillis();
-			//System.out.println("- DB connection: " + (finalTimeRecommender - initialTimeRecommender));
-			
 			//initialTimeRecommender = System.currentTimeMillis();
 			// Query
 			statement.executeUpdate("INSERT INTO " + USER_ITEM_CONTEXT_TB + " VALUES('" + user + "','" + item + "','" + context + "','" + rating + "','" + null + "','" + userProvided + "')"); // Operaci�n que consume much�simo tiempo!!!!
@@ -226,8 +218,6 @@ public class SQLiteDataManagementUserDB extends DBConnection implements DataMana
 			p.clearParameters();
 			
 			//finalTimeRecommender = System.currentTimeMillis();
-			//System.out.println("- DBop update: " + (finalTimeRecommender - initialTimeRecommender));
-			
 		} catch (SQLException e) {
 			ifInsertOK = false;
 			log.log(Level.SEVERE, e.getClass().getName() + ": " + e.getMessage());
@@ -273,24 +263,6 @@ public class SQLiteDataManagementUserDB extends DBConnection implements DataMana
 			p.setInt(4, (int) rating);
 			
 			result = p.executeQuery();
-			
-			/*
-			 * FOR PRINTING RESULT IF WANTED.
-			 * 
-			 * WARNING!!!!!! -> NEXT FUNCTION ADVANCES CURSOR -> EXIST VARIABLE WON'T BE OKAY THEN
-			 * 
-			ResultSetMetaData rsmd = result.getMetaData();
-			int columnsNumber = rsmd.getColumnCount();
-			while (result.next()) {
-			    for (int i = 1; i <= columnsNumber; i++) {
-			        if (i > 1) System.out.print(",  ");
-			        String columnValue = result.getString(i);
-			        System.out.print(columnValue + " " + rsmd.getColumnName(i));
-			    }
-			    System.out.println("");
-			}
-			 *
-			 */
 			
 			if (result.next()) {
 				exist = true;
@@ -394,8 +366,6 @@ public class SQLiteDataManagementUserDB extends DBConnection implements DataMana
 			connection = DriverManager.getConnection(dbURL);
 			// Create DB:
 			DatabaseMetaData meta = connection.getMetaData();
-			//System.out.println("The driver name is " + meta.getDriverName());
-			//System.out.println("A new database has been created.");
 		} catch (ClassNotFoundException | SQLException e) {
 			log.log(Level.SEVERE, e.getClass().getName() + ": " + e.getMessage());
 			e.printStackTrace();

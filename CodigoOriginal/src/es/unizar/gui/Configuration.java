@@ -48,6 +48,8 @@ import es.unizar.util.Literals;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 
 /**
@@ -63,14 +65,14 @@ public class Configuration extends javax.swing.JDialog {
 
 	private boolean isUpdatingFromContactCheckbox = false;
 	
-	public static final int X_CONFIG = 1080; /* silarri, 2022-07-13. */
+	public static final int X_CONFIG = 1750; /* silarri, 2022-07-13. */
 	//public static final int X_CONFIG = 1070;
 	public static final int Y_CONFIG = 850; /* silarri, 2022-07-13. */
 	//public static final int Y_CONFIG = 830;
 	
 	DataAccessRecommendersFile recommenders;
 
-	public JTextField simulationDurationTextField;
+	// public JTextField simulationDurationTextField;
 	public JTextField immunePopulationTextField;
 	public JTextField superSpreaderProbabilityTextField;
 	
@@ -104,6 +106,8 @@ public class Configuration extends javax.swing.JDialog {
 		setTitle("Configuration");
 
 		initComponents();
+
+		setupCliqueIdTextFieldListener();
 
 		pack();
 
@@ -219,7 +223,8 @@ public class Configuration extends javax.swing.JDialog {
 			
 			// Parameters for the simulation:
 			// Time available for the user [hour].
-			int timeAvailableUser = Integer.valueOf(timeAvailableForUserTextField.getText()).intValue();
+			int timeAvailableUserMinutes = Integer.valueOf(timeAvailableForUserTextField.getText()).intValue();
+			double timeAvailableUser = timeAvailableUserMinutes / 60.0;
 			// Delay observing item [seconds].
 			int delayObservingItem = Integer.valueOf(delayObservingItemTextField.getText()).intValue();
 			// Real time per iteration [seconds].
@@ -285,7 +290,8 @@ public class Configuration extends javax.swing.JDialog {
 			int initialInfected = Integer.valueOf(initialInfectedTextField.getText()).intValue();
 			double maskCompliance = Double.valueOf(maskComplianceTextField.getText()).doubleValue();
 
-			double simulationDurationMinutes = Double.valueOf(simulationDurationTextField.getText()).doubleValue();
+			// double simulationDurationMinutes = Double.valueOf(simulationDurationTextField.getText()).doubleValue();
+			int simulationDurationMinutes = timeAvailableUserMinutes;
 
 			es.unizar.epidemic.general.EpidemicConfiguration epidemicConfig = es.unizar.epidemic.general.EpidemicConfiguration.getInstance();
 			epidemicConfig.setSelectedModel(epidemicModel);
@@ -312,14 +318,6 @@ public class Configuration extends javax.swing.JDialog {
 					
 					epidemicConfig.setImmunePopulationFraction(immunePopulationFraction);
 					epidemicConfig.setSuperSpreaderProbability(superSpreaderProbability);
-
-					System.out.printf(" Configuration.java: Parámetros super-spreader configurados:\n");
-					System.out.printf("   - Probabilidad super-spreader enviada: %.1f%%\n", superSpreaderProbability * 100);
-					
-					EpidemicConfiguration verify = EpidemicConfiguration.getInstance();
-					System.out.printf("   - Probabilidad almacenada en EpidemicConfiguration: %.1f%%\n", 
-                     verify.getSuperSpreaderProbability() * 100);
-					 
 				} catch (NumberFormatException e) {
 					System.err.println("Error parsing immunity/superspreader parameters, using defaults: " + e.getMessage());
 				}
@@ -356,7 +354,6 @@ public class Configuration extends javax.swing.JDialog {
 						}
 						break;
 					case "AEROSOL_LELIEVELD":
-						System.out.println("Selected model: AEROSOL_LELIEVELD");
 						if (viralLoadHighTextField != null && 
 							viralLoadSuperTextField != null && 
 							infectiousDoseTextField != null && 
@@ -397,7 +394,6 @@ public class Configuration extends javax.swing.JDialog {
 				// Build a floor panel but including the users.
 //				MainSimulator.floorPanelCombined = new FloorPanelCombined(MainSimulator.DRAWING_WIDTH, MainSimulator.DRAWING_HEIGHT);				
 //				MainSimulator.frmSimulator.getContentPane().add(MainSimulator.floorPanelCombined);
-//				System.out.println(MainSimulator.frmSimulator.getContentPane().getComponentCount());
 				if(MainSimulator.frmSimulator.getContentPane().getComponentCount() > 2) {
 					i = 0;
 					boolean end = false;
@@ -415,7 +411,6 @@ public class Configuration extends javax.swing.JDialog {
 					MainSimulator.floorPanelCombined = new FloorPanelCombined(MainSimulator.DRAWING_WIDTH, MainSimulator.DRAWING_HEIGHT);
 					MainSimulator.frmSimulator.getContentPane().add(MainSimulator.floorPanelCombined);
 				}
-				System.out.println("load floor combined");
 				// Load combined floors (4 and 5):
 				MainSimulator.loadFloorCombined();
 				
@@ -441,7 +436,6 @@ public class Configuration extends javax.swing.JDialog {
 					}
 				}
 
-				System.out.println("simulation");
 				// Build a simulation object:
 				simulation = new Simulation(timeAvailableUser, delayObservingItem, timeForIteration, screenRefreshTime, timeForThePaths, userSpeed, kmToPixel, ttl, timeOnStairs,
 						minimumTimeToUpdateRecommendation, communicationRange, maxKnowledgeBaseSize, communicationBandwidth, latencyOfTransmission, numberOfSpecialUser, numberOfNonSpecialUser,
@@ -453,7 +447,6 @@ public class Configuration extends javax.swing.JDialog {
 				 */
 				// Calculate the simulation resolution. Check that the resolution is lower than the latency.
 				//verifyResolution(timeForIteration, screenRefreshTime, latencyOfTransmission);
-				System.out.println("end simulation");
 				// Generate a path for each non-RS user.
 
 				/* Added by Nacho Palacio 2025-04-13. */
@@ -486,7 +479,6 @@ public class Configuration extends javax.swing.JDialog {
 					}
 				}
 				
-				System.out.println("end");
 				this.dispose();
 			} else {
 				JOptionPane.showMessageDialog(this, "You will need to fill in all the fields, except: user disobedience.", "Field validation problems", JOptionPane.ERROR_MESSAGE);
@@ -504,8 +496,6 @@ public class Configuration extends javax.swing.JDialog {
 	public void verifyResolution(double timeForIteration, double screenRefreshTime, int latencyOfTransmission) {
 		// Calculate the simulation resolution:
 		double simulationResolution = timeForIteration / (double) screenRefreshTime; //Cada segundo de simulaci�n, cu�nto tiempo real representa
-		//System.out.println("Time for iteration: " + timeForIteration + "; Screen Refresh time: " + screenRefreshTime + "; Latency of Transmission: " + latencyOfTransmission);
-		//System.out.println("Simulation resolution: " + simulationResolution);
 		if (simulationResolution > latencyOfTransmission) {
 			JOptionPane.showMessageDialog(this, "The resolution is greater than latency. Change the values: Real time per iteration and Iteration time/Screen refresh time.");
 		} else {
@@ -535,11 +525,28 @@ public class Configuration extends javax.swing.JDialog {
 					return; // No hacer nada, dejar que el checkbox controle los valores
 				}
 				
-				// Number of RS users - NEW VALUE PROVIDED BY THE USER
-				int numberOfSpecialUser = Integer.valueOf(numberOfSpecialUsersTextField.getText()).intValue();
-				// Number of non-RS users - PREVIOUS VALUE
-				int numberOfNonSpecialUser = Integer.valueOf(numberOfNonSpecialUsersTextField.getText()).intValue();
+				// // Number of RS users - NEW VALUE PROVIDED BY THE USER
+				// int numberOfSpecialUser = Integer.valueOf(numberOfSpecialUsersTextField.getText()).intValue();
+				// // Number of non-RS users - PREVIOUS VALUE
+				// int numberOfNonSpecialUser = Integer.valueOf(numberOfNonSpecialUsersTextField.getText()).intValue();
 				
+				String specialText = numberOfSpecialUsersTextField.getText().trim();
+				String nonSpecialText = numberOfNonSpecialUsersTextField.getText().trim();
+
+				if (specialText.isEmpty() || nonSpecialText.isEmpty()) {
+					return;
+				}
+
+				int numberOfSpecialUser;
+				int numberOfNonSpecialUser;
+
+				try {
+					numberOfSpecialUser = Integer.parseInt(specialText);
+					numberOfNonSpecialUser = Integer.parseInt(nonSpecialText);
+				} catch (NumberFormatException ex) {
+					return;
+				}
+
 				// If number introduced exceeds maximum
 				if (numberOfSpecialUser >= Literals.TOTAL_USERS) {
 					numberOfSpecialUser = Literals.TOTAL_USERS - 1;
@@ -549,15 +556,6 @@ public class Configuration extends javax.swing.JDialog {
 					numberOfNonSpecialUsersTextField.setText(Integer.toString(numberOfNonSpecialUser));
 					numberOfSpecialUsersTextField.selectAll();
 				}
-				// If number introduced is lower than minimum
-				// else if (numberOfSpecialUser <= 0) {
-				// 	numberOfSpecialUser = 1;
-				// 	numberOfNonSpecialUser = Literals.TOTAL_USERS - 1;
-					
-				// 	numberOfSpecialUsersTextField.setText(Integer.toString(numberOfSpecialUser));
-				// 	numberOfNonSpecialUsersTextField.setText(Integer.toString(numberOfNonSpecialUser));
-				// 	numberOfSpecialUsersTextField.selectAll();
-				// }
 
 				else if (numberOfSpecialUser < 0) {
 					if (contactTrajectoryMode != ContactTrajectoryMode.DISABLED) {
@@ -572,22 +570,28 @@ public class Configuration extends javax.swing.JDialog {
 					numberOfNonSpecialUsersTextField.setText(Integer.toString(numberOfNonSpecialUser));
 					numberOfSpecialUsersTextField.selectAll();
 				}
+				// else if (numberOfSpecialUser == 0) {
+				// 	if (contactTrajectoryMode == ContactTrajectoryMode.DISABLED) {
+				// 		numberOfSpecialUser = 1;
+				// 		numberOfNonSpecialUser = Literals.TOTAL_USERS - 1;
+						
+				// 		numberOfSpecialUsersTextField.setText(Integer.toString(numberOfSpecialUser));
+				// 		numberOfNonSpecialUsersTextField.setText(Integer.toString(numberOfNonSpecialUser));
+				// 		numberOfSpecialUsersTextField.selectAll();
+						
+				// 		JOptionPane.showMessageDialog(
+				// 			Configuration.this,
+				// 			"El número de usuarios especiales debe ser al menos 1.\n" +
+				// 			"Active 'Usar trayectorias de contactos.csv' para usar 0 usuarios especiales.",
+				// 			"Validación de usuarios",
+				// 			JOptionPane.WARNING_MESSAGE
+				// 		);
+				// 	}
+				// }
 				else if (numberOfSpecialUser == 0) {
-					if (contactTrajectoryMode == ContactTrajectoryMode.DISABLED) {
-						numberOfSpecialUser = 1;
-						numberOfNonSpecialUser = Literals.TOTAL_USERS - 1;
-						
-						numberOfSpecialUsersTextField.setText(Integer.toString(numberOfSpecialUser));
+					if (numberOfSpecialUser + numberOfNonSpecialUser > Literals.TOTAL_USERS) {
+						numberOfNonSpecialUser = Literals.TOTAL_USERS - numberOfSpecialUser;
 						numberOfNonSpecialUsersTextField.setText(Integer.toString(numberOfNonSpecialUser));
-						numberOfSpecialUsersTextField.selectAll();
-						
-						JOptionPane.showMessageDialog(
-							Configuration.this,
-							"El número de usuarios especiales debe ser al menos 1.\n" +
-							"Active 'Usar trayectorias de contactos.csv' para usar 0 usuarios especiales.",
-							"Validación de usuarios",
-							JOptionPane.WARNING_MESSAGE
-						);
 					}
 				}
 
@@ -606,14 +610,31 @@ public class Configuration extends javax.swing.JDialog {
 			@Override
 			public void stateChanged(ChangeEvent e) {
 				if (isUpdatingFromContactCheckbox) {
-					return; // No hacer nada, dejar que el checkbox controle los valores
+					return;
 				}
 				
-				// Number of RS users - NEW VALUE PROVIDED BY THE USER
-				int numberOfSpecialUser = Integer.valueOf(numberOfSpecialUsersTextField.getText()).intValue();
-				// Number of non-RS users - PREVIOUS VALUE
-				int numberOfNonSpecialUser = Integer.valueOf(numberOfNonSpecialUsersTextField.getText()).intValue();
+				// // Number of RS users - NEW VALUE PROVIDED BY THE USER
+				// int numberOfSpecialUser = Integer.valueOf(numberOfSpecialUsersTextField.getText()).intValue();
+				// // Number of non-RS users - PREVIOUS VALUE
+				// int numberOfNonSpecialUser = Integer.valueOf(numberOfNonSpecialUsersTextField.getText()).intValue();
 				
+				String specialText = numberOfSpecialUsersTextField.getText().trim();
+				String nonSpecialText = numberOfNonSpecialUsersTextField.getText().trim();
+
+				if (specialText.isEmpty() || nonSpecialText.isEmpty()) {
+					return;
+				}
+
+				int numberOfSpecialUser;
+				int numberOfNonSpecialUser;
+
+				try {
+					numberOfSpecialUser = Integer.parseInt(specialText);
+					numberOfNonSpecialUser = Integer.parseInt(nonSpecialText);
+				} catch (NumberFormatException ex) {
+					return;
+				}
+
 				// If number introduced exceeds maximum
 				if (numberOfNonSpecialUser >= Literals.TOTAL_USERS) {
 					numberOfNonSpecialUser = Literals.TOTAL_USERS - 1;
@@ -626,12 +647,11 @@ public class Configuration extends javax.swing.JDialog {
 				// If number introduced is lower than minimum
 				else if (numberOfNonSpecialUser <= 0) {
 					numberOfNonSpecialUser = 1;
-					// numberOfSpecialUser = Literals.TOTAL_USERS - 1;
 
 					if (contactTrajectoryMode != ContactTrajectoryMode.DISABLED) {
-						numberOfSpecialUser = 0; // En modo contactos, usar 0
+						numberOfSpecialUser = 0;
 					} else {
-						numberOfSpecialUser = Literals.TOTAL_USERS - 1; // Modo normal
+						numberOfSpecialUser = Literals.TOTAL_USERS - 1;
 					}
 					
 					numberOfSpecialUsersTextField.setText(Integer.toString(numberOfSpecialUser));
@@ -738,9 +758,9 @@ public class Configuration extends javax.swing.JDialog {
 																		
 		latencyOfTransmissionTextField.setText("1");
 																				
-		JLabel9.setText("Time available for the user [hour]");
+		JLabel9.setText("Time available for the user [minutes]");
 																						
-		timeAvailableForUserTextField.setText("1");
+		timeAvailableForUserTextField.setText("60");
 																								
 		jLabel8.setText("Delay observing item [seconds]");
 																										
@@ -870,15 +890,14 @@ public class Configuration extends javax.swing.JDialog {
 			ContactTrajectoryMode.DISABLED.getDisplayName(),
 			ContactTrajectoryMode.SIMPLIFIED_ROTATION.getDisplayName(),
 			ContactTrajectoryMode.COMPLEX_REAL_EVENTS.getDisplayName(),
+			ContactTrajectoryMode.REAL_CHRONOLOGY.getDisplayName()
 			// ContactTrajectoryMode.MIXED.getDisplayName()
 		}));
 
 		contactTrajectoryModeComboBox.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				String selected = (String) contactTrajectoryModeComboBox.getSelectedItem();
-				System.out.println("🔘 Modo de trayectorias seleccionado en el combo: " + selected);
-				
+				String selected = (String) contactTrajectoryModeComboBox.getSelectedItem();				
 				isUpdatingFromContactCheckbox = true;
 				
 				if (selected.equals(ContactTrajectoryMode.DISABLED.getDisplayName())) {
@@ -899,7 +918,20 @@ public class Configuration extends javax.swing.JDialog {
 				} else if (selected.equals(ContactTrajectoryMode.COMPLEX_REAL_EVENTS.getDisplayName())) {
 					contactTrajectoryMode = ContactTrajectoryMode.COMPLEX_REAL_EVENTS;
 					configureContactTrajectoriesMode("Complejo (Eventos Reales)");
-				} 
+				} else if (selected.equals(ContactTrajectoryMode.REAL_CHRONOLOGY.getDisplayName())) {
+                    contactTrajectoryMode = ContactTrajectoryMode.REAL_CHRONOLOGY;
+                    configureContactTrajectoriesMode("Cronologia real");
+
+                    cliqueIdTextField.setEnabled(true);
+                    mixedModeCheckBox.setSelected(false);
+                    mixedModeCheckBox.setEnabled(false);
+                }
+
+                if (contactTrajectoryMode != ContactTrajectoryMode.REAL_CHRONOLOGY) {
+                    cliqueIdTextField.setEnabled(false);
+                    mixedModeCheckBox.setEnabled(true);
+                }
+
 				// else if (selected.equals(ContactTrajectoryMode.MIXED.getDisplayName())) {
 				// 	contactTrajectoryMode = ContactTrajectoryMode.MIXED;
 				// 	configureContactTrajectoriesMode("Mixto (rotación + independientes)");
@@ -907,9 +939,69 @@ public class Configuration extends javax.swing.JDialog {
 				
 				isUpdatingFromContactCheckbox = false;
 				
-				System.out.println(" Modo de trayectorias cambiado a: " + contactTrajectoryMode);
 			}
 		});
+
+		// cliqueIdTextField.addActionListener(new ActionListener() {
+		// 	@Override
+		// 	public void actionPerformed(ActionEvent e) {
+		// 		if (contactTrajectoryMode == ContactTrajectoryMode.REAL_CHRONOLOGY) {
+		// 			try {
+		// 				int cliqueId = Integer.parseInt(cliqueIdTextField.getText());
+		// 				int userCount = getUserCountForClique(cliqueId);
+						
+		// 				if (userCount > 0) {
+		// 					numberOfNonSpecialUsersTextField.setText(String.valueOf(userCount));
+		// 					JOptionPane.showMessageDialog(
+		// 						Configuration.this,
+		// 						"Clique " + cliqueId + " has " + userCount + " users",
+		// 						"Clique Information",
+		// 						JOptionPane.INFORMATION_MESSAGE
+		// 					);
+		// 				} else {
+		// 					JOptionPane.showMessageDialog(
+		// 						Configuration.this,
+		// 						"Clique ID not found or invalid",
+		// 						"Error",
+		// 						JOptionPane.ERROR_MESSAGE
+		// 					);
+		// 					numberOfNonSpecialUsersTextField.setText("0");
+		// 				}
+		// 			} catch (NumberFormatException ex) {
+		// 				JOptionPane.showMessageDialog(
+		// 					Configuration.this,
+		// 					"Please enter a valid clique ID (integer)",
+		// 					"Invalid Input",
+		// 					JOptionPane.ERROR_MESSAGE
+		// 				);
+		// 			}
+		// 		}
+		// 	}
+		// });
+
+		// // También agregar un DocumentListener para actualizaciones en tiempo real
+		// cliqueIdTextField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+		// 	public void insertUpdate(javax.swing.event.DocumentEvent e) { updateCliqueUsers(); }
+		// 	public void removeUpdate(javax.swing.event.DocumentEvent e) { updateCliqueUsers(); }
+		// 	public void changedUpdate(javax.swing.event.DocumentEvent e) { updateCliqueUsers(); }
+			
+		// 	private void updateCliqueUsers() {
+		// 		if (contactTrajectoryMode == ContactTrajectoryMode.REAL_CHRONOLOGY) {
+		// 			try {
+		// 				String text = cliqueIdTextField.getText().trim();
+		// 				if (!text.isEmpty()) {
+		// 					int cliqueId = Integer.parseInt(text);
+		// 					int userCount = getUserCountForClique(cliqueId);
+		// 					if (userCount > 0) {
+		// 						numberOfNonSpecialUsersTextField.setText(String.valueOf(userCount));
+		// 					}
+		// 				}
+		// 			} catch (NumberFormatException ex) {
+		// 				// Ignore while typing
+		// 			}
+		// 		}
+		// 	}
+		// });
 
 		mixedModeCheckBox = new JCheckBox("Enable mixed mode (cliques + independent users)");
 		mixedModeCheckBox.setFont(new Font("SansSerif", Font.PLAIN, 14));
@@ -921,12 +1013,13 @@ public class Configuration extends javax.swing.JDialog {
 				independentRatioTextField.setEnabled(enabled);
 				
 				if (enabled) {
-					contactTrajectoryModeComboBox.setSelectedItem(
-						ContactTrajectoryMode.SIMPLIFIED_ROTATION.getDisplayName());
-					contactTrajectoryModeComboBox.setEnabled(false);
-				} else {
-					contactTrajectoryModeComboBox.setEnabled(true);
-				}
+                    contactTrajectoryModeComboBox.setSelectedItem(
+                        ContactTrajectoryMode.SIMPLIFIED_ROTATION.getDisplayName());
+                    contactTrajectoryModeComboBox.setEnabled(false);
+                    cliqueIdTextField.setEnabled(false);
+                } else {
+                    contactTrajectoryModeComboBox.setEnabled(true);
+                }
 			}
 		});
 
@@ -953,9 +1046,9 @@ public class Configuration extends javax.swing.JDialog {
 		epidemicModelComboBox = new JComboBox();
 		epidemicModelComboBox.setFont(new Font("SansSerif", Font.PLAIN, 14));
 		epidemicModelComboBox.setModel(new DefaultComboBoxModel(new String[] { 
-			"SIMPLE_PROXIMITY", 
 			"AEROSOL_PENG",
-			"AEROSOL_LELIEVELD"
+			"AEROSOL_LELIEVELD",
+			"SIMPLE_PROXIMITY"
 		}));
 
 		JLabel lblInitialInfected = new JLabel("Initial infected users");
@@ -963,7 +1056,7 @@ public class Configuration extends javax.swing.JDialog {
 
 		initialInfectedTextField = new JTextField();
 		initialInfectedTextField.setFont(new Font("SansSerif", Font.PLAIN, 14));
-		initialInfectedTextField.setText("2");
+		initialInfectedTextField.setText("1");
 		initialInfectedTextField.setColumns(10);
 
 		JLabel lblMaskCompliance = new JLabel("Mask compliance rate [0-1]");
@@ -1009,13 +1102,12 @@ public class Configuration extends javax.swing.JDialog {
 		maskInhalationEffTextField.setText("0.3");
 		maskInhalationEffTextField.setColumns(10);
 
-		JLabel lblSimulationDuration = new JLabel("Simulation duration [minutes]");
-		lblSimulationDuration.setFont(new Font("SansSerif", Font.PLAIN, 14));
-
-		simulationDurationTextField = new JTextField();
-		simulationDurationTextField.setFont(new Font("SansSerif", Font.PLAIN, 14));
-		simulationDurationTextField.setText("7"); // 7 minutos por defecto
-		simulationDurationTextField.setColumns(10);
+		// JLabel lblSimulationDuration = new JLabel("Simulation duration [minutes]");
+		// lblSimulationDuration.setFont(new Font("SansSerif", Font.PLAIN, 14));
+		// simulationDurationTextField = new JTextField();
+		// simulationDurationTextField.setFont(new Font("SansSerif", Font.PLAIN, 14));
+		// simulationDurationTextField.setText("7"); // 7 minutos por defecto
+		// simulationDurationTextField.setColumns(10);
 
 		JLabel lblImmunePopulation = new JLabel("Immune population fraction [0-1]");
 		lblImmunePopulation.setFont(new Font("SansSerif", Font.PLAIN, 14));
@@ -1037,6 +1129,15 @@ public class Configuration extends javax.swing.JDialog {
 		modelSpecificPanel = new JPanel();
 		modelSpecificPanel.setBorder(BorderFactory.createTitledBorder("Model-specific parameters"));
 
+		lblCliqueId = new JLabel("Clique id (0-based, real chronology)");
+		lblCliqueId.setFont(new Font("SansSerif", Font.PLAIN, 14));
+
+		cliqueIdTextField = new JTextField();
+		cliqueIdTextField.setFont(new Font("SansSerif", Font.PLAIN, 14));
+		cliqueIdTextField.setColumns(10);
+		cliqueIdTextField.setText("0");
+		cliqueIdTextField.setEnabled(false);
+
 		gl_epidemicPanel.setHorizontalGroup(
 			gl_epidemicPanel.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_epidemicPanel.createSequentialGroup()
@@ -1049,6 +1150,10 @@ public class Configuration extends javax.swing.JDialog {
 						.addComponent(contactTrajectoryModeComboBox, 0, 250, Short.MAX_VALUE))
 					.addComponent(mixedModeCheckBox)
 					.addGroup(gl_epidemicPanel.createSequentialGroup()
+						.addComponent(lblCliqueId)
+						.addGap(18)
+						.addComponent(cliqueIdTextField, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE))
+					.addGroup(gl_epidemicPanel.createSequentialGroup()
 						.addGap(21)
 						.addComponent(lblIndependentRatio)
 						.addGap(18)
@@ -1056,7 +1161,7 @@ public class Configuration extends javax.swing.JDialog {
 						.addGroup(gl_epidemicPanel.createSequentialGroup()
 							.addComponent(lblEpidemicModel)
 							.addGap(18)
-							.addComponent(epidemicModelComboBox, 0, 200, Short.MAX_VALUE))
+							.addComponent(epidemicModelComboBox, 170, 170, 170))
 						.addGroup(gl_epidemicPanel.createSequentialGroup()
 							.addComponent(lblInitialInfected)
 							.addGap(18)
@@ -1082,10 +1187,6 @@ public class Configuration extends javax.swing.JDialog {
 							.addGap(18)
 							.addComponent(maskInhalationEffTextField, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE))
 						.addGroup(gl_epidemicPanel.createSequentialGroup()
-							.addComponent(lblSimulationDuration)
-							.addGap(18)
-							.addComponent(simulationDurationTextField, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE))
-						.addGroup(gl_epidemicPanel.createSequentialGroup()
 							.addComponent(lblImmunePopulation)
 							.addGap(18)
 							.addComponent(immunePopulationTextField, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE))
@@ -1108,6 +1209,10 @@ public class Configuration extends javax.swing.JDialog {
 						.addComponent(contactTrajectoryModeComboBox, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
 					.addGap(10)
 					.addComponent(mixedModeCheckBox)
+					.addGap(10)					
+					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
+						.addComponent(lblCliqueId)
+						.addComponent(cliqueIdTextField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
 					.addGap(10)
 					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
 						.addComponent(lblIndependentRatio)
@@ -1140,11 +1245,6 @@ public class Configuration extends javax.swing.JDialog {
 					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
 						.addComponent(lblMaskInhEff)
 						.addComponent(maskInhalationEffTextField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-					.addGap(10)
-					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
-						.addComponent(lblSimulationDuration)
-						.addComponent(simulationDurationTextField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-					.addGap(10)
 					.addGroup(gl_epidemicPanel.createParallelGroup(Alignment.BASELINE)
 						.addComponent(lblImmunePopulation)
 						.addComponent(immunePopulationTextField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
@@ -1347,7 +1447,7 @@ public class Configuration extends javax.swing.JDialog {
 		jLabel7 = new javax.swing.JLabel();
 		jLabel7.setFont(new Font("SansSerif", Font.PLAIN, 14));
 
-		jLabel7.setText("Number of RS users [1-" + Literals.TOTAL_USERS + "]");
+		jLabel7.setText("Number of RS users [0-" + Literals.TOTAL_USERS + "]");
 		numberOfSpecialUsersTextField = new javax.swing.JTextField();
 		numberOfSpecialUsersTextField.setFont(new Font("SansSerif", Font.PLAIN, 14));
 		numberOfSpecialUsersTextField.setText("1");
@@ -1455,7 +1555,7 @@ public class Configuration extends javax.swing.JDialog {
 			}
 		});
 		recommendationAlgorithmComboBox.setModel(new DefaultComboBoxModel(new String[] { "Select an algorithm", "User-Based Collaborative Filtering (UBCF)", "Completely-random (FULLY-RAND)",
-				"Exhaustive visit (ALL)", "Near POI (NPOI)", "Know-It-All (Know-It-All)", "K-Ideal (K-Ideal)", "Risk-Aware (Risk-Aware)", "Non-Risk-Aware (Non-Risk-Aware)" }));
+				"Exhaustive visit (ALL)", /*"Near POI (NPOI)",*/"Know-It-All (Know-It-All)", "K-Ideal (K-Ideal)", "Risk-Aware (Risk-Aware)", "Non-Risk-Aware (Non-Risk-Aware)" }));
 
 		nonSpecialUserPathsJTextField = new JTextField();
 		nonSpecialUserPathsJTextField.setFont(new Font("SansSerif", Font.PLAIN, 14));
@@ -1816,7 +1916,7 @@ public class Configuration extends javax.swing.JDialog {
 				.addGap(18)
 				.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
 					.addComponent(epidemicLabel)
-					.addComponent(epidemicPanel, GroupLayout.PREFERRED_SIZE, 450, GroupLayout.PREFERRED_SIZE))
+					.addComponent(epidemicPanel, GroupLayout.PREFERRED_SIZE, 600, GroupLayout.PREFERRED_SIZE))
 				.addContainerGap(225, Short.MAX_VALUE))
 	);
 		gl_panel.setVerticalGroup(
@@ -1855,7 +1955,7 @@ public class Configuration extends javax.swing.JDialog {
 
 		pack();
 
-		epidemicModelComboBox.setSelectedItem("SIMPLE_PROXIMITY");
+		epidemicModelComboBox.setSelectedItem("AEROSOL_PENG");
 		updateModelSpecificParameters();
 	}
 	
@@ -1921,7 +2021,7 @@ public class Configuration extends javax.swing.JDialog {
 	 * @param timeToChangeMood
 	 * @return T/F
 	 */
-	private boolean checkParametersForSimulation(int timeAvailableUser, int delayObservingPainting, double timeForIteration,
+	private boolean checkParametersForSimulation(double timeAvailableUser, int delayObservingPainting, double timeForIteration,
 			double screenRefreshTime, double timeForThePaths, double userVelocity, double kmToPixel, int ttl, int timeOnStairs,
 			int minimumTimeToUpdateRecommendation, int communicationRange, int maxKnowledgeBaseSize, int communicationBandwidth,
 			int latencyOfTransmission, int timeToChangeMood, double simulationDuration) { // ← NUEVO PARÁMETRO
@@ -1957,12 +2057,13 @@ public class Configuration extends javax.swing.JDialog {
 		boolean useContactTrajectories = (contactTrajectoryMode != ContactTrajectoryMode.DISABLED);
 										
 		
-		boolean validSpecialUsers;
-		if (useContactTrajectories) {
-			validSpecialUsers = (numberOfSpecialUser >= 0);
-		} else {
-			validSpecialUsers = (numberOfSpecialUser > 0);
-		}
+		// boolean validSpecialUsers;
+		// if (useContactTrajectories) {
+		// 	validSpecialUsers = (numberOfSpecialUser >= 0);
+		// } else {
+		// 	validSpecialUsers = (numberOfSpecialUser > 0);
+		// }
+		boolean validSpecialUsers = (numberOfSpecialUser >= 0);
 		
 		return (validSpecialUsers && 
 				numberOfNonSpecialUser > 0 && 
@@ -2041,7 +2142,7 @@ public class Configuration extends javax.swing.JDialog {
 		if (contactTrajectoryMode != ContactTrajectoryMode.DISABLED) {
 			validInitialInfected = (initialInfected >= 0);
 		} else {
-			validInitialInfected = (initialInfected > 0);
+			validInitialInfected = (initialInfected >= 0);
 		}
 		
 		return epidemicModel != null && 
@@ -2291,7 +2392,8 @@ public class Configuration extends javax.swing.JDialog {
 		DISABLED("Deshabilitado (modo tradicional)"),
 		SIMPLIFIED_ROTATION("Simplificado (rotación circular)"),
 		COMPLEX_REAL_EVENTS("Complejo (trayectorias reales)"),
-		MIXED("Mixto (rotación + independientes)");
+		MIXED("Mixto (rotación + independientes)"),
+		REAL_CHRONOLOGY("Cronologia real");
 
 		
 		private final String displayName;
@@ -2307,6 +2409,33 @@ public class Configuration extends javax.swing.JDialog {
 		@Override
 		public String toString() {
 			return displayName;
+		}
+	}
+
+	/**
+	 * Gets the ID of the clique for chronological mode.
+	 * 
+	 * @return The clique ID or -1 if not available.
+	 */
+	public int getChronologyCliqueId() {
+			if (cliqueIdTextField == null) {
+				return -1;
+			}
+			try {
+				return Integer.parseInt(cliqueIdTextField.getText().trim());
+			} catch (Exception e) {
+				return -1;
+			}
+		}
+
+	/**
+	 * Sets the ID of the clique for chronological mode.
+	 * 
+	 * @param cliqueId
+	 */
+	public void setChronologyCliqueId(int cliqueId) {
+		if (cliqueIdTextField != null) {
+			cliqueIdTextField.setText(String.valueOf(cliqueId));
 		}
 	}
 
@@ -2356,6 +2485,109 @@ public class Configuration extends javax.swing.JDialog {
 	}
 
 	/**
+	 * Reads the cliques.json file and returns the number of users in the specified clique.
+	 * Added by Nacho Palacio 2025-06-06
+	 * 
+	 * @param cliqueId The 0-based clique ID
+	 * @return Number of users in the clique, or -1 if not found
+	 */
+	private int getUserCountForClique(int cliqueId) {
+		try {
+			String cliquesJsonPath = Literals.CLIQUES_JSON;
+			
+			java.nio.file.Files.readAllLines(java.nio.file.Paths.get(cliquesJsonPath));
+			String jsonContent = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(cliquesJsonPath)));
+			
+			com.google.gson.JsonParser parser = new com.google.gson.JsonParser();
+			com.google.gson.JsonObject json = parser.parse(jsonContent).getAsJsonObject();
+			com.google.gson.JsonArray cliques = json.getAsJsonArray("cliques");
+			
+			if (cliqueId >= 0 && cliqueId < cliques.size()) {
+				com.google.gson.JsonArray clique = cliques.get(cliqueId).getAsJsonArray();
+				return clique.size();
+			}
+		} catch (Exception e) {
+			System.err.println("Error reading cliques.json: " + e.getMessage());
+			e.printStackTrace();
+		}
+		return -1;
+	}
+
+	/**
+	 * Configures the clique ID text field listener for REAL_CHRONOLOGY mode.
+	 * Added by Nacho Palacio 2025-06-06
+	 */
+	private void setupCliqueIdTextFieldListener() {
+		// Verificar que el campo existe
+		if (cliqueIdTextField == null) {
+			System.err.println("ERROR: cliqueIdTextField is null. Make sure it exists in initComponents()");
+			return;
+		}
+		
+		// ActionListener para cuando el usuario presiona Enter
+		cliqueIdTextField.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (contactTrajectoryMode == ContactTrajectoryMode.REAL_CHRONOLOGY) {
+					try {
+						int cliqueId = Integer.parseInt(cliqueIdTextField.getText());
+						int userCount = getUserCountForClique(cliqueId);
+						
+						if (userCount > 0) {
+							numberOfNonSpecialUsersTextField.setText(String.valueOf(userCount));
+							JOptionPane.showMessageDialog(
+								Configuration.this,
+								"Clique " + cliqueId + " has " + userCount + " users",
+								"Clique Information",
+								JOptionPane.INFORMATION_MESSAGE
+							);
+						} else {
+							JOptionPane.showMessageDialog(
+								Configuration.this,
+								"Clique ID not found or invalid",
+								"Error",
+								JOptionPane.ERROR_MESSAGE
+							);
+							numberOfNonSpecialUsersTextField.setText("0");
+						}
+					} catch (NumberFormatException ex) {
+						JOptionPane.showMessageDialog(
+							Configuration.this,
+							"Please enter a valid clique ID (integer)",
+							"Invalid Input",
+							JOptionPane.ERROR_MESSAGE
+						);
+					}
+				}
+			}
+		});
+
+		// DocumentListener para actualizaciones en tiempo real
+		cliqueIdTextField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+			public void insertUpdate(javax.swing.event.DocumentEvent e) { updateCliqueUsers(); }
+			public void removeUpdate(javax.swing.event.DocumentEvent e) { updateCliqueUsers(); }
+			public void changedUpdate(javax.swing.event.DocumentEvent e) { updateCliqueUsers(); }
+			
+			private void updateCliqueUsers() {
+				if (contactTrajectoryMode == ContactTrajectoryMode.REAL_CHRONOLOGY) {
+					try {
+						String text = cliqueIdTextField.getText().trim();
+						if (!text.isEmpty()) {
+							int cliqueId = Integer.parseInt(text);
+							int userCount = getUserCountForClique(cliqueId);
+							if (userCount > 0) {
+								numberOfNonSpecialUsersTextField.setText(String.valueOf(userCount));
+							}
+						}
+					} catch (NumberFormatException ex) {
+						// Ignore while typing
+					}
+				}
+			}
+		});
+	}
+
+	/**
 	 * Configures the parameters for the contact trajectories mode.
 	 * 
 	 * @param modeName The name of the selected contact trajectory mode.
@@ -2364,22 +2596,47 @@ public class Configuration extends javax.swing.JDialog {
 		numberOfSpecialUsersTextField.setText("0");
 		numberOfSpecialUsersTextField.setEnabled(false);
 		
-		numberOfNonSpecialUsersTextField.setText(String.valueOf(Literals.TOTAL_USERS));
-		
+		numberOfNonSpecialUsersTextField.setEnabled(false);
 		initialInfectedTextField.setText("0");
 		initialInfectedTextField.setEnabled(false);
 		initialInfectedTextField.setToolTipText(
-			"Con trayectorias de contactos, la infección se basa en cliques (1 usuario por clique)"
+			"With contact trajectories, infection is clique-based (1 user per clique)"
 		);
-		
+
+		if (contactTrajectoryMode == ContactTrajectoryMode.REAL_CHRONOLOGY) {
+			cliqueIdTextField.setEnabled(true);
+			cliqueIdTextField.setText("0");  // Asegúrate de que está establecido
+			
+			// AÑADE ESTAS LÍNEAS para disparar la actualización automática
+			int userCountForClique0 = getUserCountForClique(0);
+			if (userCountForClique0 > 0) {
+				numberOfNonSpecialUsersTextField.setText(String.valueOf(userCountForClique0));
+			} else {
+				numberOfNonSpecialUsersTextField.setText("0");
+				System.err.println("[WARNING] Clique 0 not found or has 0 users");
+			}
+			
+			numberOfNonSpecialUsersTextField.setToolTipText("Will be set based on selected clique ID");
+		} else {
+			numberOfNonSpecialUsersTextField.setText(String.valueOf(Literals.TOTAL_USERS));
+			numberOfNonSpecialUsersTextField.setToolTipText(null);
+			cliqueIdTextField.setEnabled(false);
+		}
+
+		String extra = "";
+		if (contactTrajectoryMode == ContactTrajectoryMode.REAL_CHRONOLOGY) {
+			extra = "\n• Select the clique ID (Clique id field)\n• Number of users will be automatically set from the clique";
+		}
+
 		JOptionPane.showMessageDialog(
 			Configuration.this,
-			"Modo seleccionado: " + modeName + "\n\n" +
-			"• El número de usuarios especiales (RS) se fija a 0\n" +
-			"• El número total de usuarios (no-RS) debe ser ≤ " + Literals.TOTAL_USERS + "\n" +
-			"• Los infectados iniciales se establecen en 0\n" +
-			"• La infección se basa en cliques (1 usuario infectado por clique)",
-			"Configuración de Trayectorias de Contacto",
+			"Selected mode: " + modeName + "\n\n" +
+			"• Special users (RS) set to 0\n" +
+			"• Total users derived from selected configuration\n" +
+			"• Initial infected set to 0\n" +
+			"• Infection is clique-based (1 infected per clique)" +
+			extra,
+			"Contact Trajectory Configuration",
 			JOptionPane.INFORMATION_MESSAGE
 		);
 	}
@@ -2478,6 +2735,9 @@ public class Configuration extends javax.swing.JDialog {
 	public JTextField viralLoadSuperTextField;
 	public JTextField infectiousDoseTextField;
 	public JTextField depositionProbabilityTextField;
+
+	private JLabel lblCliqueId;
+    private JTextField cliqueIdTextField; // static
 
 	private JPanel modelSpecificPanel;
 }

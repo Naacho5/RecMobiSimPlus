@@ -122,7 +122,6 @@ public class SimpleProximityModel extends AbstractEpidemicModel {
      * Calculates distance factor for transmission probability.
      * Returns a multiplier based on distance between users, with closer
      * proximity resulting in higher transmission risk.
-     * REVISAR Y AJUSTAR VALORES
      * 
      * @param distance distance between users in meters
      * @return distance factor multiplier (0.0 to 8.0)
@@ -151,7 +150,6 @@ public class SimpleProximityModel extends AbstractEpidemicModel {
      * Calculates duration factor for transmission probability.
      * Returns a multiplier based on contact duration, with longer
      * exposure resulting in higher transmission risk.
-     * REVISAR Y AJUSTAR VALORES
      * 
      * @param durationSeconds contact duration in seconds
      * @return duration factor multiplier (0.0 to 2.5)
