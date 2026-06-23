@@ -79,6 +79,12 @@ public class Configuration extends javax.swing.JDialog {
 	// public JCheckBox useContactTrajectoriesCheckBox;
 
 	public ContactTrajectoryMode contactTrajectoryMode = ContactTrajectoryMode.DISABLED;
+	private static final int DEFAULT_CONTACT_TRAJECTORY_USERS = 50;
+	private static final String DEFAULT_CONTACT_PATH_STRATEGY = "Completely-random (FULLY-RAND)";
+	private static final String DEFAULT_CONTACT_RECOMMENDER = "Completely-random (FULLY-RAND)";
+	private static final String DEFAULT_CONTACT_NETWORK_TYPE = "Centralized (Centralized)";
+	private static final String DEFAULT_CONTACT_PROPAGATION = "Select a strategy";
+
 	@SuppressWarnings("rawtypes")
 	public JComboBox contactTrajectoryModeComboBox;
 	private JLabel lblContactTrajectoryMode;
@@ -263,13 +269,41 @@ public class Configuration extends javax.swing.JDialog {
 			int numberOfSpecialUser = Integer.valueOf(numberOfSpecialUsersTextField.getText()).intValue();
 			// Number of non-RS users.
 			int numberOfNonSpecialUser = Integer.valueOf(numberOfNonSpecialUsersTextField.getText()).intValue();
-			// File name of non-RS users.
-			String nonSpecialUserPaths = Literals.PATH_MAPS + nonSpecialUserPathsJTextField.getText();
-			// Path strategy of non-RS users.
-			String pathStrategy = (String) pathStrategyComboBox.getSelectedItem();
-			// Recommendation algorithm.
-			String recommendationAlgorithm = (String) recommendationAlgorithmComboBox.getSelectedItem();
-			// Threshold of recommendation.
+			// // File name of non-RS users.
+			// String nonSpecialUserPaths = Literals.PATH_MAPS + nonSpecialUserPathsJTextField.getText();
+			// // Path strategy of non-RS users.
+			// String pathStrategy = (String) pathStrategyComboBox.getSelectedItem();
+			// // Recommendation algorithm.
+			// String recommendationAlgorithm = (String) recommendationAlgorithmComboBox.getSelectedItem();
+			
+			boolean useContactTrajectories = (contactTrajectoryMode != ContactTrajectoryMode.DISABLED);
+
+			if (useContactTrajectories) {
+				ifGenerateuserPathCheckBox.setSelected(false);
+				pathStrategyComboBox.setSelectedItem(DEFAULT_CONTACT_PATH_STRATEGY);
+				recommendationAlgorithmComboBox.setSelectedItem(DEFAULT_CONTACT_RECOMMENDER);
+				typeNetworkComboBox.setSelectedItem(DEFAULT_CONTACT_NETWORK_TYPE);
+				propagationStrategyComboBox.setSelectedItem(DEFAULT_CONTACT_PROPAGATION);
+			}
+
+			String pathStrategy = useContactTrajectories
+				? DEFAULT_CONTACT_PATH_STRATEGY
+				: (String) pathStrategyComboBox.getSelectedItem();
+
+			String recommendationAlgorithm = useContactTrajectories
+				? DEFAULT_CONTACT_RECOMMENDER
+				: (String) recommendationAlgorithmComboBox.getSelectedItem();
+
+			String nonSpecialUserPaths;
+			if (useContactTrajectories) {
+				numberOfNonSpecialUser = Integer.valueOf(numberOfNonSpecialUsersTextField.getText()).intValue();
+				nonSpecialUserPaths = Literals.PATH_MAPS + "rand_non_special_user_paths_" + numberOfNonSpecialUser + ".txt";
+				nonSpecialUserPathsJTextField.setText("rand_non_special_user_paths_" + numberOfNonSpecialUser + ".txt");
+			} else {
+				nonSpecialUserPaths = Literals.PATH_MAPS + nonSpecialUserPathsJTextField.getText();
+			}
+			
+			// // Threshold of recommendation.
 			float thresholdRecommendation = Float.valueOf(thresholdRecommendationTextField.getText()).floatValue();
 			// Threshold of similarity.
 			double thresholdSimilarity = Double.valueOf(thresholdSimilarityTextField.getText()).doubleValue();
@@ -910,17 +944,25 @@ public class Configuration extends javax.swing.JDialog {
 					initialInfectedTextField.setText("2");
 					initialInfectedTextField.setEnabled(true);
 					initialInfectedTextField.setToolTipText(null);
+
+					numberOfNonSpecialUsersTextField.setEnabled(true);
+					cliqueIdTextField.setEnabled(false);
+
+					configureRecommendationAndPathFieldsForContactMode(false);
 					
 				} else if (selected.equals(ContactTrajectoryMode.SIMPLIFIED_ROTATION.getDisplayName())) {
 					contactTrajectoryMode = ContactTrajectoryMode.SIMPLIFIED_ROTATION;
-					configureContactTrajectoriesMode("Simplificado (Rotación Circular)");
+					configureContactTrajectoriesMode("Modelo 1: Rotacional");
+					configureRecommendationAndPathFieldsForContactMode(true);
 					
 				} else if (selected.equals(ContactTrajectoryMode.COMPLEX_REAL_EVENTS.getDisplayName())) {
 					contactTrajectoryMode = ContactTrajectoryMode.COMPLEX_REAL_EVENTS;
-					configureContactTrajectoriesMode("Complejo (Eventos Reales)");
+					configureContactTrajectoriesMode("Modelo 2: Fidelidad a los datos");
+					configureRecommendationAndPathFieldsForContactMode(true);
 				} else if (selected.equals(ContactTrajectoryMode.REAL_CHRONOLOGY.getDisplayName())) {
                     contactTrajectoryMode = ContactTrajectoryMode.REAL_CHRONOLOGY;
-                    configureContactTrajectoriesMode("Cronologia real");
+                    configureContactTrajectoriesMode("Modelo 3: Cronología real");
+					configureRecommendationAndPathFieldsForContactMode(true);
 
                     cliqueIdTextField.setEnabled(true);
                     mixedModeCheckBox.setSelected(false);
@@ -2390,10 +2432,10 @@ public class Configuration extends javax.swing.JDialog {
 	 */
 	public enum ContactTrajectoryMode {
 		DISABLED("Deshabilitado (modo tradicional)"),
-		SIMPLIFIED_ROTATION("Simplificado (rotación circular)"),
-		COMPLEX_REAL_EVENTS("Complejo (trayectorias reales)"),
+		SIMPLIFIED_ROTATION("Modelo 1: Rotacional"),
+		COMPLEX_REAL_EVENTS("Modelo 2: Fidelidad a los datos"),
 		MIXED("Mixto (rotación + independientes)"),
-		REAL_CHRONOLOGY("Cronologia real");
+		REAL_CHRONOLOGY("Modelo 3: Cronología real");
 
 		
 		private final String displayName;
@@ -2595,8 +2637,7 @@ public class Configuration extends javax.swing.JDialog {
 	private void configureContactTrajectoriesMode(String modeName) {
 		numberOfSpecialUsersTextField.setText("0");
 		numberOfSpecialUsersTextField.setEnabled(false);
-		
-		numberOfNonSpecialUsersTextField.setEnabled(false);
+
 		initialInfectedTextField.setText("0");
 		initialInfectedTextField.setEnabled(false);
 		initialInfectedTextField.setToolTipText(
@@ -2604,10 +2645,11 @@ public class Configuration extends javax.swing.JDialog {
 		);
 
 		if (contactTrajectoryMode == ContactTrajectoryMode.REAL_CHRONOLOGY) {
+			numberOfNonSpecialUsersTextField.setEnabled(false);
+
 			cliqueIdTextField.setEnabled(true);
-			cliqueIdTextField.setText("0");  // Asegúrate de que está establecido
-			
-			// AÑADE ESTAS LÍNEAS para disparar la actualización automática
+			cliqueIdTextField.setText("0");
+
 			int userCountForClique0 = getUserCountForClique(0);
 			if (userCountForClique0 > 0) {
 				numberOfNonSpecialUsersTextField.setText(String.valueOf(userCountForClique0));
@@ -2615,17 +2657,22 @@ public class Configuration extends javax.swing.JDialog {
 				numberOfNonSpecialUsersTextField.setText("0");
 				System.err.println("[WARNING] Clique 0 not found or has 0 users");
 			}
-			
+
 			numberOfNonSpecialUsersTextField.setToolTipText("Will be set based on selected clique ID");
 		} else {
-			numberOfNonSpecialUsersTextField.setText(String.valueOf(Literals.TOTAL_USERS));
-			numberOfNonSpecialUsersTextField.setToolTipText(null);
+			numberOfNonSpecialUsersTextField.setEnabled(true);
+			numberOfNonSpecialUsersTextField.setText(String.valueOf(DEFAULT_CONTACT_TRAJECTORY_USERS));
+			numberOfNonSpecialUsersTextField.setToolTipText(
+				"Editable by the user (max " + Literals.TOTAL_USERS + ")"
+			);
 			cliqueIdTextField.setEnabled(false);
 		}
 
 		String extra = "";
 		if (contactTrajectoryMode == ContactTrajectoryMode.REAL_CHRONOLOGY) {
 			extra = "\n• Select the clique ID (Clique id field)\n• Number of users will be automatically set from the clique";
+		} else {
+			extra = "\n• Number of non-special users can be edited manually";
 		}
 
 		JOptionPane.showMessageDialog(
@@ -2639,6 +2686,56 @@ public class Configuration extends javax.swing.JDialog {
 			"Contact Trajectory Configuration",
 			JOptionPane.INFORMATION_MESSAGE
 		);
+	}
+
+	/**
+	 * Configures the recommendation and path fields based on whether contact mode is enabled.
+	 * @param contactModeEnabled true if contact mode is enabled, false otherwise
+	 */
+	private void configureRecommendationAndPathFieldsForContactMode(boolean contactModeEnabled) {
+		if (contactModeEnabled) {
+			ifGenerateuserPathCheckBox.setSelected(false);
+			ifGenerateuserPathCheckBox.setEnabled(false);
+
+			pathStrategyComboBox.setSelectedItem(DEFAULT_CONTACT_PATH_STRATEGY);
+			pathStrategyComboBox.setEnabled(false);
+
+			recommendationAlgorithmComboBox.setSelectedItem(DEFAULT_CONTACT_RECOMMENDER);
+			recommendationAlgorithmComboBox.setEnabled(false);
+
+			typeNetworkComboBox.setSelectedItem(DEFAULT_CONTACT_NETWORK_TYPE);
+			typeNetworkComboBox.setEnabled(false);
+
+			propagationStrategyComboBox.setSelectedItem(DEFAULT_CONTACT_PROPAGATION);
+			propagationStrategyComboBox.setEnabled(false);
+
+			if (thresholdRecommendationTextField != null) {
+				thresholdRecommendationTextField.setEnabled(false);
+			}
+			if (thresholdSimilarityTextField != null) {
+				thresholdSimilarityTextField.setEnabled(false);
+			}
+			if (howManyTextField != null) {
+				howManyTextField.setEnabled(true);
+			}
+		} else {
+			ifGenerateuserPathCheckBox.setEnabled(true);
+			pathStrategyComboBox.setEnabled(true);
+			recommendationAlgorithmComboBox.setEnabled(true);
+
+			recommendationAlgorithmComboBox.setSelectedItem("Select an algorithm");
+			pathStrategyComboBox.setSelectedItem("Select a strategy");
+
+			typeNetworkComboBox.setSelectedItem("Select a type of network");
+			typeNetworkComboBox.setEnabled(false);
+
+			propagationStrategyComboBox.setSelectedItem("Select a strategy");
+			propagationStrategyComboBox.setEnabled(false);
+
+			thresholdRecommendationTextField.setEnabled(false);
+			thresholdSimilarityTextField.setEnabled(false);
+			howManyTextField.setEnabled(false);
+		}
 	}
 	
 	
